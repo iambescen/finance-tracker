@@ -672,6 +672,7 @@ function pageTxns() {
     +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
     +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
     +'<select id="txType" onchange="filterTxns()"><option value="">Все типы</option><option value="income">Доходы</option><option value="expense">Расходы</option><option value="transfer">Переводы</option></select>'
+    +'<select id="txAccount" onchange="filterTxns()"><option value="">Все счета</option>'+Object.values(DB.accounts).map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('')+'</select>'
     +'<span class="tbl-count" id="txCount"></span></div>'
     +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>';
 }
@@ -688,10 +689,12 @@ function filterTxns() {
   const search=(document.getElementById('txSearch')?.value||'').toLowerCase();
   const group=document.getElementById('txGroup')?.value||'';
   const type=document.getElementById('txType')?.value||'';
+  const account=document.getElementById('txAccount')?.value||'';
   const txns=getTxns(currentPeriod).filter(t=>{
     if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search)) return false;
     if(group&&t.group!==group) return false;
     if(type&&t.type!==type) return false;
+    if(account&&t.account!==account) return false;
     return true;
   });
   const body=document.getElementById('txBody'); if(!body) return;
