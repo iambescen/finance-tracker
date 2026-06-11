@@ -721,9 +721,9 @@ function pageAccounts() {
       +'<div><div style="font-size:13px;font-weight:500">'+acc.display+'</div><div style="font-size:11px;color:var(--muted)">'+acc.bank+'</div></div>'
       +'<input type="text" value="'+acc.name+'" data-acc="'+acc.number+'" data-field="name" onchange="updateAcc(this)" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;padding:6px 10px;font-family:var(--font)">'
       +'<select data-acc="'+acc.number+'" data-field="owner" onchange="updateAcc(this)" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;padding:6px 10px;font-family:var(--font)">'
-      +'<option value="me" '+(acc.owner==='me'?'selected':'')+'>Я</option>'
-      +'<option value="wife" '+(acc.owner==='wife'?'selected':'')+'>Таня</option>'
-      +'<option value="joint" '+(acc.owner==='joint'?'selected':'')+'>Общий</option>'
+      +'<option value="me" '+(acc.owner==="me"?'selected':'')+'>Влад</option>'
+      +'<option value="wife" '+(acc.owner==="wife"?'selected':'')+'>Таня</option>'
+      +'<option value="joint" '+(acc.owner==="joint"?'selected':'')+'>Общий</option>'
       +'</select>'
       +'<span style="font-size:12px;color:var(--muted2)">'+acc.number.slice(-4)+'</span>'
       +'</div>').join('')
