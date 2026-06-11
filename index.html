@@ -9,78 +9,43 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-
 *{box-sizing:border-box;margin:0;padding:0}
-
 :root{
-  --bg:#0a0a0a;
-  --bg2:#111111;
-  --bg3:#1a1a1a;
-  --bg4:#222222;
-  --border:#2a2a2a;
-  --border2:#333333;
-  --text:#e8e8e8;
-  --muted:#666;
-  --muted2:#888;
-  --accent:#6366f1;
-  --accent-soft:rgba(99,102,241,0.12);
-  --income:#22c55e;
-  --income-soft:rgba(34,197,94,0.1);
-  --expense:#ef4444;
-  --expense-soft:rgba(239,68,68,0.1);
-  --transfer:#f59e0b;
-  --transfer-soft:rgba(245,158,11,0.1);
-  --r:8px;
-  --r2:12px;
-  --font:'Inter',system-ui,sans-serif;
+  --bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;
+  --border:#2a2a2a;--border2:#333;
+  --text:#e8e8e8;--muted:#666;--muted2:#888;
+  --accent:#6366f1;--accent-soft:rgba(99,102,241,0.12);
+  --income:#22c55e;--income-soft:rgba(34,197,94,0.1);
+  --expense:#ef4444;--expense-soft:rgba(239,68,68,0.1);
+  --transfer:#f59e0b;--transfer-soft:rgba(245,158,11,0.1);
+  --r:8px;--r2:12px;--font:'Inter',system-ui,sans-serif;
 }
-
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
-
-/* ── Layout ── */
 .app{display:grid;grid-template-rows:56px 1fr;height:100vh}
-.topbar{
-  display:flex;align-items:center;gap:16px;
-  padding:0 24px;
-  border-bottom:1px solid var(--border);
-  background:var(--bg2);
-}
-.logo{font-size:15px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
+.topbar{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.logo{font-size:15px;font-weight:600;letter-spacing:-0.3px}
 .logo em{color:var(--accent);font-style:normal}
-.topbar-period{display:flex;align-items:center;gap:6px;margin-left:auto}
-.topbar-period select{
-  background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
-  color:var(--text);font-size:13px;font-family:var(--font);padding:5px 10px;cursor:pointer
-}
-.body{display:grid;grid-template-columns:220px 1fr;overflow:hidden}
-.sidebar{
-  background:var(--bg2);border-right:1px solid var(--border);
-  padding:16px 0;overflow-y:auto;
-}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.body{display:grid;grid-template-columns:210px 1fr;overflow:hidden}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto}
 .content{overflow-y:auto;padding:24px}
-
-/* ── Sidebar nav ── */
-.nav-section{padding:0 12px;margin-bottom:4px}
-.nav-label{font-size:10px;font-weight:500;letter-spacing:0.8px;color:var(--muted);text-transform:uppercase;padding:8px 8px 4px}
-.nav-item{
-  display:flex;align-items:center;gap:10px;padding:8px 10px;
-  border-radius:var(--r);cursor:pointer;color:var(--muted2);font-size:13px;
-  transition:all 0.15s;margin-bottom:1px;
-}
+.nav-label{font-size:10px;font-weight:500;letter-spacing:0.8px;color:var(--muted);text-transform:uppercase;padding:8px 12px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;margin:0 8px 1px;border-radius:var(--r);cursor:pointer;color:var(--muted2);font-size:13px;transition:all 0.15s}
 .nav-item:hover{background:var(--bg3);color:var(--text)}
 .nav-item.active{background:var(--accent-soft);color:var(--accent)}
-.nav-item .icon{width:16px;text-align:center;font-size:14px}
 .nav-divider{height:1px;background:var(--border);margin:8px 12px}
-
-/* ── Cards & Grids ── */
+.period-list{padding:0 8px}
+.period-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--muted2);transition:all 0.15s;margin-bottom:1px}
+.period-item:hover{background:var(--bg3);color:var(--text)}
+.period-item.active{background:var(--accent-soft);color:var(--accent)}
+.badge{font-size:10px;padding:2px 6px;border-radius:20px;background:var(--bg4);color:var(--muted)}
+.period-item.active .badge{background:var(--accent-soft);color:var(--accent)}
 .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
 .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}
-
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;margin-bottom:16px}
 .card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
-.card-title{font-size:11px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
-
+.card-title{font-size:11px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
 .metric-label{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px}
 .metric-value{font-size:22px;font-weight:600;letter-spacing:-0.5px}
 .metric-sub{font-size:12px;color:var(--muted);margin-top:4px}
@@ -88,284 +53,112 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .metric-value.expense{color:var(--expense)}
 .metric-value.accent{color:var(--accent)}
 .delta{font-size:12px;margin-top:4px}
-.delta.up{color:var(--income)}
-.delta.down{color:var(--expense)}
-
-/* ── Page header ── */
+.delta.up{color:var(--income)}.delta.down{color:var(--expense)}
 .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .page-title{font-size:18px;font-weight:600;letter-spacing:-0.3px}
 .page-actions{display:flex;gap:8px}
-
-/* ── Buttons ── */
-.btn{
-  padding:7px 14px;border-radius:var(--r);border:1px solid var(--border);
-  background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;
-  transition:all 0.15s;font-family:var(--font);display:inline-flex;align-items:center;gap:6px
-}
+.btn{padding:7px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;transition:all 0.15s;font-family:var(--font);display:inline-flex;align-items:center;gap:6px}
 .btn:hover{border-color:var(--border2);background:var(--bg4)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{opacity:0.9}
 .btn.sm{padding:5px 10px;font-size:12px}
-.btn.danger{border-color:#7f1d1d;color:var(--expense)}
-.btn.danger:hover{background:var(--expense-soft)}
-
-/* ── Upload ── */
-.upload-area{
-  border:1.5px dashed var(--border2);border-radius:var(--r2);
-  padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;
-  background:var(--bg2);
-}
+.btn.danger{border-color:#7f1d1d;color:var(--expense)}.btn.danger:hover{background:var(--expense-soft)}
+.upload-area{border:1.5px dashed var(--border2);border-radius:var(--r2);padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg2)}
 .upload-area:hover,.upload-area.drag{border-color:var(--accent);background:var(--accent-soft)}
-.upload-icon{font-size:32px;margin-bottom:12px}
-.upload-title{font-size:15px;font-weight:500;margin-bottom:6px}
-.upload-sub{color:var(--muted);font-size:13px;line-height:1.6}
-#fileInput{display:none}
-
-/* ── Period tabs ── */
-.period-list{display:flex;flex-direction:column;gap:2px;padding:0 12px}
-.period-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:7px 10px;border-radius:var(--r);cursor:pointer;
-  font-size:13px;color:var(--muted2);transition:all 0.15s;
-}
-.period-item:hover{background:var(--bg3);color:var(--text)}
-.period-item.active{background:var(--accent-soft);color:var(--accent)}
-.period-item .badge{
-  font-size:10px;padding:2px 6px;border-radius:20px;
-  background:var(--bg4);color:var(--muted)
-}
-.period-item.active .badge{background:var(--accent-soft);color:var(--accent)}
-
-/* ── Table ── */
-.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
-.table-toolbar{
-  display:flex;align-items:center;gap:10px;padding:12px 16px;
-  border-bottom:1px solid var(--border);flex-wrap:wrap;
-}
-.table-toolbar input{
-  padding:6px 12px;background:var(--bg3);border:1px solid var(--border);
-  border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);width:200px
-}
-.table-toolbar input:focus{outline:none;border-color:var(--accent)}
-.table-toolbar select{
-  padding:6px 12px;background:var(--bg3);border:1px solid var(--border);
-  border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);cursor:pointer
-}
-.table-toolbar select:focus{outline:none;border-color:var(--accent)}
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:16px}
+.tbl-toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tbl-toolbar input,.tbl-toolbar select{padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)}
+.tbl-toolbar input{width:200px}.tbl-toolbar input:focus,.tbl-toolbar select:focus{outline:none;border-color:var(--accent)}
 .tbl-count{margin-left:auto;font-size:12px;color:var(--muted)}
-
 table{width:100%;border-collapse:collapse}
-th{
-  text-align:left;padding:10px 14px;font-size:11px;
-  text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);
-  border-bottom:1px solid var(--border);white-space:nowrap;font-weight:500
-}
+th{text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;font-weight:500}
 td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(255,255,255,0.015)}
-
-.amt-income{color:var(--income);font-weight:500;font-variant-numeric:tabular-nums}
-.amt-expense{color:var(--expense);font-weight:500;font-variant-numeric:tabular-nums}
-.amt-transfer{color:var(--transfer);font-weight:500;font-variant-numeric:tabular-nums}
-.amt-neutral{color:var(--muted2);font-variant-numeric:tabular-nums}
-
-/* ── Category badge ── */
-.cat-pill{
-  display:inline-flex;align-items:center;gap:4px;
-  padding:3px 8px;border-radius:20px;font-size:12px;
-  background:var(--bg3);border:1px solid var(--border);
-  cursor:pointer;transition:all 0.15s;max-width:180px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
-}
+.amt-income{color:var(--income);font-weight:500}
+.amt-expense{color:var(--expense);font-weight:500}
+.amt-transfer{color:var(--transfer);font-weight:500}
+.cat-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:12px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all 0.15s;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cat-pill:hover{border-color:var(--accent);color:var(--accent)}
 .cat-pill.transfer{background:var(--transfer-soft);border-color:rgba(245,158,11,0.2);color:var(--transfer)}
-.cat-select{
-  background:var(--bg3);border:1px solid var(--accent);border-radius:var(--r);
-  color:var(--text);font-size:12px;padding:3px 6px;font-family:var(--font);
-  cursor:pointer;max-width:200px
-}
-
-/* ── Type tag ── */
-.type-tag{
-  display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500
-}
+.cat-select{background:var(--bg3);border:1px solid var(--accent);border-radius:var(--r);color:var(--text);font-size:12px;padding:3px 6px;font-family:var(--font);cursor:pointer;max-width:200px}
+.type-tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500}
 .type-tag.income{background:var(--income-soft);color:var(--income)}
 .type-tag.expense{background:var(--expense-soft);color:var(--expense)}
 .type-tag.transfer{background:var(--transfer-soft);color:var(--transfer)}
-
-/* ── Account tag ── */
-.acc-tag{
-  font-size:11px;color:var(--muted);
-  border:1px solid var(--border);border-radius:20px;
-  padding:2px 7px;white-space:nowrap
-}
-
-/* ── P&L table ── */
-.pl-section{margin-bottom:8px}
-.pl-row{
-  display:grid;grid-template-columns:1fr 120px 120px 120px;
-  padding:8px 14px;border-radius:var(--r);transition:background 0.1s;cursor:default
-}
+.pl-header{display:grid;grid-template-columns:1fr 130px 130px 80px;padding:8px 14px;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted)}
+.pl-row{display:grid;grid-template-columns:1fr 130px 130px 80px;padding:8px 14px;border-radius:var(--r);transition:background 0.1s}
 .pl-row:hover{background:var(--bg3)}
-.pl-row.group{font-weight:500;color:var(--text);padding:10px 14px}
-.pl-row.group:hover{background:rgba(255,255,255,0.02)}
+.pl-row.group{font-weight:500}
 .pl-row.sub{color:var(--muted2);font-size:13px;padding-left:28px}
-.pl-row.sub:hover{background:var(--bg3);color:var(--text)}
-.pl-row.total{
-  font-weight:600;font-size:15px;padding:14px;
-  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  margin-top:8px;background:var(--bg3)
-}
-.pl-header{
-  display:grid;grid-template-columns:1fr 120px 120px 120px;
-  padding:8px 14px;margin-bottom:4px;
-  font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted)
-}
+.pl-row.total{font-weight:600;font-size:15px;padding:14px;border-top:1px solid var(--border);margin-top:8px;background:var(--bg3);border-radius:0 0 var(--r2) var(--r2)}
 .pl-val{text-align:right;font-variant-numeric:tabular-nums}
-.pl-val.income{color:var(--income)}
-.pl-val.expense{color:var(--expense)}
-.pl-val.pos{color:var(--income)}
-.pl-val.neg{color:var(--expense)}
-
-/* ── Chart ── */
+.pl-val.income{color:var(--income)}.pl-val.expense{color:var(--expense)}
+.pl-val.pos{color:var(--income)}.pl-val.neg{color:var(--expense)}
 .chart-wrap{position:relative;height:240px}
-
-/* ── Empty ── */
+.progress{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:8px}
+.progress-bar{height:100%;border-radius:2px;background:var(--accent)}
+.progress-bar.expense{background:var(--expense)}
 .empty{text-align:center;padding:60px 20px;color:var(--muted)}
-.empty-icon{font-size:36px;margin-bottom:12px}
-.empty-title{font-size:15px;font-weight:500;color:var(--muted2);margin-bottom:6px}
-.empty-sub{font-size:13px;color:var(--muted)}
-
-/* ── Toast ── */
-.toast{
-  position:fixed;bottom:24px;right:24px;padding:12px 18px;
-  border-radius:var(--r);font-size:13px;z-index:999;
-  opacity:0;transition:opacity 0.25s;pointer-events:none;
-}
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:var(--r);font-size:13px;z-index:999;opacity:0;transition:opacity 0.25s;pointer-events:none}
 .toast.ok{background:#0f2a1a;border:1px solid #22c55e;color:var(--income)}
 .toast.err{background:#2a0f0f;border:1px solid #ef4444;color:var(--expense)}
 .toast.info{background:#1a1a2a;border:1px solid var(--accent);color:var(--accent)}
 .toast.show{opacity:1}
-
-/* ── Modal ── */
-.modal-bg{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);
-  z-index:100;align-items:center;justify-content:center
-}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
-.modal{
-  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);
-  padding:28px;width:460px;max-width:92vw;max-height:85vh;overflow-y:auto
-}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:460px;max-width:92vw;max-height:85vh;overflow-y:auto}
 .modal h3{font-size:16px;font-weight:600;margin-bottom:20px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
-.field input,.field select,.field textarea{
-  width:100%;padding:9px 12px;background:var(--bg3);
-  border:1px solid var(--border);border-radius:var(--r);
-  color:var(--text);font-size:13px;font-family:var(--font)
-}
+.field input,.field select{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)}
 .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
-.field textarea{resize:vertical;min-height:80px}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* ── Progress bar ── */
-.progress{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:8px}
-.progress-bar{height:100%;border-radius:2px;background:var(--accent);transition:width 0.3s}
-.progress-bar.income{background:var(--income)}
-.progress-bar.expense{background:var(--expense)}
-
-/* ── Scroll ── */
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-
-@media(max-width:900px){
-  .body{grid-template-columns:1fr}
-  .sidebar{display:none}
-  .grid-4{grid-template-columns:1fr 1fr}
-  .grid-3{grid-template-columns:1fr}
-}
+@media(max-width:900px){.body{grid-template-columns:1fr}.sidebar{display:none}.grid-4{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <div class="app">
-
-<!-- Topbar -->
 <div class="topbar">
   <div class="logo">семья<em>.</em>финансы</div>
-  <div class="topbar-period">
-    <select id="periodSelect" onchange="onPeriodChange()"></select>
+  <div class="topbar-right">
+    <select id="periodSelect" onchange="onPeriodChange()" style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
     <button class="btn sm" onclick="showPage('upload')">+ Загрузить</button>
-    <button class="btn sm" onclick="openGhModal()" title="Настройки GitHub">⚙</button><button class="btn sm primary" onclick="saveToGithub()">↑ Сохранить</button>
+    <button class="btn sm" onclick="openGhModal()">⚙</button>
+    <button class="btn sm primary" onclick="saveToGithub()">↑ GitHub</button>
   </div>
 </div>
-
 <div class="body">
-<!-- Sidebar -->
-<div class="sidebar">
-  <div class="nav-section">
+  <div class="sidebar">
     <div class="nav-label">Отчёты</div>
-    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
-      <span class="icon">◈</span> Дашборд
-    </div>
-    <div class="nav-item" onclick="showPage('pl')" id="nav-pl">
-      <span class="icon">≡</span> P&amp;L
-    </div>
-    <div class="nav-item" onclick="showPage('cashflow')" id="nav-cashflow">
-      <span class="icon">⇅</span> Cash Flow
-    </div>
-    <div class="nav-item" onclick="showPage('balance')" id="nav-balance">
-      <span class="icon">◎</span> Баланс
-    </div>
-  </div>
-  <div class="nav-divider"></div>
-  <div class="nav-section">
+    <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">◈ Дашборд</div>
+    <div class="nav-item" id="nav-pl" onclick="showPage('pl')">≡ P&amp;L</div>
+    <div class="nav-item" id="nav-cashflow" onclick="showPage('cashflow')">⇅ Cash Flow</div>
+    <div class="nav-item" id="nav-balance" onclick="showPage('balance')">◎ Баланс</div>
+    <div class="nav-divider"></div>
     <div class="nav-label">Данные</div>
-    <div class="nav-item" onclick="showPage('transactions')" id="nav-transactions">
-      <span class="icon">☰</span> Операции
-    </div>
-    <div class="nav-item" onclick="showPage('upload')" id="nav-upload">
-      <span class="icon">↑</span> Загрузить
-    </div>
-    <div class="nav-item" onclick="showPage('assets')" id="nav-assets">
-      <span class="icon">◇</span> Активы и долги
-    </div>
-  </div>
-  <div class="nav-divider"></div>
-  <div class="nav-section">
+    <div class="nav-item" id="nav-transactions" onclick="showPage('transactions')">☰ Операции</div>
+    <div class="nav-item" id="nav-upload" onclick="showPage('upload')">↑ Загрузить</div>
+    <div class="nav-item" id="nav-assets" onclick="showPage('assets')">◇ Активы и долги</div>
+    <div class="nav-divider"></div>
     <div class="nav-label">Периоды</div>
     <div class="period-list" id="periodList"></div>
   </div>
-</div>
-
-<!-- Content -->
-<div class="content" id="mainContent">
-  <!-- Pages rendered by JS -->
-</div>
+  <div class="content" id="mainContent"></div>
 </div>
 </div>
 
-<!-- Modal: category edit -->
+<!-- Category modal -->
 <div class="modal-bg" id="catModal">
   <div class="modal">
-    <h3>Изменить категорию</h3>
-    <div class="field">
-      <label>Группа</label>
-      <select id="catGroup" onchange="onCatGroupChange()"></select>
-    </div>
-    <div class="field">
-      <label>Подкатегория</label>
-      <select id="catSub"></select>
-    </div>
-    <div class="field">
-      <label>Тип</label>
-      <select id="catType">
-        <option value="expense">Расход</option>
-        <option value="income">Доход</option>
-        <option value="transfer">Внутренний перевод</option>
-      </select>
+    <h3>Категория операции</h3>
+    <div class="field"><label>Группа</label><select id="catGroup" onchange="onCatGroupChange()"></select></div>
+    <div class="field"><label>Подкатегория</label><select id="catSub"></select></div>
+    <div class="field"><label>Тип</label>
+      <select id="catType"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Внутренний перевод</option></select>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeCatModal()">Отмена</button>
@@ -374,18 +167,18 @@ tr:hover td{background:rgba(255,255,255,0.015)}
   </div>
 </div>
 
-<!-- Modal: assets -->
+<!-- Assets modal -->
 <div class="modal-bg" id="assetsModal">
   <div class="modal">
     <h3>Активы и обязательства</h3>
-    <div class="field"><label>Квартира (рыночная стоимость, ₽)</label><input type="number" id="assetFlat" placeholder="0"></div>
-    <div class="field"><label>Машина (оценочная стоимость, ₽)</label><input type="number" id="assetCar" placeholder="0"></div>
-    <div class="field"><label>Брокерский счёт (₽)</label><input type="number" id="assetBroker" placeholder="0"></div>
-    <div class="field"><label>Торговый счёт (арбитраж, ₽)</label><input type="number" id="assetTrading" placeholder="0"></div>
-    <div class="field"><label>Кэш на счетах (₽)</label><input type="number" id="assetCash" placeholder="0"></div>
+    <div class="field"><label>Квартира (рыночная стоимость, ₽)</label><input type="number" id="aFlat" placeholder="0"></div>
+    <div class="field"><label>Машина (оценочная стоимость, ₽)</label><input type="number" id="aCar" placeholder="0"></div>
+    <div class="field"><label>Брокерский счёт (₽)</label><input type="number" id="aBroker" placeholder="0"></div>
+    <div class="field"><label>Торговый счёт (арбитраж, ₽)</label><input type="number" id="aTrading" placeholder="0"></div>
+    <div class="field"><label>Кэш на счетах (₽)</label><input type="number" id="aCash" placeholder="0"></div>
     <div style="height:1px;background:var(--border);margin:16px 0"></div>
-    <div class="field"><label>Остаток ипотеки (₽)</label><input type="number" id="liabMortgage" placeholder="0"></div>
-    <div class="field"><label>Остаток рассрочки на обучение (₽)</label><input type="number" id="liabEdu" placeholder="0"></div>
+    <div class="field"><label>Остаток ипотеки (₽)</label><input type="number" id="lMortgage" placeholder="0"></div>
+    <div class="field"><label>Рассрочка на обучение (₽)</label><input type="number" id="lEdu" placeholder="0"></div>
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('assetsModal').classList.remove('open')">Отмена</button>
       <button class="btn primary" onclick="saveAssets()">Сохранить</button>
@@ -393,1370 +186,623 @@ tr:hover td{background:rgba(255,255,255,0.015)}
   </div>
 </div>
 
-
-<!-- Modal: GitHub settings -->
+<!-- GitHub modal -->
 <div class="modal-bg" id="ghModal">
   <div class="modal">
     <h3>Настройки GitHub</h3>
-    <div class="field"><label>GitHub Username</label><input type="text" id="ghUser" placeholder="iambescen"></div>
+    <div class="field"><label>Username</label><input type="text" id="ghUser" placeholder="iambescen"></div>
     <div class="field"><label>Репозиторий</label><input type="text" id="ghRepo" placeholder="finance-tracker"></div>
-    <div class="field"><label>Personal Access Token</label><input type="password" id="ghTokenInput" placeholder="ghp_..."></div>
+    <div class="field"><label>Personal Access Token</label><input type="password" id="ghToken" placeholder="ghp_..."></div>
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('ghModal').classList.remove('open')">Отмена</button>
       <button class="btn primary" onclick="saveGhModal()">Сохранить</button>
     </div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" multiple style="display:none">
+</body>
+</html><script>
+// ── Own accounts ──
+const OWN_INN = '570701153846';
+const OWN_ACCOUNTS = new Set(['40802810100000077444','40802810500004846488','40817810400000461363','42109810600000071861','40802810600000071861']);
 
-<script>
-// ═══════════════════════════════════════════
-// CATEGORY STRUCTURE (from Zen Money)
-// ═══════════════════════════════════════════
+// ── Category tree ──
 const CAT_TREE = {
-  income: {
-    label: 'Доход',
-    subs: ['Выручка от услуг/курсов/товаров','Дивиденды/купоны/курсовая разница',
-           'Кэшбэк/проценты на остаток','Пособия/вычеты','Возвраты','Прочие доходы']
-  },
-  expense: {
-    label: 'Расходы',
-    groups: {
-      'Питание':['Продукты/супермаркеты','Рестораны/кафе','Кино/концерты/мероприятия'],
-      'Дети':['Детский сад/школа','Кружки/секции','Детские товары'],
-      'Жильё':['Аренда/Ипотека (платёж)','Коммунальные/Интернет','Страховка жилья'],
-      'Здоровье':['Визиты врача/платные услуги','Лекарства/аптека','Абонементы/тренажёрный','Страховка здоровья'],
-      'Транспорт':['Такси/Общественный транспорт','Топливо','Обслуживание авто','Страховка авто'],
-      'Покупки':['Одежда/обувь','Бытовая техника/электроника','Мебель/декор','Красота/уход','Книги/образование'],
-      'Развлечения/Отдых':['Кино/концерты/мероприятия','Путешествия/отпуск','Хобби'],
-      'Сервисы/Связь':['Мобильная связь','Подписки на сервисы','Интернет/хостинг','Банковские комиссии'],
-      'Предпринимательство':['Оплата подрядчикам/сотрудникам','Рекламные расходы','Налоги/взносы ИП','Банковские комиссии ИП'],
-      'Налоги/Взносы':['Взносы ИП','НДФЛ','УСН'],
-      'Образование':['Оплата обучения','Курсы/тренинги'],
-      'Прочее':['Подарки','Благотворительность','Прочие расходы'],
-    }
-  }
+  income: { label:'Доход', subs:['Выручка от услуг/курсов/товаров','Дивиденды/купоны/курсовая разница','Кэшбэк/проценты на остаток','Пособия/вычеты','Возвраты','Прочие доходы'] },
+  expense: { groups: {
+    'Питание':['Продукты/супермаркеты','Рестораны/кафе'],
+    'Дети':['Детский сад/школа','Кружки/секции','Детские товары'],
+    'Жильё':['Аренда/Ипотека (платёж)','Коммунальные/Интернет','Страховка жилья'],
+    'Здоровье':['Визиты врача/платные услуги','Лекарства/аптека','Абонементы/тренажёрный','Страховка здоровья'],
+    'Транспорт':['Такси/Общественный транспорт','Топливо','Обслуживание авто','Страховка авто'],
+    'Покупки':['Одежда/обувь','Бытовая техника/электроника','Мебель/декор','Красота/уход','Книги'],
+    'Развлечения/Отдых':['Кино/концерты/мероприятия','Путешествия/отпуск','Хобби'],
+    'Сервисы/Связь':['Мобильная связь','Подписки на сервисы','Интернет/хостинг','Банковские комиссии'],
+    'Предпринимательство':['Оплата подрядчикам','Рекламные расходы','Налоги/взносы ИП','Банковские комиссии ИП'],
+    'Образование':['Оплата обучения','Курсы/тренинги'],
+    'Прочее':['Подарки','Благотворительность','Прочие расходы'],
+  }}
 };
 
-// Auto-categorization rules
+// ── Auto-categorization ──
 const AUTO_RULES = [
-  // Income
-  {match:['зачисление','кэшбэк','бонус'], group:'Доход', sub:'Кэшбэк/проценты на остаток', type:'income'},
-  {match:['дивиденд','купон'], group:'Доход', sub:'Дивиденды/купоны/курсовая разница', type:'income'},
-  {match:['возврат'], group:'Доход', sub:'Возвраты', type:'income'},
-  // Transfers
-  {match:['между своими','own account','между счет'], group:'Перевод', sub:'Внутренний перевод', type:'transfer'},
-  // Food
-  {match:['пятёрочка','пятерочка','магнит','вкусвилл','перекрёсток','перекресток','лента','дикси','ашан','spar','metro cash','окей'], group:'Питание', sub:'Продукты/супермаркеты', type:'expense'},
-  {match:['доставка','самокат','яндекс еда','delivery'], group:'Питание', sub:'Продукты/супермаркеты', type:'expense'},
-  {match:['ресторан','кафе','васильки','mcdonald','бургер','пицца','суши','coffee','кофе'], group:'Питание', sub:'Рестораны/кафе', type:'expense'},
-  // Transport
-  {match:['яндекс такси','такси','uber','gett'], group:'Транспорт', sub:'Такси/Общественный транспорт', type:'expense'},
-  {match:['тройка','сбертройка','метро','автобус'], group:'Транспорт', sub:'Такси/Общественный транспорт', type:'expense'},
-  {match:['азс','заправ','лукойл','роснефть','газпром','топлив','бензин'], group:'Транспорт', sub:'Топливо', type:'expense'},
-  {match:['emex','автозапчаст','шиномонт','автомой'], group:'Транспорт', sub:'Обслуживание авто', type:'expense'},
-  // Health
-  {match:['аптека','фармация','здоровье','медицин','клиник','больниц'], group:'Здоровье', sub:'Лекарства/аптека', type:'expense'},
-  {match:['фитнес','тренажёр','тренажер','спорт клуб'], group:'Здоровье', sub:'Абонементы/тренажёрный', type:'expense'},
-  // Housing
-  {match:['жкх','коммунальн','электроэнерг','водоканал','газ','квартплат'], group:'Жильё', sub:'Коммунальные/Интернет', type:'expense'},
-  {match:['beget','хостинг','домен'], group:'Сервисы/Связь', sub:'Интернет/хостинг', type:'expense'},
-  // Telecom
-  {match:['т-мобайл','мегафон','билайн','мтс','теле2','мобайл'], group:'Сервисы/Связь', sub:'Мобильная связь', type:'expense'},
-  {match:['подписка','subscription','netflix','spotify','яндекс плюс','onlipay','cozypay'], group:'Сервисы/Связь', sub:'Подписки на сервисы', type:'expense'},
-  // Entertainment
-  {match:['афиша','кино','театр','билет','concert','event'], group:'Развлечения/Отдых', sub:'Кино/концерты/мероприятия', type:'expense'},
-  {match:['суточно','отель','гостиниц','booking','airbnb'], group:'Развлечения/Отдых', sub:'Путешествия/отпуск', type:'expense'},
-  // Kids
-  {match:['детский сад','садик','ясли'], group:'Дети', sub:'Детский сад/школа', type:'expense'},
-  // Business
-  {match:['сравни.ру','сравни'], group:'Сервисы/Связь', sub:'Банковские комиссии', type:'expense'},
-  // Shopping
-  {match:['wildberries','wb','ozon','lamoda','одежда'], group:'Покупки', sub:'Одежда/обувь', type:'expense'},
-  // Finance services
-  {match:['пакет x5','пакет'], group:'Сервисы/Связь', sub:'Банковские комиссии', type:'expense'},
+  {m:['зачисление кэшбэка','кэшбэк','бонус'], g:'Доход', s:'Кэшбэк/проценты на остаток', t:'income'},
+  {m:['дивиденд','купон'], g:'Доход', s:'Дивиденды/купоны/курсовая разница', t:'income'},
+  {m:['возврат'], g:'Доход', s:'Возвраты', t:'income'},
+  {m:['пятёрочка','пятерочка','магнит','вкусвилл','перекрёсток','перекресток','лента','ашан','самокат','яндекс еда'], g:'Питание', s:'Продукты/супермаркеты', t:'expense'},
+  {m:['ресторан','кафе','васильки','mcdonald','coffee'], g:'Питание', s:'Рестораны/кафе', t:'expense'},
+  {m:['яндекс такси','яндекс.такси','такси','uber'], g:'Транспорт', s:'Такси/Общественный транспорт', t:'expense'},
+  {m:['тройка','сбертройка','метро','автобус'], g:'Транспорт', s:'Такси/Общественный транспорт', t:'expense'},
+  {m:['азс','лукойл','роснефть','газпром нефть','топлив','бензин'], g:'Транспорт', s:'Топливо', t:'expense'},
+  {m:['emex','автозапчаст','шиномонт'], g:'Транспорт', s:'Обслуживание авто', t:'expense'},
+  {m:['аптека','фармация'], g:'Здоровье', s:'Лекарства/аптека', t:'expense'},
+  {m:['фитнес','тренажёр','тренажер'], g:'Здоровье', s:'Абонементы/тренажёрный', t:'expense'},
+  {m:['жкх','коммунальн','электроэнерг','водоканал'], g:'Жильё', s:'Коммунальные/Интернет', t:'expense'},
+  {m:['beget','хостинг','домен'], g:'Сервисы/Связь', s:'Интернет/хостинг', t:'expense'},
+  {m:['т-мобайл','мегафон','билайн','мтс','теле2'], g:'Сервисы/Связь', s:'Мобильная связь', t:'expense'},
+  {m:['подписка','netflix','spotify','яндекс плюс','onlipay','cozypay'], g:'Сервисы/Связь', s:'Подписки на сервисы', t:'expense'},
+  {m:['афиша','театр','кино','concert'], g:'Развлечения/Отдых', s:'Кино/концерты/мероприятия', t:'expense'},
+  {m:['суточно','отель','гостиниц','booking','airbnb'], g:'Развлечения/Отдых', s:'Путешествия/отпуск', t:'expense'},
+  {m:['детский сад','садик','ясли'], g:'Дети', s:'Детский сад/школа', t:'expense'},
+  {m:['wildberries','ozon','lamoda'], g:'Покупки', s:'Одежда/обувь', t:'expense'},
+  {m:['пакет x5','пакет'], g:'Сервисы/Связь', s:'Банковские комиссии', t:'expense'},
+  {m:['сравни'], g:'Сервисы/Связь', s:'Банковские комиссии', t:'expense'},
 ];
+
+const BANK_CAT_MAP = {
+  'супермаркеты':{g:'Питание',s:'Продукты/супермаркеты',t:'expense'},
+  'рестораны':{g:'Питание',s:'Рестораны/кафе',t:'expense'},
+  'такси':{g:'Транспорт',s:'Такси/Общественный транспорт',t:'expense'},
+  'местный транспорт':{g:'Транспорт',s:'Такси/Общественный транспорт',t:'expense'},
+  'отели':{g:'Развлечения/Отдых',s:'Путешествия/отпуск',t:'expense'},
+  'развлечения':{g:'Развлечения/Отдых',s:'Кино/концерты/мероприятия',t:'expense'},
+  'автоуслуги':{g:'Транспорт',s:'Обслуживание авто',t:'expense'},
+  'мобильная связь':{g:'Сервисы/Связь',s:'Мобильная связь',t:'expense'},
+  'связь':{g:'Сервисы/Связь',s:'Интернет/хостинг',t:'expense'},
+  'цифровые товары':{g:'Сервисы/Связь',s:'Подписки на сервисы',t:'expense'},
+  'финансы':{g:'Сервисы/Связь',s:'Банковские комиссии',t:'expense'},
+  'бонусы':{g:'Доход',s:'Кэшбэк/проценты на остаток',t:'income'},
+  'переводы':{g:'Перевод',s:'Внутренний перевод',t:'transfer'},
+};
 
 function autoCateg(desc, bankCat) {
   const d = (desc||'').toLowerCase();
   const b = (bankCat||'').toLowerCase();
-  for (const rule of AUTO_RULES) {
-    if (rule.match.some(m => d.includes(m) || b.includes(m))) {
-      return {group: rule.group, sub: rule.sub, type: rule.type};
-    }
+  for (const r of AUTO_RULES) {
+    if (r.m.some(m => d.includes(m) || b.includes(m))) return {g:r.g, s:r.s, t:r.t};
   }
-  // Fallback by bank category
-  const bankMap = {
-    'супермаркеты':{group:'Питание',sub:'Продукты/супермаркеты',type:'expense'},
-    'рестораны':{group:'Питание',sub:'Рестораны/кафе',type:'expense'},
-    'такси':{group:'Транспорт',sub:'Такси/Общественный транспорт',type:'expense'},
-    'местный транспорт':{group:'Транспорт',sub:'Такси/Общественный транспорт',type:'expense'},
-    'отели':{group:'Развлечения/Отдых',sub:'Путешествия/отпуск',type:'expense'},
-    'развлечения':{group:'Развлечения/Отдых',sub:'Кино/концерты/мероприятия',type:'expense'},
-    'автоуслуги':{group:'Транспорт',sub:'Обслуживание авто',type:'expense'},
-    'мобильная связь':{group:'Сервисы/Связь',sub:'Мобильная связь',type:'expense'},
-    'связь':{group:'Сервисы/Связь',sub:'Интернет/хостинг',type:'expense'},
-    'цифровые товары':{group:'Сервисы/Связь',sub:'Подписки на сервисы',type:'expense'},
-    'финансы':{group:'Сервисы/Связь',sub:'Банковские комиссии',type:'expense'},
-    'бонусы':{group:'Доход',sub:'Кэшбэк/проценты на остаток',type:'income'},
-    'переводы':{group:'Перевод',sub:'Внутренний перевод',type:'transfer'},
-  };
-  if (bankMap[b]) return bankMap[b];
-  return {group:'Прочее', sub:'Прочие расходы', type:'expense'};
+  if (BANK_CAT_MAP[b]) { const c=BANK_CAT_MAP[b]; return {g:c.g,s:c.s,t:c.t}; }
+  return {g:'Прочее', s:'Прочие расходы', t:'expense'};
 }
 
-
-// ═══════════════════════════════════════════
-// OWN ACCOUNTS (для определения внутренних переводов)
-// ═══════════════════════════════════════════
-const OWN_ACCOUNTS = new Set([
-  '40802810100000077444', // ИП основной
-  '40802810500004846488', // ИП второй
-  '40817810400000461363', // Личный Тинькофф
-  '42109810600000071861', // ИП третий
-  '40802810600000071861',
-]);
-
-const OWN_INN = '570701153846';
-
-function isOwnAccount(acc) {
-  if (!acc) return false;
-  return OWN_ACCOUNTS.has(acc.replace(/\s/g,''));
-}
-
-// ── Tinkoff Business / IP format ──
-// Колонки: Номер счёта; Тип операции (Кредит/Дебет); Дата проведения; Номер платежа;
-//          Валюта операции; Сумма в валюте счёта; Валюта счёта; Описание операции;
-//          Назначение платежа; Счет плательщика; ИНН плательщика; ...
-//          Счет получателя; ... Наименование получателя; ... Счет контрагента; ИНН контрагента; Наименование контрагента
-function parseTinkoffBusiness(rows) {
-  const results = [];
-  for (const r of rows) {
-    const acc      = (r['Номер счёта'] || '').trim();
-    const opType   = (r['Тип операции (пополнение/списание)'] || '').trim(); // Кредит / Дебет
-    const dateRaw  = (r['Дата проведения'] || '').trim();
-    const amtRaw   = r['Сумма в валюте счёта'];
-    const cur      = (r['Валюта счёта'] || 'RUB').trim();
-    const desc     = (r['Описание операции'] || r['Назначение платежа'] || '').trim();
-    const payerAcc = (r['Счет плательщика'] || '').trim();
-    const payerINN = (r['ИНН плательщика'] || '').trim();
-    const rcvAcc   = (r['Счет получателя'] || '').trim();
-    const ctgAcc   = (r['Счет контрагента'] || '').trim();
-    const ctgINN   = (r['ИНН контрагента'] || '').trim();
-    const ctgName  = (r['Наименование контрагента'] || '').trim();
-
-    if (!dateRaw || !amtRaw) continue;
-    const amt = parseFloat(String(amtRaw).replace(/\s/g,'').replace(',','.')) || 0;
-    if (!amt) continue;
-
-    const dateISO = toISODate(dateRaw);
-    const month   = dateISO.slice(0,7);
-    const isCredit = opType === 'Кредит'; // пополнение счёта
-
-    // Determine if internal transfer:
-    // 1. Контрагент — сам ИП (свой ИНН) или свой счёт
-    // 2. Назначение содержит "перевод собственных средств"
-    const descLow = desc.toLowerCase();
-    const isOwnTransfer =
-      ctgINN === OWN_INN ||
-      payerINN === OWN_INN ||
-      isOwnAccount(ctgAcc) ||
-      isOwnAccount(payerAcc) ||
-      isOwnAccount(rcvAcc) ||
-      descLow.includes('перевод собственных средств');
-
-    // Account service fee
-    const isServiceFee = descLow.includes('плата за обслуживание счета');
-
-    // Tax payments
-    const isTax = descLow.includes('пополнение енс') || descLow.includes('ндфл') ||
-                  descLow.includes('усн') || descLow.includes('взнос') ||
-                  descLow.includes('казначейство');
-
-    let type, group, sub;
-    if (isOwnTransfer) {
-      type = 'transfer'; group = 'Перевод'; sub = 'Внутренний перевод';
-    } else if (isServiceFee) {
-      type = 'expense'; group = 'Предпринимательство'; sub = 'Банковские комиссии ИП';
-    } else if (isTax) {
-      type = 'expense'; group = 'Предпринимательство'; sub = 'Налоги/взносы ИП';
-    } else if (isCredit) {
-      type = 'income'; group = 'Доход'; sub = 'Выручка от услуг/курсов/товаров';
-    } else {
-      // Debit, non-own = real expense
-      const c = autoCateg(desc, '');
-      type = c.type; group = c.group; sub = c.sub;
-      if (type === 'income') { type = 'expense'; group = 'Предпринимательство'; sub = 'Прочие расходы ИП'; }
-    }
-
-    // Amount sign: credit = positive, debit = negative
-    const amtRub = isCredit ? amt : -amt;
-
-    results.push({
-      id: uid(), date: dateISO, month, dateDisplay: dateRaw,
-      desc: desc || ctgName,
-      card: acc.slice(-4) ? '*' + acc.slice(-4) : '',
-      account: acc,
-      bankCat: opType,
-      amtOp: amtRub, curOp: cur, amtRub,
-      status: 'OK',
-      group, sub, type,
-      source: 'tinkoff_business',
-      counterparty: ctgName || '',
-    });
-  }
-  return results;
-}
-// ═══════════════════════════════════════════
-// DATA STORE
-// ═══════════════════════════════════════════
-let DB = {
-  periods: {},   // { "2026-05": { transactions: [...] } }
-  assets: {
-    flat:0, car:0, broker:0, trading:0, cash:0,
-    mortgage:0, eduLoan:0,
-    updatedAt: null
-  }
-};
-
-let currentPeriod = null;
-let editingTxId = null;
-let currentPage = 'dashboard';
-let chartInstances = {};
-
-function getTransactions(period) {
-  return DB.periods[period]?.transactions || [];
-}
-
-function allTransactions() {
-  return Object.values(DB.periods).flatMap(p => p.transactions || []);
-}
-
-function savePeriod(period, txns) {
-  if (!DB.periods[period]) DB.periods[period] = {};
-  DB.periods[period].transactions = txns;
-  saveLocal();
-}
-
-// ═══════════════════════════════════════════
-// PARSING
-// ═══════════════════════════════════════════
-function parseAmount(s) {
-  if (s == null) return 0;
-  return parseFloat(String(s).replace(/\s/g,'').replace(',','.')) || 0;
-}
-
-function toISODate(raw) {
-  if (!raw) return '';
-  const s = String(raw).split(' ')[0];
+// ── Helpers ──
+function uid() { return Math.random().toString(36).slice(2,10); }
+function parseAmt(s) { if(!s) return 0; return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0; }
+function toISO(raw) {
+  const s = String(raw||'').split(' ')[0];
   const p = s.split('.');
-  if (p.length === 3 && p[2].length === 4) return `${p[2]}-${p[1]}-${p[0]}`;
+  if(p.length===3 && p[2].length===4) return p[2]+'-'+p[1]+'-'+p[0];
   return s;
 }
-
-function detectBank(keys) {
-  const k = keys.join('|').toLowerCase();
-  if (k.includes('тип операции') && k.includes('дата проведения') && k.includes('счёта')) return 'tinkoff_business';
-  if (k.includes('сумма операции') || k.includes('дата операции')) return 'tinkoff';
-  return 'generic';
+function fmtMoney(n, sign=false) {
+  const a=Math.abs(n), s=a.toLocaleString('ru-RU',{maximumFractionDigits:0});
+  if(sign&&n>0) return '+'+s+' ₽';
+  if(n<0) return '−'+s+' ₽';
+  return s+' ₽';
+}
+function fmtMonth(ym) {
+  if(!ym) return '';
+  const [y,m]=ym.split('-');
+  return ['','Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][+m]+' '+y;
 }
 
+// ── Parsers ──
 function parseTinkoff(rows) {
   return rows.map(r => {
-    const dateRaw = r['Дата операции'] || '';
-    const status  = r['Статус'] || '';
-    const amtOp   = parseAmount(r['Сумма операции']);
-    const curOp   = r['Валюта операции'] || 'RUB';
-    const amtRub  = parseAmount(r['Сумма платежа']);
-    const card    = r['Номер карты'] || '';
-    const bankCat = r['Категория'] || '';
-    const desc    = r['Описание'] || '';
-    if (!dateRaw) return null;
-    const date = toISODate(dateRaw);
-    const month = date.slice(0,7);
-    const c = autoCateg(desc, bankCat);
-    return {
-      id: uid(), date, month,
-      dateDisplay: dateRaw.split(' ')[0],
-      desc, card, bankCat,
-      amtOp, curOp, amtRub,
-      status,
-      group: c.group, sub: c.sub, type: c.type,
-      source: 'tinkoff'
-    };
+    const dateRaw=r['Дата операции']||''; if(!dateRaw) return null;
+    const amtOp=parseAmt(r['Сумма операции']), amtRub=parseAmt(r['Сумма платежа']);
+    const curOp=r['Валюта операции']||'RUB', desc=r['Описание']||'', bankCat=r['Категория']||'', card=r['Номер карты']||'';
+    const date=toISO(dateRaw), month=date.slice(0,7);
+    const c=autoCateg(desc,bankCat);
+    return {id:uid(),date,month,dateDisplay:dateRaw.split(' ')[0],desc,card,account:card,bankCat,amtOp,curOp,amtRub,status:r['Статус']||'',group:c.g,sub:c.s,type:c.t,source:'tinkoff',counterparty:''};
+  }).filter(Boolean);
+}
+
+function parseTinkoffBusiness(rows) {
+  return rows.map(r => {
+    const acc=(r['Номер счёта']||'').trim();
+    const opType=(r['Тип операции (пополнение/списание)']||'').trim();
+    const dateRaw=(r['Дата проведения']||'').trim(); if(!dateRaw) return null;
+    const amt=parseAmt(r['Сумма в валюте счёта']); if(!amt) return null;
+    const cur=(r['Валюта счёта']||'RUB').trim();
+    const desc=(r['Описание операции']||r['Назначение платежа']||'').trim();
+    const payerAcc=(r['Счет плательщика']||'').trim();
+    const payerINN=(r['ИНН плательщика']||'').trim();
+    const rcvAcc=(r['Счет получателя']||'').trim();
+    const ctgAcc=(r['Счет контрагента']||'').trim();
+    const ctgINN=(r['ИНН контрагента']||'').trim();
+    const ctgName=(r['Наименование контрагента']||'').trim();
+    const date=toISO(dateRaw), month=date.slice(0,7);
+    const isCredit=opType==='Кредит';
+    const dLow=desc.toLowerCase();
+    const isOwnTransfer = ctgINN===OWN_INN || payerINN===OWN_INN ||
+      OWN_ACCOUNTS.has(ctgAcc) || OWN_ACCOUNTS.has(payerAcc) || OWN_ACCOUNTS.has(rcvAcc) ||
+      dLow.includes('перевод собственных средств');
+    const isServiceFee=dLow.includes('плата за обслуживание счета');
+    const isTax=dLow.includes('пополнение енс')||dLow.includes('казначейство')||dLow.includes('взнос')||dLow.includes('усн');
+    let type,group,sub;
+    if(isOwnTransfer){type='transfer';group='Перевод';sub='Внутренний перевод';}
+    else if(isServiceFee){type='expense';group='Предпринимательство';sub='Банковские комиссии ИП';}
+    else if(isTax){type='expense';group='Предпринимательство';sub='Налоги/взносы ИП';}
+    else if(isCredit){type='income';group='Доход';sub='Выручка от услуг/курсов/товаров';}
+    else{const c=autoCateg(desc,'');type=c.t;group=c.g;sub=c.s;}
+    const amtRub=isCredit?amt:-amt;
+    return {id:uid(),date,month,dateDisplay:dateRaw,desc:desc||ctgName,card:'*'+acc.slice(-4),account:acc,bankCat:opType,amtOp:amtRub,curOp:cur,amtRub,status:'OK',group,sub,type,source:'tinkoff_business',counterparty:ctgName};
   }).filter(Boolean);
 }
 
 function parseGeneric(rows) {
   return rows.map(r => {
-    const keys = Object.keys(r);
-    let date='', desc='', amt=0, cat='';
-    for (const k of keys) {
-      const kl = k.toLowerCase();
-      if (!date && kl.includes('дат')) date = r[k];
-      if (!desc && (kl.includes('опис')||kl.includes('назн')||kl.includes('получ'))) desc = r[k];
-      if (!amt && (kl.includes('сумм')||kl.includes('amount'))) amt = parseAmount(r[k]);
-      if (!cat && (kl.includes('катег')||kl.includes('category'))) cat = r[k];
+    const keys=Object.keys(r); let date='',desc='',amt=0,cat='';
+    for(const k of keys){const kl=k.toLowerCase();
+      if(!date&&kl.includes('дат')) date=r[k];
+      if(!desc&&(kl.includes('опис')||kl.includes('назн'))) desc=r[k];
+      if(!amt&&(kl.includes('сумм')||kl.includes('amount'))) amt=parseAmt(r[k]);
+      if(!cat&&kl.includes('катег')) cat=r[k];
     }
-    if (!date || !amt) return null;
-    const dateISO = toISODate(date);
-    const c = autoCateg(String(desc), cat);
-    return {
-      id: uid(), date: dateISO, month: dateISO.slice(0,7),
-      dateDisplay: String(date).split(' ')[0],
-      desc: String(desc), card:'', bankCat: cat,
-      amtOp: amt, curOp:'RUB', amtRub: amt,
-      status:'OK',
-      group: c.group, sub: c.sub, type: c.type,
-      source:'generic'
-    };
+    if(!date||!amt) return null;
+    const dateISO=toISO(date), c=autoCateg(String(desc),cat);
+    return {id:uid(),date:dateISO,month:dateISO.slice(0,7),dateDisplay:String(date).split(' ')[0],desc:String(desc),card:'',account:'',bankCat:cat,amtOp:amt,curOp:'RUB',amtRub:amt,status:'OK',group:c.g,sub:c.s,type:c.t,source:'generic',counterparty:''};
   }).filter(Boolean);
 }
 
+function detectBank(keys) {
+  const k=keys.join('|').toLowerCase();
+  if(k.includes('тип операции')&&k.includes('дата проведения')&&k.includes('номер счёта')) return 'tinkoff_business';
+  if(k.includes('дата операции')||k.includes('сумма операции')) return 'tinkoff';
+  return 'generic';
+}
 function processRows(rows) {
-  if (!rows?.length) return [];
-  const bank = detectBank(Object.keys(rows[0]||{}));
-  if (bank === 'tinkoff_business') return parseTinkoffBusiness(rows);
-  if (bank === 'tinkoff') return parseTinkoff(rows);
+  if(!rows?.length) return [];
+  const bank=detectBank(Object.keys(rows[0]||{}));
+  if(bank==='tinkoff_business') return parseTinkoffBusiness(rows);
+  if(bank==='tinkoff') return parseTinkoff(rows);
   return parseGeneric(rows);
 }
 
+// ── DB ──
+let DB = { periods:{}, assets:{flat:0,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null} };
+let currentPeriod=null, currentPage='dashboard', editTxId=null, charts={};
+
+function getTxns(p) { return DB.periods[p]?.transactions||[]; }
+function savePeriod(p,txns) { if(!DB.periods[p]) DB.periods[p]={}; DB.periods[p].transactions=txns; saveLocal(); }
+
+// ── File processing ──
 function processFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (['xlsx','xls'].includes(ext)) {
-    const fr = new FileReader();
-    fr.onload = e => {
-      const wb = XLSX.read(e.target.result, {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      ingestTransactions(processRows(XLSX.utils.sheet_to_json(ws)));
-    };
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(['xlsx','xls'].includes(ext)) {
+    const fr=new FileReader();
+    fr.onload=e=>{const wb=XLSX.read(e.target.result,{type:'array'});ingest(processRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])));};
     fr.readAsArrayBuffer(file);
   } else {
-    const fr = new FileReader();
-    fr.onload = e => {
-      let res = Papa.parse(e.target.result, {header:true,delimiter:';',skipEmptyLines:true,encoding:'UTF-8'});
-      if (!res.data?.length) res = Papa.parse(e.target.result, {header:true,skipEmptyLines:true});
-      ingestTransactions(processRows(res.data));
+    const fr=new FileReader();
+    fr.onload=e=>{
+      let res=Papa.parse(e.target.result,{header:true,delimiter:';',skipEmptyLines:true,encoding:'UTF-8'});
+      if(!res.data?.length) res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});
+      ingest(processRows(res.data));
     };
-    fr.readAsText(file, 'UTF-8');
+    fr.readAsText(file,'UTF-8');
   }
 }
 
-function ingestTransactions(newTxns) {
-  if (!newTxns.length) { toast('Нет данных в файле','err'); return; }
-  // Group by month, deduplicate
-  const byMonth = {};
-  for (const t of newTxns) {
-    if (!byMonth[t.month]) byMonth[t.month] = [];
-    byMonth[t.month].push(t);
+function ingest(newTxns) {
+  if(!newTxns.length){toast('Нет данных в файле','err');return;}
+  const byMonth={};
+  for(const t of newTxns){if(!byMonth[t.month]) byMonth[t.month]=[]; byMonth[t.month].push(t);}
+  let added=0;
+  for(const [month,txns] of Object.entries(byMonth)){
+    const existing=getTxns(month);
+    const keys=new Set(existing.map(t=>t.date+'|'+t.desc+'|'+t.amtOp));
+    const deduped=txns.filter(t=>!keys.has(t.date+'|'+t.desc+'|'+t.amtOp));
+    savePeriod(month,[...existing,...deduped].sort((a,b)=>b.date.localeCompare(a.date)));
+    added+=deduped.length;
   }
-  let added = 0;
-  for (const [month, txns] of Object.entries(byMonth)) {
-    const existing = getTransactions(month);
-    const keys = new Set(existing.map(t => t.date+'|'+t.desc+'|'+t.amtOp));
-    const deduped = txns.filter(t => !keys.has(t.date+'|'+t.desc+'|'+t.amtOp));
-    const merged = [...existing, ...deduped].sort((a,b) => b.date.localeCompare(a.date));
-    savePeriod(month, merged);
-    added += deduped.length;
-  }
-  const months = Object.keys(byMonth);
-  if (!currentPeriod && months.length) currentPeriod = months.sort().reverse()[0];
-  refreshPeriodList();
-  renderPage();
-  toast(`Добавлено ${added} операций за ${months.join(', ')}`, 'ok');
+  const months=Object.keys(byMonth);
+  if(!currentPeriod&&months.length) currentPeriod=months.sort().reverse()[0];
+  refreshUI(); toast('Добавлено '+added+' операций за '+months.join(', '),'ok');
 }
 
-// ═══════════════════════════════════════════
-// FORMATTING
-// ═══════════════════════════════════════════
-function uid() { return Math.random().toString(36).slice(2,10); }
-
-function fmtMoney(n, showSign=false) {
-  const abs = Math.abs(n);
-  const s = abs.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0});
-  if (showSign && n > 0) return '+' + s + ' ₽';
-  if (n < 0) return '−' + s + ' ₽';
-  return s + ' ₽';
-}
-
-function fmtMonthName(ym) {
-  if (!ym) return '';
-  const [y,m] = ym.split('-');
-  const names = ['','Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
-  return `${names[+m]} ${y}`;
-}
-
-// ═══════════════════════════════════════════
-// PAGES
-// ═══════════════════════════════════════════
+// ── Render ──
 function showPage(page) {
-  currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  const nav = document.getElementById('nav-'+page);
-  if (nav) nav.classList.add('active');
+  currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const n=document.getElementById('nav-'+page); if(n) n.classList.add('active');
   renderPage();
 }
-
 function renderPage() {
-  const c = document.getElementById('mainContent');
-  if (currentPage === 'dashboard') c.innerHTML = pageDashboard();
-  else if (currentPage === 'pl') c.innerHTML = pagePL();
-  else if (currentPage === 'cashflow') c.innerHTML = pageCashflow();
-  else if (currentPage === 'balance') c.innerHTML = pageBalance();
-  else if (currentPage === 'transactions') c.innerHTML = pageTransactions();
-  else if (currentPage === 'upload') c.innerHTML = pageUpload();
-  else if (currentPage === 'assets') c.innerHTML = pageAssets();
-  afterRender();
+  Object.values(charts).forEach(c=>c.destroy()); charts={};
+  const c=document.getElementById('mainContent');
+  if(currentPage==='dashboard') c.innerHTML=pageDash();
+  else if(currentPage==='pl') c.innerHTML=pagePL();
+  else if(currentPage==='cashflow') c.innerHTML=pageCF();
+  else if(currentPage==='balance') c.innerHTML=pageBalance();
+  else if(currentPage==='transactions') {c.innerHTML=pageTxns(); bindTxnEvents();}
+  else if(currentPage==='upload') c.innerHTML=pageUpload();
+  else if(currentPage==='assets') c.innerHTML=pageAssets();
+  if(currentPage==='dashboard') renderDashCharts();
 }
 
-function afterRender() {
-  // Destroy old charts
-  Object.values(chartInstances).forEach(c => c.destroy());
-  chartInstances = {};
+// ── Dashboard ──
+function pageDash() {
+  const range=document.getElementById('dashRange')?.value||'month';
+  const allP=Object.keys(DB.periods).sort().reverse();
+  let selP=[currentPeriod];
+  if(range==='quarter'){
+    const [y,m]=currentPeriod.split('-').map(Number), qs=m-((m-1)%3);
+    selP=allP.filter(p=>{const [py,pm]=p.split('-').map(Number);return py===y&&pm>=qs&&pm<qs+3;});
+  } else if(range==='year'){
+    const y=currentPeriod.split('-')[0]; selP=allP.filter(p=>p.startsWith(y));
+  } else if(range==='all'){selP=allP;}
+  const label=range==='month'?fmtMonth(currentPeriod):range==='quarter'?'Q'+Math.ceil(+currentPeriod.split('-')[1]/3)+' '+currentPeriod.split('-')[0]:range==='year'?currentPeriod.split('-')[0]:'Всё время';
+  const txns=selP.flatMap(p=>getTxns(p)).filter(t=>t.type!=='transfer');
+  const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
+  const expense=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+  const profit=income-expense;
+  const prevP=allP[allP.indexOf(currentPeriod)+1];
+  const prevTxns=range==='month'&&prevP?getTxns(prevP).filter(t=>t.type!=='transfer'):[];
+  const pI=prevTxns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
+  const pE=Math.abs(prevTxns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+  const dI=pI?((income-pI)/pI*100).toFixed(0):null;
+  const dE=pE?((expense-pE)/pE*100).toFixed(0):null;
+  const byCat={};
+  txns.filter(t=>t.type==='expense').forEach(t=>{byCat[t.group]=(byCat[t.group]||0)+Math.abs(t.amtRub);});
+  const topCats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const monthlyRows=selP.length>1?selP.sort().map(p=>{
+    const pt=getTxns(p).filter(t=>t.type!=='transfer');
+    const inc=pt.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
+    const exp=Math.abs(pt.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+    const res=inc-exp;
+    return '<tr><td style="cursor:pointer;color:var(--accent)" onclick="selectPeriod(\''+p+'\')">'+fmtMonth(p)+'</td>'
+      +'<td style="text-align:right" class="amt-income">+'+inc.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
+      +'<td style="text-align:right" class="amt-expense">'+fmtMoney(exp)+'</td>'
+      +'<td style="text-align:right '+(res>=0?'class="amt-income"':'class="amt-expense"')+'">'+fmtMoney(res,true)+'</td></tr>';
+  }).join(''):'';
 
-  if (currentPage === 'dashboard') renderDashboardCharts();
-  if (currentPage === 'transactions') bindTransactionEvents();
+  return '<div class="page-header"><div class="page-title">Дашборд — '+label+'</div>'
+    +'<div class="page-actions"><select id="dashRange" onchange="renderPage()" style="padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">'
+    +'<option value="month">Месяц</option><option value="quarter">Квартал</option><option value="year">Год</option><option value="all">Всё время</option></select></div></div>'
+    +'<div class="grid-4">'
+    +'<div class="card-sm"><div class="metric-label">Доходы</div><div class="metric-value income">'+fmtMoney(income)+'</div>'+(dI!==null?'<div class="delta '+(+dI>=0?'up':'down')+'">'+(+dI>=0?'↑':'↓')+Math.abs(dI)+'% к пред. мес.</div>':'')+'</div>'
+    +'<div class="card-sm"><div class="metric-label">Расходы</div><div class="metric-value expense">'+fmtMoney(expense)+'</div>'+(dE!==null?'<div class="delta '+(+dE<=0?'up':'down')+'">'+(+dE<=0?'↓':'↑')+Math.abs(dE)+'% к пред. мес.</div>':'')+'</div>'
+    +'<div class="card-sm"><div class="metric-label">Чистый результат</div><div class="metric-value '+(profit>=0?'income':'expense')+'">'+fmtMoney(profit,true)+'</div><div class="metric-sub">Доходы − Расходы</div></div>'
+    +'<div class="card-sm"><div class="metric-label">Операций</div><div class="metric-value accent">'+txns.length+'</div><div class="metric-sub">без переводов</div></div></div>'
+    +'<div class="grid-2"><div class="card" style="margin-bottom:0"><div class="card-title">Расходы по категориям</div><div class="chart-wrap"><canvas id="chartCats"></canvas></div></div>'
+    +'<div class="card" style="margin-bottom:0"><div class="card-title">По дням / месяцам</div><div class="chart-wrap"><canvas id="chartDays"></canvas></div></div></div>'
+    +(topCats.length?'<div class="card"><div class="card-title">Топ категорий расходов</div>'+topCats.map(([cat,amt])=>'<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>'+cat+'</span><span style="color:var(--expense)">'+fmtMoney(amt)+'</span></div><div class="progress"><div class="progress-bar expense" style="width:'+Math.min(100,amt/expense*100).toFixed(0)+'%"></div></div></div></div>').join('')+'</div>':'')
+    +(monthlyRows?'<div class="card"><div class="card-title">По месяцам</div><table><thead><tr><th>Месяц</th><th style="text-align:right">Доходы</th><th style="text-align:right">Расходы</th><th style="text-align:right">Результат</th></tr></thead><tbody>'+monthlyRows+'</tbody></table></div>':'');
 }
 
-// ─── DASHBOARD ───
-function pageDashboard() {
-  const range = document.getElementById('dashRange')?.value || 'month';
-  const allPeriods = Object.keys(DB.periods).sort().reverse();
-  let selectedPeriods = [currentPeriod];
-  if (range === 'quarter') {
-    const [y,m] = currentPeriod.split('-').map(Number);
-    const qStart = m - ((m-1)%3);
-    selectedPeriods = allPeriods.filter(p => {
-      const [py,pm] = p.split('-').map(Number);
-      return py===y && pm>=qStart && pm<qStart+3;
-    });
-  } else if (range === 'year') {
-    const y = currentPeriod.split('-')[0];
-    selectedPeriods = allPeriods.filter(p => p.startsWith(y));
-  } else if (range === 'all') {
-    selectedPeriods = allPeriods;
-  }
-  const rangeLabel = range==='month' ? fmtMonthName(currentPeriod)
-    : range==='quarter' ? 'Q'+Math.ceil(+currentPeriod.split('-')[1]/3)+' '+currentPeriod.split('-')[0]
-    : range==='year' ? currentPeriod.split('-')[0]
-    : 'Всё время';
-  setTimeout(()=>{ const t=document.getElementById('dashTitle'); if(t) t.textContent='Дашборд — '+rangeLabel; },0);
-  const txns = selectedPeriods.flatMap(p=>getTransactions(p)).filter(t => t.type !== 'transfer');
-  if (!txns.length && !currentPeriod) return pageEmpty();
-
-  const income  = txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
-  const expense = Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
-  const profit  = income - expense;
-
-  // Compare prev month
-  const periods = Object.keys(DB.periods).sort().reverse();
-  const idx = periods.indexOf(currentPeriod);
-  const prevPeriod = periods[idx+1];
-  const prevTxns = (range==='month' && prevPeriod) ? getTransactions(prevPeriod).filter(t=>t.type!=='transfer') : [];
-  const prevIncome  = prevTxns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
-  const prevExpense = Math.abs(prevTxns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
-
-  const deltaI = prevIncome  ? ((income-prevIncome)/prevIncome*100).toFixed(0) : null;
-  const deltaE = prevExpense ? ((expense-prevExpense)/prevExpense*100).toFixed(0) : null;
-
-  // Top expense categories
-  const byCat = {};
-  txns.filter(t=>t.type==='expense').forEach(t => {
-    byCat[t.group] = (byCat[t.group]||0) + Math.abs(t.amtRub);
-  });
-  const topCats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  return `
-<div class="page-header">
-  <div class="page-title" id="dashTitle">Дашборд</div>
-  <div class="page-actions">
-    <select id="dashRange" onchange="renderPage()" style="padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);cursor:pointer">
-      <option value="month">Месяц</option>
-      <option value="quarter">Квартал</option>
-      <option value="year">Год</option>
-      <option value="all">Всё время</option>
-    </select>
-  </div>
-</div>
-
-<div class="grid-4">
-  <div class="card-sm">
-    <div class="metric-label">Доходы</div>
-    <div class="metric-value income">${fmtMoney(income)}</div>
-    ${deltaI !== null ? `<div class="delta ${+deltaI>=0?'up':'down'}">${+deltaI>=0?'↑':'↓'} ${Math.abs(deltaI)}% к прошлому мес.</div>` : ''}
-  </div>
-  <div class="card-sm">
-    <div class="metric-label">Расходы</div>
-    <div class="metric-value expense">${fmtMoney(expense)}</div>
-    ${deltaE !== null ? `<div class="delta ${+deltaE<=0?'up':'down'}">${+deltaE<=0?'↓':'↑'} ${Math.abs(deltaE)}% к прошлому мес.</div>` : ''}
-  </div>
-  <div class="card-sm">
-    <div class="metric-label">Чистый результат</div>
-    <div class="metric-value ${profit>=0?'income':'expense'}">${fmtMoney(profit,true)}</div>
-    <div class="metric-sub">Доходы минус расходы</div>
-  </div>
-  <div class="card-sm">
-    <div class="metric-label">Операций</div>
-    <div class="metric-value accent">${txns.length}</div>
-    <div class="metric-sub">за ${fmtMonthName(currentPeriod)}</div>
-  </div>
-</div>
-
-<div class="grid-2">
-  <div class="card">
-    <div class="card-title">Расходы по категориям</div>
-    <div class="chart-wrap"><canvas id="chartCats"></canvas></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Динамика по дням</div>
-    <div class="chart-wrap"><canvas id="chartDays"></canvas></div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-title">Топ расходных категорий</div>
-  ${topCats.map(([cat,amt]) => `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:13px">${cat}</span>
-          <span style="font-size:13px;color:var(--expense)">${fmtMoney(amt)}</span>
-        </div>
-        <div class="progress"><div class="progress-bar expense" style="width:${Math.min(100,(amt/expense*100)).toFixed(0)}%"></div></div>
-      </div>
-    </div>
-  `).join('')}
-</div>
-
-${(range !== 'month' && selectedPeriods.length > 1) ? `
-<div class="card" style="margin-top:16px">
-  <div class="card-title">По месяцам</div>
-  <table style="width:100%">
-    <thead><tr>
-      <th>Месяц</th>
-      <th style="text-align:right">Доходы</th>
-      <th style="text-align:right">Расходы</th>
-      <th style="text-align:right">Результат</th>
-    </tr></thead>
-    <tbody>
-    ${selectedPeriods.sort().map(p => {
-      const pt = getTransactions(p).filter(t=>t.type!=='transfer');
-      const inc = pt.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
-      const exp = Math.abs(pt.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
-      const res = inc-exp;
-      return \`<tr>
-        <td style="cursor:pointer;color:var(--accent)" onclick="selectPeriod('\${p}')">\${fmtMonthName(p)}</td>
-        <td style="text-align:right" class="amt-income">+\${inc.toLocaleString('ru-RU',{maximumFractionDigits:0})} ₽</td>
-        <td style="text-align:right" class="amt-expense">\${fmtMoney(exp)}</td>
-        <td style="text-align:right" class="\${res>=0?'amt-income':'amt-expense'}">\${fmtMoney(res,true)}</td>
-      </tr>\`;
-    }).join('')}
-    </tbody>
-  </table>
-</div>` : ''}
-`;
-}
-
-function renderDashboardCharts() {
-  const txns = getTransactions(currentPeriod).filter(t=>t.type!=='transfer');
-
-  // Pie — categories
-  const byCat = {};
-  txns.filter(t=>t.type==='expense').forEach(t => {
-    byCat[t.group] = (byCat[t.group]||0) + Math.abs(t.amtRub);
-  });
-  const catEntries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const COLORS = ['#6366f1','#22c55e','#ef4444','#f59e0b','#06b6d4','#a78bfa','#fb7185','#34d399'];
-
-  const cCats = document.getElementById('chartCats');
-  if (cCats) {
-    chartInstances.cats = new Chart(cCats, {
-      type:'doughnut',
-      data:{
-        labels: catEntries.map(e=>e[0]),
-        datasets:[{data: catEntries.map(e=>Math.round(e[1])), backgroundColor:COLORS, borderWidth:0}]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{
-          legend:{position:'right', labels:{color:'#666', font:{size:11}, boxWidth:12}},
-          tooltip:{callbacks:{label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString('ru-RU')} ₽`}}
-        }
-      }
-    });
-  }
-
-  // Bar — days
-  const byDay = {};
-  txns.forEach(t => {
-    if (!byDay[t.date]) byDay[t.date] = {inc:0, exp:0};
-    if (t.type==='income') byDay[t.date].inc += t.amtRub;
-    else byDay[t.date].exp += Math.abs(t.amtRub);
-  });
-  const days = Object.keys(byDay).sort();
-  const cDays = document.getElementById('chartDays');
-  if (cDays) {
-    chartInstances.days = new Chart(cDays, {
-      type:'bar',
-      data:{
-        labels: days.map(d=>d.slice(8)),
-        datasets:[
-          {label:'Доходы', data:days.map(d=>Math.round(byDay[d].inc)), backgroundColor:'rgba(34,197,94,0.7)', borderRadius:3},
-          {label:'Расходы', data:days.map(d=>Math.round(byDay[d].exp)), backgroundColor:'rgba(239,68,68,0.7)', borderRadius:3}
-        ]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        scales:{
-          x:{ticks:{color:'#555',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'}},
-          y:{ticks:{color:'#555',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'}}
-        },
-        plugins:{legend:{labels:{color:'#666',font:{size:11}}}}
-      }
-    });
-  }
-}
-
-// ─── P&L ───
-function pagePL() {
-  const txns = getTransactions(currentPeriod).filter(t=>t.type!=='transfer');
-  if (!txns.length) return pageEmpty();
-
-  const income  = txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
-  const expense = Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
-  const profit  = income - expense;
-
-  // Income breakdown
-  const incomeBySub = {};
-  txns.filter(t=>t.type==='income').forEach(t => {
-    incomeBySub[t.sub] = (incomeBySub[t.sub]||0) + t.amtRub;
-  });
-
-  // Expense breakdown by group → sub
-  const expByGroup = {};
-  txns.filter(t=>t.type==='expense').forEach(t => {
-    if (!expByGroup[t.group]) expByGroup[t.group] = {};
-    expByGroup[t.group][t.sub] = (expByGroup[t.group][t.sub]||0) + Math.abs(t.amtRub);
-  });
-
-  // Previous period
-  const periods = Object.keys(DB.periods).sort().reverse();
-  const prevPeriod = periods[periods.indexOf(currentPeriod)+1];
-  const prevTxns = prevPeriod ? getTransactions(prevPeriod).filter(t=>t.type!=='transfer') : [];
-
-  function prevAmt(type, group, sub) {
-    return Math.abs(prevTxns.filter(t =>
-      t.type===type && (!group||t.group===group) && (!sub||t.sub===sub)
-    ).reduce((s,t)=>s+(type==='income'?t.amtRub:Math.abs(t.amtRub)),0));
-  }
-
-  const prevIncome  = prevAmt('income');
-  const prevExpense = prevAmt('expense');
-
-  function plVal(cur, prev, isExpense=false) {
-    const cls = isExpense ? (cur>0?'expense':'') : (cur>0?'income':'expense');
-    const sign = isExpense ? '−' : (cur>0?'+':'');
-    const prevStr = prev ? `<span style="color:var(--muted);font-size:11px">${fmtMoney(prev)}</span>` : '';
-    return `<div class="pl-val ${cls}">${cur ? (sign + Math.abs(cur).toLocaleString('ru-RU',{maximumFractionDigits:0}) + ' ₽') : '—'}</div>${prevStr}`;
-  }
-
-  let expRows = '';
-  for (const [group, subs] of Object.entries(expByGroup)) {
-    const groupTotal = Object.values(subs).reduce((s,v)=>s+v,0);
-    const prevGroup = prevAmt('expense', group);
-    expRows += `
-      <div class="pl-row group">
-        <div>${group}</div>
-        <div class="pl-val expense">${fmtMoney(groupTotal)}</div>
-        <div class="pl-val" style="color:var(--muted);font-size:12px">${prevGroup ? fmtMoney(prevGroup) : '—'}</div>
-        <div class="pl-val" style="color:var(--muted);font-size:12px">${prevGroup ? (((groupTotal-prevGroup)/prevGroup*100)>0?'+':'')+((groupTotal-prevGroup)/prevGroup*100).toFixed(0)+'%' : '—'}</div>
-      </div>`;
-    for (const [sub, amt] of Object.entries(subs).sort((a,b)=>b[1]-a[1])) {
-      const prevSub = prevAmt('expense', group, sub);
-      expRows += `
-        <div class="pl-row sub">
-          <div>${sub}</div>
-          <div class="pl-val expense">${fmtMoney(amt)}</div>
-          <div class="pl-val" style="color:var(--muted);font-size:12px">${prevSub ? fmtMoney(prevSub) : '—'}</div>
-          <div class="pl-val"></div>
-        </div>`;
+function renderDashCharts() {
+  const range=document.getElementById('dashRange')?.value||'month';
+  const allP=Object.keys(DB.periods).sort().reverse();
+  let selP=[currentPeriod];
+  if(range==='quarter'){const [y,m]=currentPeriod.split('-').map(Number),qs=m-((m-1)%3);selP=allP.filter(p=>{const[py,pm]=p.split('-').map(Number);return py===y&&pm>=qs&&pm<qs+3;});}
+  else if(range==='year'){const y=currentPeriod.split('-')[0];selP=allP.filter(p=>p.startsWith(y));}
+  else if(range==='all') selP=allP;
+  const txns=selP.flatMap(p=>getTxns(p)).filter(t=>t.type!=='transfer');
+  const byCat={};
+  txns.filter(t=>t.type==='expense').forEach(t=>{byCat[t.group]=(byCat[t.group]||0)+Math.abs(t.amtRub);});
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const COLORS=['#6366f1','#22c55e','#ef4444','#f59e0b','#06b6d4','#a78bfa','#fb7185','#34d399'];
+  const cc=document.getElementById('chartCats');
+  if(cc) charts.cats=new Chart(cc,{type:'doughnut',data:{labels:cats.map(e=>e[0]),datasets:[{data:cats.map(e=>Math.round(e[1])),backgroundColor:COLORS,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#666',font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.parsed.toLocaleString('ru-RU')+' ₽'}}}}});
+  const cd=document.getElementById('chartDays');
+  if(cd){
+    if(selP.length>1){
+      const sorted=selP.sort();
+      const inc=sorted.map(p=>Math.round(getTxns(p).filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0)));
+      const exp=sorted.map(p=>Math.round(Math.abs(getTxns(p).filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0))));
+      charts.days=new Chart(cd,{type:'bar',data:{labels:sorted.map(fmtMonth),datasets:[{label:'Доходы',data:inc,backgroundColor:'rgba(34,197,94,0.7)',borderRadius:3},{label:'Расходы',data:exp,backgroundColor:'rgba(239,68,68,0.7)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{color:'#555',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}},plugins:{legend:{labels:{color:'#666',font:{size:11}}}}}});
+    } else {
+      const byDay={};
+      txns.forEach(t=>{if(!byDay[t.date]) byDay[t.date]={inc:0,exp:0};if(t.type==='income') byDay[t.date].inc+=t.amtRub;else byDay[t.date].exp+=Math.abs(t.amtRub);});
+      const days=Object.keys(byDay).sort();
+      charts.days=new Chart(cd,{type:'bar',data:{labels:days.map(d=>d.slice(8)),datasets:[{label:'Доходы',data:days.map(d=>Math.round(byDay[d].inc)),backgroundColor:'rgba(34,197,94,0.7)',borderRadius:3},{label:'Расходы',data:days.map(d=>Math.round(byDay[d].exp)),backgroundColor:'rgba(239,68,68,0.7)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{color:'#555',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}},plugins:{legend:{labels:{color:'#666',font:{size:11}}}}}});
     }
   }
-
-  let incRows = '';
-  for (const [sub, amt] of Object.entries(incomeBySub).sort((a,b)=>b[1]-a[1])) {
-    incRows += `
-      <div class="pl-row sub">
-        <div>${sub}</div>
-        <div class="pl-val income">+${amt.toLocaleString('ru-RU',{maximumFractionDigits:0})} ₽</div>
-        <div class="pl-val" style="color:var(--muted);font-size:12px">—</div>
-        <div class="pl-val"></div>
-      </div>`;
-  }
-
-  return `
-<div class="page-header">
-  <div class="page-title">P&L — ${fmtMonthName(currentPeriod)}</div>
-</div>
-
-<div class="card" style="margin-bottom:16px">
-  <div class="pl-header">
-    <div>Статья</div>
-    <div style="text-align:right">${fmtMonthName(currentPeriod)}</div>
-    <div style="text-align:right">${prevPeriod ? fmtMonthName(prevPeriod) : 'Пред. период'}</div>
-    <div style="text-align:right">Δ%</div>
-  </div>
-
-  <div class="pl-row group" style="color:var(--income)">
-    <div>Доходы</div>
-    <div class="pl-val income">+${income.toLocaleString('ru-RU',{maximumFractionDigits:0})} ₽</div>
-    <div class="pl-val" style="color:var(--muted);font-size:12px">${prevIncome ? fmtMoney(prevIncome) : '—'}</div>
-    <div class="pl-val" style="color:var(--muted);font-size:12px">${prevIncome ? (((income-prevIncome)/prevIncome*100)>0?'+':'')+((income-prevIncome)/prevIncome*100).toFixed(0)+'%' : '—'}</div>
-  </div>
-  ${incRows}
-
-  <div style="height:12px"></div>
-
-  <div class="pl-row group" style="color:var(--expense)">
-    <div>Расходы</div>
-    <div class="pl-val expense">${fmtMoney(expense)}</div>
-    <div class="pl-val" style="color:var(--muted);font-size:12px">${prevExpense ? fmtMoney(prevExpense) : '—'}</div>
-    <div class="pl-val" style="color:var(--muted);font-size:12px">${prevExpense ? (((expense-prevExpense)/prevExpense*100)>0?'+':'')+((expense-prevExpense)/prevExpense*100).toFixed(0)+'%' : '—'}</div>
-  </div>
-  ${expRows}
-
-  <div class="pl-row total">
-    <div>Чистый результат</div>
-    <div class="pl-val ${profit>=0?'pos':'neg'}">${fmtMoney(profit,true)}</div>
-    <div class="pl-val" style="color:var(--muted);font-size:12px">${prevIncome||prevExpense ? fmtMoney(prevIncome-prevExpense,true) : '—'}</div>
-    <div class="pl-val"></div>
-  </div>
-</div>`;
 }
 
-// ─── CASH FLOW ───
-function pageCashflow() {
-  const txns = getTransactions(currentPeriod);
-  if (!txns.length) return pageEmpty();
-
-  // Operational: income & everyday expenses
-  const opIncomeGroups = ['Доход'];
-  const opExpGroups = ['Питание','Дети','Жильё','Здоровье','Покупки','Развлечения/Отдых','Сервисы/Связь','Прочее','Образование'];
-  const investGroups = ['Инвестиции'];
-  const finGroups    = ['Предпринимательство','Налоги/Взносы'];
-
-  function sumGroups(groups, type) {
-    return Math.abs(txns.filter(t => t.type===type && groups.includes(t.group)).reduce((s,t)=>s+t.amtRub,0));
+// ── P&L ──
+function pagePL() {
+  const txns=getTxns(currentPeriod).filter(t=>t.type!=='transfer');
+  if(!txns.length) return pageEmpty();
+  const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
+  const expense=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+  const profit=income-expense;
+  const allP=Object.keys(DB.periods).sort().reverse();
+  const prevP=allP[allP.indexOf(currentPeriod)+1];
+  const prevTxns=prevP?getTxns(prevP).filter(t=>t.type!=='transfer'):[];
+  const pI=prevTxns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
+  const pE=Math.abs(prevTxns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+  const incBySub={};
+  txns.filter(t=>t.type==='income').forEach(t=>{incBySub[t.sub]=(incBySub[t.sub]||0)+t.amtRub;});
+  const expByGroup={};
+  txns.filter(t=>t.type==='expense').forEach(t=>{if(!expByGroup[t.group]) expByGroup[t.group]={};expByGroup[t.group][t.sub]=(expByGroup[t.group][t.sub]||0)+Math.abs(t.amtRub);});
+  function pAmt(type,group,sub) {
+    return Math.abs(prevTxns.filter(t=>t.type===type&&(!group||t.group===group)&&(!sub||t.sub===sub)).reduce((s,t)=>s+(type==='income'?t.amtRub:Math.abs(t.amtRub)),0));
   }
-
-  const opIncome  = txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
-  const opExpense = Math.abs(txns.filter(t=>t.type==='expense' && opExpGroups.includes(t.group)).reduce((s,t)=>s+t.amtRub,0));
-  const finExpense= Math.abs(txns.filter(t=>t.type==='expense' && finGroups.includes(t.group)).reduce((s,t)=>s+t.amtRub,0));
-  const transfers = txns.filter(t=>t.type==='transfer');
-
-  const opFlow   = opIncome - opExpense;
-  const finFlow  = -finExpense;
-  const totalFlow = opFlow + finFlow;
-
-  function flowRow(label, amt, sub=false) {
-    const cls = amt>=0?'income':'expense';
-    return `<div class="pl-row ${sub?'sub':'group'}">
-      <div>${label}</div>
-      <div class="pl-val ${cls}">${fmtMoney(amt,true)}</div>
-      <div></div><div></div>
-    </div>`;
+  let incRows='';
+  for(const [sub,amt] of Object.entries(incBySub).sort((a,b)=>b[1]-a[1])) incRows+='<div class="pl-row sub"><div>'+sub+'</div><div class="pl-val income">+'+amt.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div><div class="pl-val" style="color:var(--muted);font-size:12px">—</div><div></div></div>';
+  let expRows='';
+  for(const [group,subs] of Object.entries(expByGroup)){
+    const gt=Object.values(subs).reduce((s,v)=>s+v,0), pg=pAmt('expense',group);
+    const delta=pg?((gt-pg)/pg*100).toFixed(0):null;
+    expRows+='<div class="pl-row group"><div>'+group+'</div><div class="pl-val expense">'+fmtMoney(gt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pg?fmtMoney(pg):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(delta!==null?(+delta>0?'+':'')+delta+'%':'—')+'</div></div>';
+    for(const [sub,amt] of Object.entries(subs).sort((a,b)=>b[1]-a[1])) expRows+='<div class="pl-row sub"><div>'+sub+'</div><div class="pl-val expense">'+fmtMoney(amt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">—</div><div></div></div>';
   }
-
-  return `
-<div class="page-header">
-  <div class="page-title">Cash Flow — ${fmtMonthName(currentPeriod)}</div>
-</div>
-
-<div class="card" style="margin-bottom:16px">
-  <div class="pl-header">
-    <div>Поток</div>
-    <div style="text-align:right">Сумма</div>
-    <div></div><div></div>
-  </div>
-
-  <div class="pl-row group" style="font-size:13px;color:var(--muted);padding:10px 14px 4px">
-    <div>Операционная деятельность</div><div></div><div></div><div></div>
-  </div>
-  ${flowRow('Доходы', opIncome, true)}
-  ${flowRow('Операционные расходы', -opExpense, true)}
-  <div class="pl-row group">
-    <div>Операционный поток</div>
-    <div class="pl-val ${opFlow>=0?'pos':'neg'}">${fmtMoney(opFlow,true)}</div>
-    <div></div><div></div>
-  </div>
-
-  <div style="height:8px"></div>
-  <div class="pl-row group" style="font-size:13px;color:var(--muted);padding:10px 14px 4px">
-    <div>Финансовая деятельность</div><div></div><div></div><div></div>
-  </div>
-  ${flowRow('Предпринимательство / Налоги', -finExpense, true)}
-  <div class="pl-row group">
-    <div>Финансовый поток</div>
-    <div class="pl-val ${finFlow>=0?'pos':'neg'}">${fmtMoney(finFlow,true)}</div>
-    <div></div><div></div>
-  </div>
-
-  <div style="height:8px"></div>
-  <div class="pl-row group" style="font-size:13px;color:var(--muted);padding:10px 14px 4px">
-    <div>Внутренние переводы</div><div></div><div></div><div></div>
-  </div>
-  <div class="pl-row sub">
-    <div>Переводы между своими счетами</div>
-    <div class="pl-val" style="color:var(--transfer)">${transfers.length} операций</div>
-    <div></div><div></div>
-  </div>
-
-  <div class="pl-row total">
-    <div>Итого денежный поток</div>
-    <div class="pl-val ${totalFlow>=0?'pos':'neg'}">${fmtMoney(totalFlow,true)}</div>
-    <div></div><div></div>
-  </div>
-</div>`;
+  return '<div class="page-header"><div class="page-title">P&L — '+fmtMonth(currentPeriod)+'</div></div>'
+    +'<div class="card"><div class="pl-header"><div>Статья</div><div style="text-align:right">'+fmtMonth(currentPeriod)+'</div><div style="text-align:right">'+(prevP?fmtMonth(prevP):'Пред. период')+'</div><div style="text-align:right">Δ%</div></div>'
+    +'<div class="pl-row group" style="color:var(--income)"><div>Доходы</div><div class="pl-val income">+'+income.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?fmtMoney(pI):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?((income-pI)/pI*100>0?'+':'')+((income-pI)/pI*100).toFixed(0)+'%':'—')+'</div></div>'
+    +incRows
+    +'<div style="height:10px"></div>'
+    +'<div class="pl-row group" style="color:var(--expense)"><div>Расходы</div><div class="pl-val expense">'+fmtMoney(expense)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pE?fmtMoney(pE):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pE?((expense-pE)/pE*100>0?'+':'')+((expense-pE)/pE*100).toFixed(0)+'%':'—')+'</div></div>'
+    +expRows
+    +'<div class="pl-row total"><div>Чистый результат</div><div class="pl-val '+(profit>=0?'pos':'neg')+'">'+fmtMoney(profit,true)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI||pE?fmtMoney(pI-pE,true):'—')+'</div><div></div></div></div>';
 }
 
-// ─── BALANCE ───
+// ── Cash Flow ──
+function pageCF() {
+  const txns=getTxns(currentPeriod);
+  if(!txns.length) return pageEmpty();
+  const opExpGroups=['Питание','Дети','Жильё','Здоровье','Покупки','Развлечения/Отдых','Сервисы/Связь','Прочее','Образование'];
+  const finGroups=['Предпринимательство'];
+  const opIncome=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
+  const opExpense=Math.abs(txns.filter(t=>t.type==='expense'&&opExpGroups.includes(t.group)).reduce((s,t)=>s+t.amtRub,0));
+  const finExpense=Math.abs(txns.filter(t=>t.type==='expense'&&finGroups.includes(t.group)).reduce((s,t)=>s+t.amtRub,0));
+  const transfers=txns.filter(t=>t.type==='transfer');
+  const opFlow=opIncome-opExpense, finFlow=-finExpense, total=opFlow+finFlow;
+  function row(label,amt,sub=false){return '<div class="pl-row '+(sub?'sub':'group')+'"><div>'+label+'</div><div class="pl-val '+(amt>=0?'pos':'neg')+'">'+fmtMoney(amt,true)+'</div><div></div><div></div></div>';}
+  return '<div class="page-header"><div class="page-title">Cash Flow — '+fmtMonth(currentPeriod)+'</div></div>'
+    +'<div class="card"><div class="pl-header"><div>Поток</div><div style="text-align:right">Сумма</div><div></div><div></div></div>'
+    +'<div class="pl-row group" style="color:var(--muted);font-size:12px;padding:8px 14px 2px"><div>Операционная деятельность</div><div></div><div></div><div></div></div>'
+    +row('Доходы (выручка)',opIncome,true)+row('Операционные расходы',-opExpense,true)
+    +row('Операционный поток',opFlow)
+    +'<div style="height:8px"></div>'
+    +'<div class="pl-row group" style="color:var(--muted);font-size:12px;padding:8px 14px 2px"><div>Финансовая деятельность</div><div></div><div></div><div></div></div>'
+    +row('Предпринимательство / налоги',-finExpense,true)+row('Финансовый поток',finFlow)
+    +'<div style="height:8px"></div>'
+    +'<div class="pl-row sub"><div>Внутренние переводы (исключены)</div><div class="pl-val" style="color:var(--transfer)">'+transfers.length+' операций</div><div></div><div></div></div>'
+    +'<div class="pl-row total"><div>Итого денежный поток</div><div class="pl-val '+(total>=0?'pos':'neg')+'">'+fmtMoney(total,true)+'</div><div></div><div></div></div></div>';
+}
+
+// ── Balance ──
 function pageBalance() {
-  const a = DB.assets;
-  const totalAssets = a.flat + a.car + a.broker + a.trading + a.cash;
-  const totalLiab   = a.mortgage + a.eduLoan;
-  const equity      = totalAssets - totalLiab;
-
-  function bRow(label, val, sub=false) {
-    return `<div class="pl-row ${sub?'sub':'group'}">
-      <div>${label}</div>
-      <div class="pl-val">${val ? fmtMoney(val) : '—'}</div>
-      <div></div><div></div>
-    </div>`;
-  }
-
-  return `
-<div class="page-header">
-  <div class="page-title">Баланс</div>
-  <div class="page-actions">
-    <button class="btn" onclick="openAssetsModal()">Обновить активы</button>
-  </div>
-</div>
-
-${a.updatedAt ? `<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Обновлено: ${new Date(a.updatedAt).toLocaleDateString('ru-RU')}</div>` : ''}
-
-<div class="grid-3" style="margin-bottom:20px">
-  <div class="card-sm">
-    <div class="metric-label">Активы</div>
-    <div class="metric-value income">${fmtMoney(totalAssets)}</div>
-  </div>
-  <div class="card-sm">
-    <div class="metric-label">Обязательства</div>
-    <div class="metric-value expense">${fmtMoney(totalLiab)}</div>
-  </div>
-  <div class="card-sm">
-    <div class="metric-label">Собственный капитал</div>
-    <div class="metric-value ${equity>=0?'income':'expense'}">${fmtMoney(equity)}</div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="pl-header"><div>Статья</div><div style="text-align:right">Стоимость</div><div></div><div></div></div>
-
-  <div class="pl-row group" style="color:var(--income)"><div>Активы</div><div class="pl-val income">${fmtMoney(totalAssets)}</div><div></div><div></div></div>
-  ${bRow('Недвижимость (квартира)', a.flat, true)}
-  ${bRow('Автомобиль', a.car, true)}
-  ${bRow('Брокерский счёт (облигации)', a.broker, true)}
-  ${bRow('Торговый счёт (арбитраж)', a.trading, true)}
-  ${bRow('Кэш на счетах', a.cash, true)}
-
-  <div style="height:8px"></div>
-  <div class="pl-row group" style="color:var(--expense)"><div>Обязательства</div><div class="pl-val expense">${fmtMoney(totalLiab)}</div><div></div><div></div></div>
-  ${bRow('Остаток ипотеки', a.mortgage, true)}
-  ${bRow('Рассрочка на обучение', a.eduLoan, true)}
-
-  <div class="pl-row total">
-    <div>Собственный капитал</div>
-    <div class="pl-val ${equity>=0?'pos':'neg'}">${fmtMoney(equity)}</div>
-    <div></div><div></div>
-  </div>
-</div>`;
+  const a=DB.assets;
+  const tA=a.flat+a.car+a.broker+a.trading+a.cash;
+  const tL=a.mortgage+a.eduLoan;
+  const eq=tA-tL;
+  function brow(label,val,sub=false){return '<div class="pl-row '+(sub?'sub':'group')+'"><div>'+label+'</div><div class="pl-val">'+(val?fmtMoney(val):'—')+'</div><div></div><div></div></div>';}
+  return '<div class="page-header"><div class="page-title">Баланс</div><div class="page-actions"><button class="btn" onclick="openAssets()">Обновить</button></div></div>'
+    +'<div class="grid-3">'
+    +'<div class="card-sm"><div class="metric-label">Активы</div><div class="metric-value income">'+fmtMoney(tA)+'</div></div>'
+    +'<div class="card-sm"><div class="metric-label">Обязательства</div><div class="metric-value expense">'+fmtMoney(tL)+'</div></div>'
+    +'<div class="card-sm"><div class="metric-label">Собственный капитал</div><div class="metric-value '+(eq>=0?'income':'expense')+'">'+fmtMoney(eq)+'</div></div></div>'
+    +'<div class="card"><div class="pl-header"><div>Статья</div><div style="text-align:right">Стоимость</div><div></div><div></div></div>'
+    +'<div class="pl-row group" style="color:var(--income)"><div>Активы</div><div class="pl-val income">'+fmtMoney(tA)+'</div><div></div><div></div></div>'
+    +brow('Недвижимость (квартира)',a.flat,true)+brow('Автомобиль',a.car,true)+brow('Брокерский счёт',a.broker,true)+brow('Торговый счёт',a.trading,true)+brow('Кэш на счетах',a.cash,true)
+    +'<div style="height:8px"></div>'
+    +'<div class="pl-row group" style="color:var(--expense)"><div>Обязательства</div><div class="pl-val expense">'+fmtMoney(tL)+'</div><div></div><div></div></div>'
+    +brow('Остаток ипотеки',a.mortgage,true)+brow('Рассрочка на обучение',a.eduLoan,true)
+    +'<div class="pl-row total"><div>Собственный капитал</div><div class="pl-val '+(eq>=0?'pos':'neg')+'">'+fmtMoney(eq)+'</div><div></div><div></div></div></div>';
 }
 
-// ─── TRANSACTIONS ───
-function pageTransactions() {
-  const txns = getTransactions(currentPeriod);
-  if (!txns.length) return pageEmpty();
-
-  const groups = [...new Set(txns.map(t=>t.group))].sort();
-
-  return `
-<div class="page-header">
-  <div class="page-title">Операции — ${fmtMonthName(currentPeriod)}</div>
-</div>
-<div class="table-wrap">
-  <div class="table-toolbar">
-    <input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTable()">
-    <select id="txGroup" onchange="filterTable()">
-      <option value="">Все категории</option>
-      ${groups.map(g=>`<option value="${g}">${g}</option>`).join('')}
-    </select>
-    <select id="txType" onchange="filterTable()">
-      <option value="">Все типы</option>
-      <option value="income">Доходы</option>
-      <option value="expense">Расходы</option>
-      <option value="transfer">Переводы</option>
-    </select>
-    <span class="tbl-count" id="txCount"></span>
-  </div>
-  <table>
-    <thead><tr>
-      <th>Дата</th>
-      <th>Описание</th>
-      <th>Тип</th>
-      <th>Категория</th>
-      <th style="text-align:right">Сумма опер.</th>
-      <th style="text-align:right">Сумма ₽</th>
-    </tr></thead>
-    <tbody id="txBody"></tbody>
-  </table>
-</div>`;
+// ── Transactions ──
+function pageTxns() {
+  const txns=getTxns(currentPeriod);
+  if(!txns.length) return pageEmpty();
+  const groups=[...new Set(txns.map(t=>t.group))].sort();
+  return '<div class="page-header"><div class="page-title">Операции — '+fmtMonth(currentPeriod)+'</div></div>'
+    +'<div class="tbl-wrap"><div class="tbl-toolbar">'
+    +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
+    +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
+    +'<select id="txType" onchange="filterTxns()"><option value="">Все типы</option><option value="income">Доходы</option><option value="expense">Расходы</option><option value="transfer">Переводы</option></select>'
+    +'<span class="tbl-count" id="txCount"></span></div>'
+    +'<table><thead><tr><th>Дата</th><th>Описание</th><th>Контрагент</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма ₽</th></tr></thead><tbody id="txBody"></tbody></table></div>';
 }
 
-function bindTransactionEvents() {
-  filterTable();
-  document.getElementById('txBody').addEventListener('click', e => {
-    const cell = e.target.closest('[data-txid]');
-    if (cell) openCatModal(cell.dataset.txid);
-  });
+function bindTxnEvents() {
+  filterTxns();
+  document.getElementById('txBody').addEventListener('click',e=>{const c=e.target.closest('[data-id]');if(c) openCatModal(c.dataset.id);});
 }
 
-function filterTable() {
-  const search = (document.getElementById('txSearch')?.value||'').toLowerCase();
-  const group  = document.getElementById('txGroup')?.value||'';
-  const type   = document.getElementById('txType')?.value||'';
-  const txns   = getTransactions(currentPeriod);
-
-  const filtered = txns.filter(t => {
-    if (search && !t.desc.toLowerCase().includes(search) && !t.group.toLowerCase().includes(search) && !t.sub.toLowerCase().includes(search)) return false;
-    if (group && t.group !== group) return false;
-    if (type  && t.type  !== type)  return false;
+function filterTxns() {
+  const search=(document.getElementById('txSearch')?.value||'').toLowerCase();
+  const group=document.getElementById('txGroup')?.value||'';
+  const type=document.getElementById('txType')?.value||'';
+  const txns=getTxns(currentPeriod).filter(t=>{
+    if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search)) return false;
+    if(group&&t.group!==group) return false;
+    if(type&&t.type!==type) return false;
     return true;
   });
-
-  const body = document.getElementById('txBody');
-  if (!body) return;
-  body.innerHTML = filtered.map(t => {
-    const isIncome   = t.type==='income';
-    const isTransfer = t.type==='transfer';
-    const amtClass   = isTransfer?'amt-transfer':isIncome?'amt-income':'amt-expense';
-    const sign       = isIncome?'+':'';
-    const opStr      = t.curOp!=='RUB' ? `${sign}${Math.abs(t.amtOp).toLocaleString('ru-RU',{maximumFractionDigits:2})} ${t.curOp}` : '—';
-    return `<tr>
-      <td style="color:var(--muted);white-space:nowrap">${t.dateDisplay}</td>
-      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t.desc}">${t.desc}</td>
-      <td><span class="type-tag ${t.type}">${t.type==='income'?'Доход':t.type==='expense'?'Расход':'Перевод'}</span></td>
-      <td><span class="cat-pill ${isTransfer?'transfer':''}" data-txid="${t.id}" title="${t.group} / ${t.sub}">${t.group}</span></td>
-      <td style="text-align:right" class="${amtClass}">${opStr}</td>
-      <td style="text-align:right" class="${amtClass}">${sign}${Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})} ₽</td>
-    </tr>`;
+  const body=document.getElementById('txBody'); if(!body) return;
+  body.innerHTML=txns.map(t=>{
+    const isI=t.type==='income', isT=t.type==='transfer';
+    const cls=isT?'amt-transfer':isI?'amt-income':'amt-expense';
+    const sign=isI?'+':'';
+    return '<tr><td style="color:var(--muted);white-space:nowrap">'+t.dateDisplay+'</td>'
+      +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+t.desc+'">'+t.desc+'</td>'
+      +'<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted2);font-size:12px">'+(t.counterparty||'—')+'</td>'
+      +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
+      +'<td><span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'">'+t.group+'</span></td>'
+      +'<td style="text-align:right" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td></tr>';
   }).join('');
-
-  const cnt = document.getElementById('txCount');
-  if (cnt) cnt.textContent = `${filtered.length} из ${txns.length}`;
+  const cnt=document.getElementById('txCount'); if(cnt) cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
 }
 
-// ─── UPLOAD ───
+// ── Upload ──
 function pageUpload() {
-  const periods = Object.keys(DB.periods);
-  return `
-<div class="page-header">
-  <div class="page-title">Загрузить выписку</div>
-</div>
-<div class="upload-area" id="uploadArea">
-  <div class="upload-icon">📂</div>
-  <div class="upload-title">Перетащите файлы или нажмите для выбора</div>
-  <div class="upload-sub">
-    CSV или Excel · Тинькофф, ВТБ, Сбер и другие<br>
-    Можно загружать несколько файлов за разные месяцы<br>
-    Дубли определяются автоматически
-  </div>
-  <div style="margin-top:16px">
-    <button class="btn primary" onclick="document.getElementById('fileInput').click()">Выбрать файлы</button>
-  </div>
-</div>
-${periods.length ? `
-<div class="card" style="margin-top:16px">
-  <div class="card-title">Счета</div>
-  ${(()=>{
-    const accMap = {};
-    Object.values(DB.periods).flatMap(p=>p.transactions||[]).forEach(t => {
-      if (!t.account) return;
-      if (!accMap[t.account]) accMap[t.account] = {credits:0, debits:0, name: t.source==='tinkoff_business'?'ИП счёт':'Карта'};
-      if (t.amtRub>0) accMap[t.account].credits += t.amtRub;
-      else accMap[t.account].debits += Math.abs(t.amtRub);
-    });
-    return Object.entries(accMap).map(([acc,d])=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:13px;font-weight:500">***\${acc.slice(-4)}</div>
-          <div style="font-size:11px;color:var(--muted)">\${d.name}</div>
-        </div>
-        <div style="text-align:right;font-size:12px">
-          <div style="color:var(--income)">+\${d.credits.toLocaleString('ru-RU',{maximumFractionDigits:0})} ₽</div>
-          <div style="color:var(--expense)">-\${d.debits.toLocaleString('ru-RU',{maximumFractionDigits:0})} ₽</div>
-        </div>
-      </div>`).join('') || '<div style="color:var(--muted);font-size:13px">Нет данных</div>';
-  })()}
-</div>
-<div class="card" style="margin-top:16px">
-  <div class="card-title">Загруженные периоды</div>
-  ${periods.sort().reverse().map(p => {
-    const txns = getTransactions(p);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div>
-        <div style="font-size:14px;font-weight:500">${fmtMonthName(p)}</div>
-        <div style="font-size:12px;color:var(--muted)">${txns.length} операций</div>
-      </div>
-      <button class="btn sm danger" onclick="deletePeriod('${p}')">Удалить</button>
-    </div>`;
-  }).join('')}
-</div>` : ''}`;
+  const periods=Object.keys(DB.periods).sort().reverse();
+  const allTxns=Object.values(DB.periods).flatMap(p=>p.transactions||[]);
+  const accMap={};
+  allTxns.forEach(t=>{if(!t.account) return; if(!accMap[t.account]) accMap[t.account]={in:0,out:0,src:t.source}; if(t.amtRub>0) accMap[t.account].in+=t.amtRub; else accMap[t.account].out+=Math.abs(t.amtRub);});
+  return '<div class="page-header"><div class="page-title">Загрузить выписку</div></div>'
+    +'<div class="upload-area" id="uploadArea"><div style="font-size:32px;margin-bottom:12px">📂</div>'
+    +'<div style="font-size:15px;font-weight:500;margin-bottom:6px">Перетащите файлы или нажмите</div>'
+    +'<div style="color:var(--muted);font-size:13px">CSV или Excel · Тинькофф личный и бизнес · ВТБ · Сбер<br>Несколько файлов за разные месяцы — OK · Дубли исключаются</div>'
+    +'<div style="margin-top:16px"><button class="btn primary" onclick="document.getElementById(\'fileInput\').click()">Выбрать файлы</button></div></div>'
+    +(Object.keys(accMap).length?'<div class="card"><div class="card-title">Счета</div>'+Object.entries(accMap).map(([acc,d])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:500">***'+acc.slice(-4)+'</div><div style="font-size:11px;color:var(--muted)">'+(d.src==='tinkoff_business'?'ИП счёт':'Карта')+'</div></div><div style="text-align:right;font-size:12px"><div style="color:var(--income)">+'+d.in.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div><div style="color:var(--expense)">−'+d.out.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div></div></div>').join('')+'</div>':'')
+    +(periods.length?'<div class="card"><div class="card-title">Загруженные периоды</div>'+periods.map(p=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:14px;font-weight:500">'+fmtMonth(p)+'</div><div style="font-size:12px;color:var(--muted)">'+getTxns(p).length+' операций</div></div><button class="btn sm danger" onclick="delPeriod(\''+p+'\')">Удалить</button></div>').join('')+'</div>':'');
 }
 
-// ─── ASSETS PAGE ───
+// ── Assets ──
 function pageAssets() {
-  const a = DB.assets;
-  return `
-<div class="page-header">
-  <div class="page-title">Активы и долги</div>
-  <div class="page-actions">
-    <button class="btn primary" onclick="openAssetsModal()">Обновить</button>
-  </div>
-</div>
-<div class="grid-2">
-  <div class="card">
-    <div class="card-title">Активы</div>
-    ${[['Квартира',a.flat],['Машина',a.car],['Брокерский счёт',a.broker],['Торговый счёт',a.trading],['Кэш на счетах',a.cash]].map(([l,v])=>`
-      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="color:var(--muted2)">${l}</span>
-        <span style="color:var(--income);font-weight:500">${v ? fmtMoney(v) : '—'}</span>
-      </div>`).join('')}
-    <div style="display:flex;justify-content:space-between;padding:12px 0;font-weight:600">
-      <span>Итого активы</span>
-      <span style="color:var(--income)">${fmtMoney(a.flat+a.car+a.broker+a.trading+a.cash)}</span>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">Обязательства</div>
-    ${[['Остаток ипотеки',a.mortgage],['Рассрочка на обучение',a.eduLoan]].map(([l,v])=>`
-      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="color:var(--muted2)">${l}</span>
-        <span style="color:var(--expense);font-weight:500">${v ? fmtMoney(v) : '—'}</span>
-      </div>`).join('')}
-    <div style="display:flex;justify-content:space-between;padding:12px 0;font-weight:600">
-      <span>Итого долги</span>
-      <span style="color:var(--expense)">${fmtMoney(a.mortgage+a.eduLoan)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:12px 0;font-weight:600;border-top:1px solid var(--border)">
-      <span>Собственный капитал</span>
-      <span style="color:${(a.flat+a.car+a.broker+a.trading+a.cash-a.mortgage-a.eduLoan)>=0?'var(--income)':'var(--expense)'}">
-        ${fmtMoney(a.flat+a.car+a.broker+a.trading+a.cash-a.mortgage-a.eduLoan)}
-      </span>
-    </div>
-  </div>
-</div>`;
+  const a=DB.assets;
+  const tA=a.flat+a.car+a.broker+a.trading+a.cash, tL=a.mortgage+a.eduLoan;
+  return '<div class="page-header"><div class="page-title">Активы и долги</div><div class="page-actions"><button class="btn primary" onclick="openAssets()">Обновить</button></div></div>'
+    +'<div class="grid-2">'
+    +'<div class="card"><div class="card-title">Активы</div>'
+    +[['Квартира',a.flat],['Машина',a.car],['Брокерский счёт',a.broker],['Торговый счёт',a.trading],['Кэш на счетах',a.cash]].map(([l,v])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted2)">'+l+'</span><span style="color:var(--income)">'+( v?fmtMoney(v):'—')+'</span></div>').join('')
+    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600"><span>Итого</span><span style="color:var(--income)">'+fmtMoney(tA)+'</span></div></div>'
+    +'<div class="card"><div class="card-title">Обязательства</div>'
+    +[['Остаток ипотеки',a.mortgage],['Рассрочка на обучение',a.eduLoan]].map(([l,v])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted2)">'+l+'</span><span style="color:var(--expense)">'+(v?fmtMoney(v):'—')+'</span></div>').join('')
+    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600"><span>Итого долги</span><span style="color:var(--expense)">'+fmtMoney(tL)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600;border-top:1px solid var(--border)"><span>Собственный капитал</span><span style="color:'+((tA-tL)>=0?'var(--income)':'var(--expense)')+'">'+fmtMoney(tA-tL)+'</span></div></div></div>';
 }
 
 function pageEmpty() {
-  return `<div class="empty">
-    <div class="empty-icon">📂</div>
-    <div class="empty-title">Нет данных за этот период</div>
-    <div class="empty-sub">Загрузите выписку из банка</div>
-    <div style="margin-top:16px"><button class="btn primary" onclick="showPage('upload')">Загрузить</button></div>
-  </div>`;
+  return '<div class="empty"><div style="font-size:36px;margin-bottom:12px">📂</div><div style="font-size:15px;font-weight:500;color:var(--muted2);margin-bottom:6px">Нет данных за этот период</div><div style="margin-top:16px"><button class="btn primary" onclick="showPage(\'upload\')">Загрузить</button></div></div>';
 }
 
-// ═══════════════════════════════════════════
-// PERIOD MANAGEMENT
-// ═══════════════════════════════════════════
-function refreshPeriodList() {
-  const periods = Object.keys(DB.periods).sort().reverse();
-
-  // Period select in topbar
-  const sel = document.getElementById('periodSelect');
-  const prev = sel.value;
-  sel.innerHTML = periods.map(p => `<option value="${p}">${fmtMonthName(p)}</option>`).join('');
-  if (prev && periods.includes(prev)) sel.value = prev;
-  else if (periods.length) { sel.value = periods[0]; currentPeriod = periods[0]; }
-
-  // Period list in sidebar
-  const list = document.getElementById('periodList');
-  list.innerHTML = periods.map(p => {
-    const cnt = getTransactions(p).length;
-    return `<div class="period-item ${p===currentPeriod?'active':''}" onclick="selectPeriod('${p}')">
-      ${fmtMonthName(p)}<span class="badge">${cnt}</span>
-    </div>`;
-  }).join('');
-}
-
-function onPeriodChange() {
-  currentPeriod = document.getElementById('periodSelect').value;
-  refreshPeriodList();
-  renderPage();
-}
-
-function selectPeriod(p) {
-  currentPeriod = p;
-  document.getElementById('periodSelect').value = p;
-  refreshPeriodList();
-  renderPage();
-}
-
-function deletePeriod(p) {
-  if (!confirm(`Удалить данные за ${fmtMonthName(p)}?`)) return;
-  delete DB.periods[p];
-  if (currentPeriod === p) {
-    const periods = Object.keys(DB.periods).sort().reverse();
-    currentPeriod = periods[0] || null;
-  }
-  saveLocal();
-  refreshPeriodList();
-  renderPage();
-}
-
-// ═══════════════════════════════════════════
-// CATEGORY MODAL
-// ═══════════════════════════════════════════
+// ── Category modal ──
 function openCatModal(txId) {
-  editingTxId = txId;
-  const tx = getTransactions(currentPeriod).find(t=>t.id===txId);
-  if (!tx) return;
-
-  const groupSel = document.getElementById('catGroup');
-  const subSel   = document.getElementById('catSub');
-  const typeSel  = document.getElementById('catType');
-
-  // Build groups
-  const allGroups = ['Доход', ...Object.keys(CAT_TREE.expense.groups), 'Перевод', 'Прочее'];
-  groupSel.innerHTML = allGroups.map(g=>`<option value="${g}">${g}</option>`).join('');
-  groupSel.value = tx.group;
-  onCatGroupChange();
-  subSel.value = tx.sub;
-  typeSel.value = tx.type;
-
+  editTxId=txId;
+  const tx=getTxns(currentPeriod).find(t=>t.id===txId); if(!tx) return;
+  const gs=document.getElementById('catGroup');
+  const allGroups=['Доход',...Object.keys(CAT_TREE.expense.groups),'Перевод'];
+  gs.innerHTML=allGroups.map(g=>'<option value="'+g+'">'+g+'</option>').join('');
+  gs.value=tx.group; onCatGroupChange();
+  document.getElementById('catSub').value=tx.sub;
+  document.getElementById('catType').value=tx.type;
   document.getElementById('catModal').classList.add('open');
 }
-
 function onCatGroupChange() {
-  const group = document.getElementById('catGroup').value;
-  const subSel = document.getElementById('catSub');
-  let subs = [];
-  if (group === 'Доход') subs = CAT_TREE.income.subs;
-  else if (group === 'Перевод') subs = ['Внутренний перевод'];
-  else subs = CAT_TREE.expense.groups[group] || ['Прочее'];
-  subSel.innerHTML = subs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const g=document.getElementById('catGroup').value;
+  const subs=g==='Доход'?CAT_TREE.income.subs:g==='Перевод'?['Внутренний перевод']:CAT_TREE.expense.groups[g]||['Прочее'];
+  document.getElementById('catSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
 }
-
 function saveCatModal() {
-  const txns = getTransactions(currentPeriod);
-  const tx = txns.find(t=>t.id===editingTxId);
-  if (tx) {
-    tx.group = document.getElementById('catGroup').value;
-    tx.sub   = document.getElementById('catSub').value;
-    tx.type  = document.getElementById('catType').value;
-    savePeriod(currentPeriod, txns);
-    bindTransactionEvents();
-  }
+  const txns=getTxns(currentPeriod), tx=txns.find(t=>t.id===editTxId);
+  if(tx){tx.group=document.getElementById('catGroup').value;tx.sub=document.getElementById('catSub').value;tx.type=document.getElementById('catType').value;savePeriod(currentPeriod,txns);filterTxns();}
   closeCatModal();
 }
+function closeCatModal(){document.getElementById('catModal').classList.remove('open');editTxId=null;}
 
-function closeCatModal() {
-  document.getElementById('catModal').classList.remove('open');
-  editingTxId = null;
-}
-
-// ═══════════════════════════════════════════
-// ASSETS MODAL
-// ═══════════════════════════════════════════
-function openAssetsModal() {
-  const a = DB.assets;
-  document.getElementById('assetFlat').value    = a.flat    || '';
-  document.getElementById('assetCar').value     = a.car     || '';
-  document.getElementById('assetBroker').value  = a.broker  || '';
-  document.getElementById('assetTrading').value = a.trading || '';
-  document.getElementById('assetCash').value    = a.cash    || '';
-  document.getElementById('liabMortgage').value = a.mortgage|| '';
-  document.getElementById('liabEdu').value      = a.eduLoan || '';
+// ── Assets modal ──
+function openAssets() {
+  const a=DB.assets;
+  document.getElementById('aFlat').value=a.flat||'';document.getElementById('aCar').value=a.car||'';
+  document.getElementById('aBroker').value=a.broker||'';document.getElementById('aTrading').value=a.trading||'';
+  document.getElementById('aCash').value=a.cash||'';document.getElementById('lMortgage').value=a.mortgage||'';
+  document.getElementById('lEdu').value=a.eduLoan||'';
   document.getElementById('assetsModal').classList.add('open');
 }
-
 function saveAssets() {
-  DB.assets = {
-    flat:     +document.getElementById('assetFlat').value    || 0,
-    car:      +document.getElementById('assetCar').value     || 0,
-    broker:   +document.getElementById('assetBroker').value  || 0,
-    trading:  +document.getElementById('assetTrading').value || 0,
-    cash:     +document.getElementById('assetCash').value    || 0,
-    mortgage: +document.getElementById('liabMortgage').value || 0,
-    eduLoan:  +document.getElementById('liabEdu').value      || 0,
-    updatedAt: new Date().toISOString()
-  };
-  saveLocal();
-  document.getElementById('assetsModal').classList.remove('open');
-  toast('Активы сохранены','ok');
-  if (currentPage === 'balance' || currentPage === 'assets') renderPage();
+  DB.assets={flat:+document.getElementById('aFlat').value||0,car:+document.getElementById('aCar').value||0,broker:+document.getElementById('aBroker').value||0,trading:+document.getElementById('aTrading').value||0,cash:+document.getElementById('aCash').value||0,mortgage:+document.getElementById('lMortgage').value||0,eduLoan:+document.getElementById('lEdu').value||0,updatedAt:new Date().toISOString()};
+  saveLocal();document.getElementById('assetsModal').classList.remove('open');toast('Активы сохранены','ok');
+  if(currentPage==='balance'||currentPage==='assets') renderPage();
 }
 
-// ═══════════════════════════════════════════
-// GITHUB SAVE
-// ═══════════════════════════════════════════
-function ghCfg() {
-  return {
-    user:  localStorage.getItem('gh_user')  || 'iambescen',
-    repo:  localStorage.getItem('gh_repo')  || 'finance-tracker',
-    token: localStorage.getItem('gh_token') || ''
-  };
-}
+// ── GitHub ──
+function ghCfg(){return{user:localStorage.getItem('gh_user')||'iambescen',repo:localStorage.getItem('gh_repo')||'finance-tracker',token:localStorage.getItem('gh_token')||''};}
+function openGhModal(){const c=ghCfg();document.getElementById('ghUser').value=c.user;document.getElementById('ghRepo').value=c.repo;document.getElementById('ghToken').value=c.token;document.getElementById('ghModal').classList.add('open');}
+function saveGhModal(){localStorage.setItem('gh_user',document.getElementById('ghUser').value.trim());localStorage.setItem('gh_repo',document.getElementById('ghRepo').value.trim());localStorage.setItem('gh_token',document.getElementById('ghToken').value.trim());document.getElementById('ghModal').classList.remove('open');toast('Настройки сохранены','ok');}
 
-async function githubPut(path, content, msg) {
-  const b64 = btoa(unescape(encodeURIComponent(content)));
-  const check = await fetch(`https://api.github.com/repos/${ghCfg().user}/${ghCfg().repo}/contents/${path}`, {
-    headers:{Authorization:`token ${ghCfg().token}`,Accept:'application/vnd.github.v3+json'}
-  });
-  const body = {message: msg, content: b64};
-  if (check.ok) { const j = await check.json(); body.sha = j.sha; }
-  return fetch(`https://api.github.com/repos/${ghCfg().user}/${ghCfg().repo}/contents/${path}`, {
-    method:'PUT',
-    headers:{Authorization:`token ${GH_TOKEN}`,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},
-    body: JSON.stringify(body)
-  });
+async function ghPut(path,content,msg) {
+  const {user,repo,token}=ghCfg();
+  const b64=btoa(unescape(encodeURIComponent(content)));
+  const check=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
+  const body={message:msg,content:b64};
+  if(check.ok){const j=await check.json();body.sha=j.sha;}
+  return fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
 }
 
 async function saveToGithub() {
-  const btn = document.querySelector('.btn.primary[onclick="saveToGithub()"]');
-  if (btn) { btn.textContent = 'Сохраняем...'; btn.disabled = true; }
+  const {token}=ghCfg();
+  if(!token){toast('Введите токен GitHub (кнопка ⚙)','err');openGhModal();return;}
+  const btn=document.querySelector('.btn.primary[onclick="saveToGithub()"]');
+  if(btn){btn.textContent='Сохраняем...';btn.disabled=true;}
   try {
-    const date = new Date().toLocaleDateString('ru-RU');
-    // Save each period
-    for (const [period, data] of Object.entries(DB.periods)) {
-      const res = await githubPut(`data/${period}.json`, JSON.stringify(data, null, 2), `Update ${period} — ${date}`);
-      if (!res.ok) { const j=await res.json(); throw new Error(j.message); }
+    const date=new Date().toLocaleDateString('ru-RU');
+    for(const [period,data] of Object.entries(DB.periods)){
+      const res=await ghPut('data/'+period+'.json',JSON.stringify(data,null,2),'Update '+period+' — '+date);
+      if(!res.ok){const j=await res.json();throw new Error(j.message);}
     }
-    // Save assets
-    await githubPut('data/assets.json', JSON.stringify(DB.assets, null, 2), `Update assets — ${date}`);
-    toast('Всё сохранено в GitHub ✓','ok');
-  } catch(e) {
-    toast('Ошибка: '+e.message,'err');
-  }
-  if (btn) { btn.textContent = '↑ Сохранить'; btn.disabled = false; }
-}
-
-// ═══════════════════════════════════════════
-// LOCAL STORAGE
-// ═══════════════════════════════════════════
-function saveLocal() {
-  try { localStorage.setItem('family_finance_db', JSON.stringify(DB)); } catch(e) {}
-}
-
-function loadLocal() {
-  try {
-    const raw = localStorage.getItem('family_finance_db');
-    if (raw) {
-      DB = JSON.parse(raw);
-      DB.assets = DB.assets || {flat:0,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null};
-    }
-  } catch(e) {}
+    await ghPut('data/assets.json',JSON.stringify(DB.assets,null,2),'Update assets — '+date);
+    toast('Сохранено в GitHub ✓','ok');
+  } catch(e){toast('Ошибка: '+e.message,'err');}
+  if(btn){btn.textContent='↑ GitHub';btn.disabled=false;}
 }
 
 async function loadFromGithub() {
+  const {user,repo,token}=ghCfg(); if(!token) return;
   try {
-    // Load assets
-    const ar = await fetch(`https://raw.githubusercontent.com/${ghCfg().user}/${ghCfg().repo}/main/data/assets.json`);
-    if (ar.ok) DB.assets = await ar.json();
-    // List data files
-    const lr = await fetch(`https://api.github.com/repos/${ghCfg().user}/${ghCfg().repo}/contents/data`, {
-      headers:{Authorization:`token ${ghCfg().token}`}
-    });
-    if (lr.ok) {
-      const files = await lr.json();
-      for (const f of files) {
-        if (f.name.match(/^\d{4}-\d{2}\.json$/)) {
-          const dr = await fetch(f.download_url);
-          if (dr.ok) {
-            const period = f.name.replace('.json','');
-            DB.periods[period] = await dr.json();
-          }
+    const ar=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/data/assets.json');
+    if(ar.ok) DB.assets=await ar.json();
+    const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',{headers:{Authorization:'token '+token}});
+    if(lr.ok){
+      const files=await lr.json();
+      for(const f of files){
+        if(f.name.match(/^\d{4}-\d{2}\.json$/)){
+          const dr=await fetch(f.download_url); if(dr.ok) DB.periods[f.name.replace('.json','')]=await dr.json();
         }
       }
     }
-    const periods = Object.keys(DB.periods).sort().reverse();
-    if (periods.length) currentPeriod = periods[0];
-    saveLocal();
-    refreshPeriodList();
-    renderPage();
-  } catch(e) {}
+    const p=Object.keys(DB.periods).sort().reverse(); if(p.length) currentPeriod=p[0];
+    refreshUI();
+  } catch(e){}
 }
 
-// ═══════════════════════════════════════════
-// FILE DROP
-// ═══════════════════════════════════════════
-document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => {
-  e.preventDefault();
-  [...e.dataTransfer.files].forEach(processFile);
-});
-document.getElementById('fileInput').addEventListener('change', e => {
-  [...e.target.files].forEach(processFile);
-  e.target.value = '';
-});
-document.addEventListener('click', e => {
-  if (e.target.id === 'uploadArea' || e.target.closest('#uploadArea')) {
-    if (!e.target.closest('button')) document.getElementById('fileInput').click();
-  }
-});
-document.getElementById('catModal').addEventListener('click', e => {
-  if (e.target===document.getElementById('catModal')) closeCatModal();
-});
-document.getElementById('assetsModal').addEventListener('click', e => {
-  if (e.target===document.getElementById('assetsModal')) document.getElementById('assetsModal').classList.remove('open');
+// ── Period management ──
+function refreshUI() {
+  const periods=Object.keys(DB.periods).sort().reverse();
+  const sel=document.getElementById('periodSelect');
+  const prev=sel.value;
+  sel.innerHTML=periods.map(p=>'<option value="'+p+'">'+fmtMonth(p)+'</option>').join('');
+  if(prev&&periods.includes(prev)) sel.value=prev;
+  else if(periods.length){sel.value=periods[0];currentPeriod=periods[0];}
+  const list=document.getElementById('periodList');
+  list.innerHTML=periods.map(p=>'<div class="period-item '+(p===currentPeriod?'active':'')+'" onclick="selectPeriod(\''+p+'\')">'+fmtMonth(p)+'<span class="badge">'+getTxns(p).length+'</span></div>').join('');
+  renderPage();
+}
+function onPeriodChange(){currentPeriod=document.getElementById('periodSelect').value;refreshUI();}
+function selectPeriod(p){currentPeriod=p;document.getElementById('periodSelect').value=p;refreshUI();}
+function delPeriod(p){if(!confirm('Удалить '+fmtMonth(p)+'?')) return;delete DB.periods[p];if(currentPeriod===p){const ps=Object.keys(DB.periods).sort().reverse();currentPeriod=ps[0]||null;}saveLocal();refreshUI();}
+
+// ── Storage ──
+function saveLocal(){try{localStorage.setItem('ff_db',JSON.stringify(DB));}catch(e){}}
+function loadLocal(){try{const d=localStorage.getItem('ff_db');if(d){DB=JSON.parse(d);DB.assets=DB.assets||{flat:0,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null};}}catch(e){}}
+
+// ── Toast ──
+function toast(msg,type='info'){const el=document.getElementById('toast');el.textContent=msg;el.className='toast '+type+' show';setTimeout(()=>el.classList.remove('show'),3500);}
+
+// ── Events ──
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].forEach(processFile);});
+document.getElementById('fileInput').addEventListener('change',e=>{[...e.target.files].forEach(processFile);e.target.value='';});
+document.addEventListener('click',e=>{
+  if(e.target.id==='uploadArea'||e.target.closest('#uploadArea')) if(!e.target.closest('button')) document.getElementById('fileInput').click();
+  if(e.target===document.getElementById('catModal')) closeCatModal();
+  if(e.target===document.getElementById('assetsModal')) document.getElementById('assetsModal').classList.remove('open');
+  if(e.target===document.getElementById('ghModal')) document.getElementById('ghModal').classList.remove('open');
 });
 
-// ═══════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════
-function toast(msg, type='info') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `toast ${type} show`;
-  setTimeout(() => el.classList.remove('show'), 3500);
-}
-
-
-function openGhModal() {
-  const c = ghCfg();
-  document.getElementById('ghUser').value = c.user;
-  document.getElementById('ghRepo').value = c.repo;
-  document.getElementById('ghTokenInput').value = c.token;
-  document.getElementById('ghModal').classList.add('open');
-}
-function saveGhModal() {
-  localStorage.setItem('gh_user',  document.getElementById('ghUser').value.trim());
-  localStorage.setItem('gh_repo',  document.getElementById('ghRepo').value.trim());
-  localStorage.setItem('gh_token', document.getElementById('ghTokenInput').value.trim());
-  document.getElementById('ghModal').classList.remove('open');
-  toast('Настройки GitHub сохранены','ok');
-}
-// ═══════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════
+// ── Init ──
 loadLocal();
-const periods = Object.keys(DB.periods).sort().reverse();
-if (periods.length) currentPeriod = periods[0];
-refreshPeriodList();
-renderPage();
-// Load from GitHub on start
+const initP=Object.keys(DB.periods).sort().reverse();
+if(initP.length) currentPeriod=initP[0];
+refreshUI();
 loadFromGithub();
 </script>
-</body>
-</html>
