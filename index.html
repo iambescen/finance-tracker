@@ -473,8 +473,9 @@ function ingest(newTxns) {
   }
   const months=Object.keys(byMonth);
   if(!currentPeriod&&months.length) currentPeriod=months.sort().reverse()[0];
+  const pairs = linkTransferPairs();
   saveLocal(); refreshUI();
-  toast('Добавлено '+added+' операций за '+months.join(', '),'ok');
+  toast('Добавлено '+added+' операций за '+months.join(', ')+(pairs?' · связано '+pairs+' пар переводов':''),'ok');
 }
 
 // ══════════════════════════════════════════
@@ -663,6 +664,55 @@ function pageBalance() {
     +'<div class="pl-row total"><div>Собственный капитал</div><div class="pl-val '+(eq>=0?'pos':'neg')+'">'+fmtMoney(eq)+'</div><div></div><div></div></div></div>';
 }
 
+
+// ── Отображение счёта ──
+function accLabel(accNum) {
+  if(!accNum) return '—';
+  const acc = DB.accounts[accNum] || DB.accounts[accNum.replace(/\*/g,'').trim()];
+  if(acc) return acc.name;
+  return '***' + String(accNum).slice(-4);
+}
+
+// ── Связывание пар переводов ──
+function linkTransferPairs() {
+  // Для каждого периода ищем пары: дебет с одного счёта = кредит на другой, одинаковая сумма, близкая дата (±2 дня)
+  let linked = 0;
+  for(const period of Object.keys(DB.periods)) {
+    const txns = getTxns(period);
+    const transfers = txns.filter(t => t.type === 'transfer' && !t.linkedTo);
+    for(const tx of transfers) {
+      if(tx.linkedTo) continue;
+      const amt = Math.abs(tx.amtRub);
+      const txDate = new Date(tx.date);
+      // Ищем парный перевод в том же и соседних периодах
+      const allPeriods = Object.keys(DB.periods).sort();
+      for(const p2 of allPeriods) {
+        if(linked > 1000) break;
+        const txns2 = getTxns(p2);
+        const pair = txns2.find(t2 =>
+          t2.id !== tx.id &&
+          t2.type === 'transfer' &&
+          !t2.linkedTo &&
+          Math.abs(Math.abs(t2.amtRub) - amt) < 1 &&
+          Math.abs(new Date(t2.date) - txDate) <= 2 * 86400000 &&
+          // Противоположные счета
+          ((tx.account && t2.account && tx.account !== t2.account) ||
+           (tx.counterpartyAcc && t2.account && tx.counterpartyAcc === t2.account))
+        );
+        if(pair) {
+          tx.linkedTo = pair.id;
+          tx.linkedAccount = pair.account;
+          pair.linkedTo = tx.id;
+          pair.linkedAccount = tx.account;
+          linked++;
+          break;
+        }
+      }
+    }
+  }
+  if(linked > 0) saveLocal();
+  return linked;
+}
 // ── Transactions ──
 function pageTxns() {
   const txns=getTxns(currentPeriod); if(!txns.length) return pageEmpty();
@@ -674,7 +724,7 @@ function pageTxns() {
     +'<select id="txType" onchange="filterTxns()"><option value="">Все типы</option><option value="income">Доходы</option><option value="expense">Расходы</option><option value="transfer">Переводы</option></select>'
     +'<select id="txAccount" onchange="filterTxns()"><option value="">Все счета</option>'+Object.values(DB.accounts).map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('')+'</select>'
     +'<span class="tbl-count" id="txCount"></span></div>'
-    +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>';
+    +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма</th></tr></thead><tbody id="txBody"></tbody></table></div>';
 }
 
 function bindTxnEvents() {
@@ -703,13 +753,24 @@ function filterTxns() {
     const cls=isT?'amt-transfer':isI?'amt-income':'amt-expense';
     const sign=isI?'+':'';
     const manualIcon=t.manualCategory?'<span title="Вручную" style="color:var(--accent);font-size:10px">●</span> ':'';
+    // Account/transfer display
+    const fromAcc = accLabel(t.account);
+    let accCell = '<div style="font-size:12px;font-weight:500;color:var(--muted2)">'+fromAcc+'</div>';
+    if(isT && t.linkedAccount) {
+      const toAcc = accLabel(t.linkedAccount);
+      const arrow = t.amtRub < 0 ? ' → ' : ' ← ';
+      accCell = '<div style="font-size:11px;color:var(--transfer)">'+fromAcc+arrow+toAcc+'</div>';
+    } else if(isT && t.counterpartyAcc) {
+      accCell = '<div style="font-size:11px;color:var(--transfer)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
+    }
     return '<tr>'
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
-      +'<td style="max-width:220px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+t.desc+'">'+t.desc+'</div>'+(t.counterparty?'<div style="font-size:11px;color:var(--muted)">'+t.counterparty+'</div>':'')+'</td>'
+      +'<td style="max-width:180px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+t.desc+'">'+t.desc+'</div>'+(t.counterparty&&!isT?'<div style="font-size:11px;color:var(--muted)">'+t.counterparty+'</div>':'')+'</td>'
+      +'<td style="min-width:130px">'+accCell+'</td>'
       +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
-      +'<td style="text-align:right" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
-      +'<td></td></tr>';
+      +'<td style="text-align:right;white-space:nowrap" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
+      +'</tr>';
   }).join('');
   const cnt=document.getElementById('txCount'); if(cnt) cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
 }
