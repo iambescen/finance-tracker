@@ -188,7 +188,6 @@ tr:hover td{background:var(--bg3)}
 .field input:focus,.field select:focus{outline:none;border-color:var(--accent);background:var(--bg2)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 
-@keyframes spin{to{transform:rotate(360deg)}}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -1369,16 +1368,9 @@ function showPage(page){updateBottomNav(page);
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
   renderPage();
 }
-let ghLoading=false;
 function renderPage(){
   Object.values(charts).forEach(c=>c.destroy());charts={};
   const c=document.getElementById('mainContent');
-  if(ghLoading){
-    c.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;color:var(--muted)">'
-      +'<div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite"></div>'
-      +'<div style="font-size:14px">Загрузка данных из GitHub...</div></div>';
-    return;
-  }
   if(currentPage==='dashboard')c.innerHTML=pageDash();
   else if(currentPage==='pl')c.innerHTML=pagePL();
   else if(currentPage==='cashflow')c.innerHTML=pageCF();
@@ -2015,7 +2007,6 @@ async function saveToGithub(){
 
 async function loadFromGithub(){
   const{user,repo,token}=ghCfg();if(!token)return;
-  ghLoading=true;renderPage();
   try{
     const load=async(path)=>{const r=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/'+path+'?t='+Date.now());return r.ok?r.json():null;};
     const[assets,accounts,rules]=await Promise.all([load('data/assets.json'),load('data/accounts.json'),load('data/rules.json')]);
@@ -2027,8 +2018,8 @@ async function loadFromGithub(){
     }
     const p=Object.keys(DB.periods).sort().reverse();if(p.length)currentPeriod=p[0];
     ensureCashAccounts();
-    ghLoading=false;saveLocal();refreshUI();toast('Данные загружены из GitHub','info');
-  }catch(e){console.error(e);ghLoading=false;refreshUI();}
+    saveLocal();refreshUI();toast('Данные загружены из GitHub','info');
+  }catch(e){console.error(e);}
 }
 
 // ── Periods ──
@@ -2072,6 +2063,22 @@ document.addEventListener('click',e=>{
   if(e.target===document.getElementById('assetsModal'))document.getElementById('assetsModal').classList.remove('open');
   if(e.target===document.getElementById('ghModal'))document.getElementById('ghModal').classList.remove('open');
 });
+
+
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  localStorage.setItem('theme',isDark?'light':'dark');
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=isDark?'☀️':'🌙';
+}
+function initTheme(){
+  const t=localStorage.getItem('theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
+}
 
 // ── Init ──
 loadLocal();
@@ -2386,20 +2393,6 @@ function updateBottomNav(page){
 })();
 
 
-function toggleTheme(){
-  const html=document.documentElement;
-  const isDark=html.getAttribute('data-theme')==='dark';
-  html.setAttribute('data-theme',isDark?'light':'dark');
-  localStorage.setItem('theme',isDark?'light':'dark');
-  const btn=document.getElementById('themeBtn');
-  if(btn)btn.textContent=isDark?'☀️':'🌙';
-}
-function initTheme(){
-  const t=localStorage.getItem('theme')||'light';
-  document.documentElement.setAttribute('data-theme',t);
-  const btn=document.getElementById('themeBtn');
-  if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
-}
 
 </script>
 </body>
