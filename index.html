@@ -244,7 +244,6 @@ tr:hover td{background:var(--bg3)}
 <div class="topbar">
   <div class="logo">Семейный<em> портфель</em></div>
   <div class="topbar-right">
-    <select id="periodSelect" onchange="onPeriodChange()" style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
     <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub">⚙</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
@@ -1421,10 +1420,13 @@ function pageDash(){
       +'<td style="text-align:right;color:'+(res>=0?'var(--income)':'var(--expense)')+'">'+fmtMoney(res,true)+'</td></tr>';
   }).join(''):'';
   const selStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  return '<div class="page-header"><div class="page-title">Дашборд — '+label+'</div>'
+  const dashPeriods=Object.keys(DB.periods).sort().reverse();
+  const dashPeriodOpts=dashPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
+  return '<div class="page-header"><div class="page-title">Дашборд</div>'
     +'<div class="page-actions">'
     +'<select id="ownerFilter" onchange="renderPage()" style="'+selStyle+'"><option value="all">Все счета</option><option value="me">Влад</option><option value="wife">Таня</option><option value="joint">Общие</option></select>'
     +'<select id="dashRange" onchange="renderPage()" style="'+selStyle+'"><option value="month">Месяц</option><option value="quarter">Квартал</option><option value="year">Год</option><option value="all">Всё время</option></select>'
+    +'<select onchange="selectPeriod(this.value)" style="'+selStyle+'">'+dashPeriodOpts+'</select>'
     +'</div></div>'
     +'<div class="grid-4">'
     +'<div class="card-sm"><div class="metric-label">Доходы</div><div class="metric-value income">'+fmtMoney(income)+'</div>'+(dI!==null?'<div class="delta '+(+dI>=0?'up':'down')+'">'+(+dI>=0?'↑':'↓')+Math.abs(dI)+'% к пред.</div>':'')+'</div>'
@@ -1492,7 +1494,10 @@ function pagePL(){
     expRows+='<div class="pl-row group"><div>'+group+'</div><div class="pl-val expense">'+fmtMoney(gt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pg?fmtMoney(pg):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(delta!==null?(+delta>0?'+':'')+delta+'%':'—')+'</div></div>';
     for(const[sub,amt]of Object.entries(subs).sort((a,b)=>b[1]-a[1]))expRows+='<div class="pl-row sub"><div>'+sub+'</div><div class="pl-val expense">'+fmtMoney(amt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">—</div><div></div></div>';
   }
-  return '<div class="page-header"><div class="page-title">P&amp;L — '+fmtMonth(currentPeriod)+'</div></div>'
+  const allPeriodsPL=Object.keys(DB.periods).sort().reverse();
+  const selStylePL='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
+  const periodOptsPL=allPeriodsPL.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
+  return '<div class="page-header"><div class="page-title">P&amp;L</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+selStylePL+'">'+periodOptsPL+'</select></div></div>'
     +'<div class="card"><div class="pl-header"><div>Статья</div><div style="text-align:right">'+fmtMonth(currentPeriod)+'</div><div style="text-align:right">'+(prevP?fmtMonth(prevP):'Пред. период')+'</div><div style="text-align:right">Δ%</div></div>'
     +'<div class="pl-row group" style="color:var(--income)"><div>Доходы</div><div class="pl-val income">+'+income.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?fmtMoney(pI):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?(((income-pI)/pI*100)>0?'+':'')+(((income-pI)/pI*100)).toFixed(0)+'%':'—')+'</div></div>'
     +incRows+'<div style="height:10px"></div>'
