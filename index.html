@@ -657,6 +657,14 @@ function parseSberPDF(lines) {
     }
 
     if(!amount) continue;
+
+    // Skip footer garbage: "Действителен до" date or QR instructions
+    const descCheck = descParts.join(' ').toLowerCase();
+    if(descCheck.includes('qr') || descCheck.includes('подлинност') ||
+       descCheck.includes('зайдите в приложение') || descCheck.includes('отсканируйте')) continue;
+    // Skip if amount is exactly 1 ruble and desc looks like footer
+    if(amount === 1 && descCheck.includes('сберб')) continue;
+
     const desc = descParts.join(' ').trim();
     const dateISO = toISO(opDate);
     const month = dateISO.slice(0,7);
