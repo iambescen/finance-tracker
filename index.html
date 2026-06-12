@@ -2018,7 +2018,6 @@ async function loadFromGithub(){
 // ── Periods ──
 function refreshUI(){
   const periods=Object.keys(DB.periods).sort().reverse();
-  // periodSelect may not exist (removed from topbar)
   const sel=document.getElementById('periodSelect');
   if(sel){
     const prev=sel.value;
@@ -2032,8 +2031,8 @@ function refreshUI(){
   if(pl)pl.innerHTML=periods.map(p=>'<div class="period-item '+(p===currentPeriod?'active':'')+'" onclick="selectPeriod(\''+p+'\')">'+fmtMonth(p)+'<span class="badge">'+getTxns(p).length+'</span></div>').join('');
   renderPage();
 }
-function onPeriodChange(){currentPeriod=document.getElementById('periodSelect').value;refreshUI();}
-function selectPeriod(p){currentPeriod=p;document.getElementById('periodSelect').value=p;refreshUI();}
+function onPeriodChange(){const s=document.getElementById('periodSelect');if(s)currentPeriod=s.value;refreshUI();}
+function selectPeriod(p){currentPeriod=p;const s=document.getElementById('periodSelect');if(s)s.value=p;refreshUI();}
 function delPeriod(p){if(!confirm('Удалить '+fmtMonth(p)+'?'))return;delete DB.periods[p];const ps=Object.keys(DB.periods).sort().reverse();currentPeriod=ps[0]||null;saveLocal();refreshUI();}
 
 // ── Storage ──
