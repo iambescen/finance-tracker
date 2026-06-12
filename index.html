@@ -262,13 +262,15 @@ tr:hover td{background:var(--bg3)}
 <div class="modal-bg" id="assetsModal">
   <div class="modal">
     <h3>Активы и обязательства</h3>
-    <div class="field"><label>Квартира (рыночная стоимость, ₽)</label><input type="number" id="aFlat" placeholder="0"></div>
+    <div class="field"><label>Квартира — площадь (м²)</label><input type="number" id="aFlatSqm" placeholder="54.5" step="0.1"></div>
+    <div class="field"><label>Квартира — цена м² (₽) <span style="font-size:11px;color:var(--text-muted)">обновляй раз в полгода</span></label><input type="number" id="aFlatPpm" placeholder="120000"></div>
+    <div class="field"><label>Материнский капитал (₽) <span style="font-size:11px;color:var(--text-muted)">вложен как первоначальный взнос</span></label><input type="number" id="aMatkapital" placeholder="483881.83"></div>
     <div class="field"><label>Машина (оценочная стоимость, ₽)</label><input type="number" id="aCar" placeholder="0"></div>
     <div class="field"><label>Брокерский счёт (₽)</label><input type="number" id="aBroker" placeholder="0"></div>
     <div class="field"><label>Торговый счёт (арбитраж, ₽)</label><input type="number" id="aTrading" placeholder="0"></div>
     <div class="field"><label>Кэш на счетах (₽)</label><input type="number" id="aCash" placeholder="0"></div>
     <div style="height:1px;background:var(--border);margin:16px 0"></div>
-    <div class="field"><label>Остаток ипотеки (₽)</label><input type="number" id="lMortgage" placeholder="0"></div>
+    <div style="padding:8px 0;color:var(--text-muted);font-size:13px">Остаток ипотеки рассчитывается автоматически из загруженных выписок ВТБ</div>
     <div class="field"><label>Рассрочка на обучение (₽)</label><input type="number" id="lEdu" placeholder="0"></div>
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('assetsModal').classList.remove('open')">Отмена</button>
@@ -357,7 +359,7 @@ const BANK_CAT={
 
 let DB={
   periods:{},
-  assets:{flat:0,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null},
+  assets:{flat:0,flatSqm:54.5,flatPricePerSqm:120000,matkapital:483881.83,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null},
   accounts:{},
   rules:[]
 };
@@ -1598,15 +1600,42 @@ function updateAccCheck(el){
 
 // ── Assets ──
 function pageAssets(){
-  const a=DB.assets,tA=a.flat+a.car+a.broker+a.trading+a.cash,tL=a.mortgage+a.eduLoan;
-  return '<div class="page-header"><div class="page-title">Активы и долги</div><div class="page-actions"><button class="btn primary" onclick="openAssets()">Обновить</button></div></div>'
-    +'<div class="grid-2"><div class="card"><div class="card-title">Активы</div>'
-    +[['Квартира',a.flat],['Машина',a.car],['Брокерский счёт',a.broker],['Торговый счёт',a.trading],['Кэш на счетах',a.cash]].map(([l,v])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted2)">'+l+'</span><span style="color:var(--income)">'+(v?fmtMoney(v):'—')+'</span></div>').join('')
+  const a=DB.assets;
+  const allTxns=Object.values(DB.periods).flatMap(p=>p.transactions||[]);
+  const vtbPaid=allTxns.filter(t=>t.account==='mortgage_vtb'&&t.sub==='Погашение тела ипотеки').reduce((s,t)=>s+Math.abs(t.amtRub),0);
+  const sberPaid=allTxns.filter(t=>t.account&&t.account.startsWith('sber_loan')&&t.sub==='Погашение тела кредита').reduce((s,t)=>s+Math.abs(t.amtRub),0);
+  const vtbMortgage=Math.max(0,3436983.50-vtbPaid);
+  const sberLoan=Math.max(0,148585.50-sberPaid);
+  const sqm=a.flatSqm||54.5,ppm=a.flatPricePerSqm||120000;
+  const flatVal=Math.round(sqm*ppm);
+  const matk=a.matkapital||483881.83;
+  const tA=flatVal+(a.car||0)+(a.broker||0)+(a.trading||0)+(a.cash||0);
+  const tL=vtbMortgage+sberLoan+(a.eduLoan||0);
+  const equity=tA-tL;
+  return '<div class="page-header"><div class="page-title">Активы и долги</div>'
+    +'<div class="page-actions"><button class="btn primary" onclick="openAssets()">✎ Цены</button></div></div>'
+    +'<div class="card" style="margin-bottom:16px">'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">'
+    +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--income)">'+fmtMoney(equity)+'</div><div style="font-size:12px;color:var(--text-muted)">Собственный капитал</div></div>'
+    +'<div style="text-align:center"><div style="font-size:24px;font-weight:700">'+fmtMoney(tA)+'</div><div style="font-size:12px;color:var(--text-muted)">Активы</div></div>'
+    +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--expense)">'+fmtMoney(tL)+'</div><div style="font-size:12px;color:var(--text-muted)">Долги</div></div>'
+    +'</div></div>'
+    +'<div class="grid-2">'
+    +'<div class="card"><div class="card-title">Активы</div>'
+    +'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
+    +'<div><div style="color:var(--text-muted)">Квартира</div><div style="font-size:11px;color:var(--text-muted)">'+sqm+' м² × '+ppm.toLocaleString('ru-RU')+' ₽/м²</div></div>'
+    +'<span style="color:var(--income)">'+fmtMoney(flatVal)+'</span></div>'
+    +[['Машина',a.car],['Брокерский счёт',a.broker],['Торговый счёт',a.trading],['Кэш на счетах',a.cash]].map(([l,v])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">'+l+'</span><span style="color:var(--income)">'+(v?fmtMoney(v):'-')+'</span></div>').join('')
     +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600"><span>Итого</span><span style="color:var(--income)">'+fmtMoney(tA)+'</span></div></div>'
     +'<div class="card"><div class="card-title">Обязательства</div>'
-    +[['Ипотека',a.mortgage],['Рассрочка на обучение',a.eduLoan]].map(([l,v])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted2)">'+l+'</span><span style="color:var(--expense)">'+(v?fmtMoney(v):'—')+'</span></div>').join('')
-    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600"><span>Итого долги</span><span style="color:var(--expense)">'+fmtMoney(tL)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600;border-top:1px solid var(--border)"><span>Собственный капитал</span><span style="color:'+((tA-tL)>=0?'var(--income)':'var(--expense)')+'">'+fmtMoney(tA-tL)+'</span></div></div></div>';
+    +'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="color:var(--text-muted)">Ипотека ВТБ</div><div style="font-size:11px;color:var(--text-muted)">выплачено '+Math.round(vtbPaid).toLocaleString('ru-RU')+' ₽'</div></div><span style="color:var(--expense)">'+fmtMoney(vtbMortgage)+'</span></div>'
+    +(sberLoan>0?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="color:var(--text-muted)">Кредит Сбер</div><div style="font-size:11px;color:var(--text-muted)">выплачено '+Math.round(sberPaid).toLocaleString('ru-RU')+' ₽'</div></div><span style="color:var(--expense)">'+fmtMoney(sberLoan)+'</span></div>':'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Кредит Сбер</span><span style="color:var(--income)">✓ Закрыт</span></div>')
+    +(a.eduLoan?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Рассрочка на обучение</span><span style="color:var(--expense)">'+fmtMoney(a.eduLoan)+'</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600;border-bottom:1px solid var(--border)"><span>Итого долги</span><span style="color:var(--expense)">'+fmtMoney(tL)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:700;border-bottom:1px solid var(--border)"><span>Собственный капитал</span><span style="color:var(--income)">'+fmtMoney(equity)+'</span></div>'
+    +'<div style="padding:10px 0"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);padding:3px 0"><span>в т.ч. маткапитал</span><span>'+fmtMoney(matk)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);padding:3px 0"><span>ваши вложения</span><span>'+fmtMoney(equity-matk)+'</span></div></div>'
+    +'</div></div>';
 }
 
 // ── Rules ──
@@ -1698,13 +1727,14 @@ function closeCatModal(){document.getElementById('catModal').classList.remove('o
 // ── Assets modal ──
 function openAssets(){
   const a=DB.assets;
-  const map={aFlat:'flat',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lMortgage:'mortgage',lEdu:'eduLoan'};
-  Object.entries(map).forEach(([id,key])=>{document.getElementById(id).value=a[key]||'';});
+  const map={aFlatSqm:'flatSqm',aFlatPpm:'flatPricePerSqm',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
+  Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.value=a[key]||'';});
   document.getElementById('assetsModal').classList.add('open');
 }
 function saveAssets(){
-  const map={aFlat:'flat',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lMortgage:'mortgage',lEdu:'eduLoan'};
-  Object.entries(map).forEach(([id,key])=>{DB.assets[key]=+document.getElementById(id).value||0;});
+  const map={aFlatSqm:'flatSqm',aFlatPpm:'flatPricePerSqm',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
+  Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)DB.assets[key]=+el.value||0;});
+  DB.assets.flat = Math.round((DB.assets.flatSqm||0)*(DB.assets.flatPricePerSqm||0));
   DB.assets.updatedAt=new Date().toISOString();
   saveLocal();document.getElementById('assetsModal').classList.remove('open');
   toast('Активы сохранены','ok');
