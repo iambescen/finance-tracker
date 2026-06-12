@@ -585,8 +585,10 @@ async function loadPDFjs() {
 function detectPDFBank(lines) {
   const text = lines.join(' ').toLowerCase();
   if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
-  if((text.includes('банк втб') || text.includes('втб (пао)')) && (text.includes('кредитный лимит') || text.includes('беспроцентный период') || text.includes('номер договора kk'))) return 'vtb_credit';
-  if(text.includes('банк втб') || text.includes('bank vtb') || text.includes('втб (пао)')) return 'vtb';
+  // VTB credit card: has KK- contract number and credit limit info (no "банк втб" in header)
+  if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный период'))) return 'vtb_credit';
+  // VTB debit: has "банк втб" or "втб (пао)"
+  if(text.includes('банк втб') || text.includes('втб (пао)') || (text.includes('втб') && text.includes('филиал'))) return 'vtb';
   if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff')) return 'tinkoff_pdf';
   return 'unknown';
 }
