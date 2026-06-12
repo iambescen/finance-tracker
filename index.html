@@ -372,13 +372,7 @@ function accLabel(accNum){
   if(!accNum)return '—';
   const k=String(accNum).replace(/\*/g,'').trim();
   const acc=DB.accounts[k];
-  if(acc){
-    if(acc.parentAccount){
-      const parent=DB.accounts[acc.parentAccount];
-      if(parent) return parent.name+' / '+acc.display;
-    }
-    return acc.name;
-  }
+  if(acc) return acc.name;
   if(k==='cash_me')return 'Наличные Влад';
   if(k==='cash_wife')return 'Наличные Таня';
   return '***'+k.slice(-4);
@@ -1011,13 +1005,10 @@ function calcAccountHistory(accNum){
   const acc=DB.accounts[accNum];
   if(!acc||acc.currentBalance==null||acc.currentBalance==='')return null;
   let balance=parseFloat(acc.currentBalance)||0;
-  // Include child card accounts
-  const childAccs = Object.values(DB.accounts).filter(a=>a.parentAccount===accNum).map(a=>a.number);
-  const allAccNums = [accNum, ...childAccs];
   const periods=Object.keys(DB.periods).sort().reverse();
   const history=[];
   for(const period of periods){
-    const txns=getTxns(period).filter(t=>allAccNums.includes(t.account));
+    const txns=getTxns(period).filter(t=>t.account===accNum);
     const periodTotal=txns.reduce((s,t)=>s+t.amtRub,0);
     const endBalance=balance,startBalance=balance-periodTotal;
     history.push({period,startBalance,endBalance,periodTotal,txCount:txns.length});
@@ -1214,9 +1205,7 @@ function pageBalance(){
   const curSymbolMap={'RUB':'₽','USD':'$','EUR':'€','KGS':'с'};
   function fmtCur(n,cur){const s=Math.abs(n).toLocaleString('ru-RU',{maximumFractionDigits:2,minimumFractionDigits:0});const sym=curSymbolMap[cur||'RUB']||cur||'₽';return (n<0?'−':'')+s+' '+sym;}
   // For balance: use parent accounts (child balances already included via calcAccountHistory)
-  const accsWithBalance=Object.values(DB.accounts).filter(a=>
-    a.currentBalance!=null && a.currentBalance!=='' && !a.virtual && !a.parentAccount
-  );
+  const accsWithBalance=Object.values(DB.accounts).filter(a=>a.currentBalance!=null&&a.currentBalance!==''&&!a.virtual);
   const accRows=accsWithBalance.map(acc=>{
     const hist=calcAccountHistory(acc.number);
     const oldest=hist&&hist.length?hist[0]:null;
@@ -1333,67 +1322,37 @@ function pageUpload(){
 
 // ── Accounts ──
 function pageAccounts(){
-  const accs = Object.values(DB.accounts);
-  const inputStyle = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;padding:6px 10px;font-family:var(--font)';
-  const CURRENCIES = ['RUB','USD','EUR','KGS'];
-  const curSymbol = {'RUB':'₽','USD':'$','EUR':'€','KGS':'с'};
-
-  // Separate root accounts (no parent) and child cards (have parent)
-  const roots = accs.filter(a => !a.parentAccount);
-  const children = accs.filter(a => !!a.parentAccount);
-
-  function renderAccount(acc, isChild) {
-    const cur = acc.currency||'RUB';
-    const sym = curSymbol[cur]||cur;
-    const indent = isChild ? 'margin-left:24px;border-left:2px solid var(--border);padding-left:12px;' : '';
-    // Parent options: root accounts that are not this account, not cash, not child themselves
-    const parentOpts = '<option value="">— корневой счёт —</option>'
-      + roots.filter(r => r.number !== acc.number && !r.virtual)
-             .map(r => '<option value="'+r.number+'" '+(acc.parentAccount===r.number?'selected':'')+'>'+r.name+'</option>').join('');
-    return '<div style="'+indent+'display:grid;grid-template-columns:130px 1fr 90px 75px 90px 90px;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">'
-      +'<div><div style="font-size:'+(isChild?'12':'13')+'px;font-weight:500;color:'+(isChild?'var(--muted2)':'var(--text)')+'">'+acc.display+'</div>'
-        +'<div style="font-size:11px;color:var(--muted)">'+acc.bank+'</div></div>'
-      +'<input type="text" value="'+acc.name+'" data-acc="'+acc.number+'" data-field="name" onchange="updateAcc(this)" style="'+inputStyle+'">'
-      +'<select data-acc="'+acc.number+'" data-field="owner" onchange="updateAcc(this)" style="'+inputStyle+'">'
-        +'<option value="me" '+(acc.owner==='me'?'selected':'')+'>Влад</option>'
-        +'<option value="wife" '+(acc.owner==='wife'?'selected':'')+'>Таня</option>'
-        +'<option value="joint" '+(acc.owner==='joint'?'selected':'')+'>Общий</option>'
-      +'</select>'
-      +'<select data-acc="'+acc.number+'" data-field="currency" onchange="updateAcc(this)" style="'+inputStyle+'">'
-        +CURRENCIES.map(c=>'<option value="'+c+'" '+(cur===c?'selected':'')+'>'+c+'</option>').join('')
-      +'</select>'
-      +'<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted2);cursor:pointer;white-space:nowrap">'
-        +'<input type="checkbox" data-acc="'+acc.number+'" data-field="isCredit" onchange="updateAccCheck(this)" '+(acc.isCredit?'checked':'')+' style="cursor:pointer;accent-color:var(--expense)"> Кредитная'
-      +'</label>'
-      +'<div style="display:flex;align-items:center;gap:5px">'
-        +'<input type="number" placeholder="Остаток" value="'+(acc.currentBalance!=null&&acc.currentBalance!==''?acc.currentBalance:'')+'" data-acc="'+acc.number+'" data-field="currentBalance" onchange="updateAcc(this)" style="'+inputStyle+';width:100px">'
-        +'<span style="font-size:12px;color:var(--muted2)">'+sym+'</span>'
-      +'</div>'
-      +'</div>'
-      // Parent account row (only for non-virtual)
-      + (!acc.virtual ? '<div style="'+indent+'display:flex;align-items:center;gap:8px;padding:2px 0 8px;border-bottom:1px solid var(--border)">'
-        +'<span style="font-size:11px;color:var(--muted);white-space:nowrap">Привязать к счёту:</span>'
-        +'<select data-acc="'+acc.number+'" data-field="parentAccount" onchange="updateAcc(this)" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;padding:3px 8px;font-family:var(--font);flex:1">'+parentOpts+'</select>'
-      +'</div>' : '');
-  }
-
-  // Build hierarchy: roots first, then their children underneath
-  let rows = '';
-  for(const root of roots) {
-    rows += renderAccount(root, false);
-    const myChildren = children.filter(c => c.parentAccount === root.number);
-    for(const child of myChildren) {
-      rows += renderAccount(child, true);
-    }
-  }
-  // Orphan children (parent not found)
-  const orphans = children.filter(c => !roots.find(r => r.number === c.parentAccount));
-  for(const o of orphans) rows += renderAccount(o, false);
-
+  const accs=Object.values(DB.accounts);
+  const inputStyle='background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;padding:6px 10px;font-family:var(--font)';
+  const CURRENCIES=['RUB','USD','EUR','KGS'];
+  const curSymbol={'RUB':'₽','USD':'$','EUR':'€','KGS':'с'};
   return '<div class="page-header"><div class="page-title">Счета</div>'
-    +'<div style="font-size:13px;color:var(--muted2)">Карты можно привязать к родительскому счёту — тогда в балансе они объединятся</div></div>'
+    +'<div style="font-size:13px;color:var(--muted2)">Введите текущий остаток — система посчитает историю балансов</div></div>'
     +'<div class="card"><div class="card-title">Список счетов</div>'
-    +(accs.length ? rows : '<div style="color:var(--muted);padding:20px 0;text-align:center">Счета появятся после загрузки выписок</div>')
+    +(accs.length?accs.map(acc=>{
+      const cur=acc.currency||'RUB';
+      const sym=curSymbol[cur]||cur;
+      return '<div style="display:grid;grid-template-columns:130px 1fr 100px 80px 100px 160px;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div><div style="font-size:13px;font-weight:500">'+acc.display+'</div><div style="font-size:11px;color:var(--muted)">'+acc.bank+'</div></div>'
+        +'<input type="text" value="'+acc.name+'" data-acc="'+acc.number+'" data-field="name" onchange="updateAcc(this)" style="'+inputStyle+'">'
+        +'<select data-acc="'+acc.number+'" data-field="owner" onchange="updateAcc(this)" style="'+inputStyle+'">'
+          +'<option value="me" '+(acc.owner==='me'?'selected':'')+'>Влад</option>'
+          +'<option value="wife" '+(acc.owner==='wife'?'selected':'')+'>Таня</option>'
+          +'<option value="joint" '+(acc.owner==='joint'?'selected':'')+'>Общий</option>'
+        +'</select>'
+        +'<select data-acc="'+acc.number+'" data-field="currency" onchange="updateAcc(this)" style="'+inputStyle+'">'
+          +CURRENCIES.map(c=>'<option value="'+c+'" '+(cur===c?'selected':'')+'>'+c+'</option>').join('')
+        +'</select>'
+        +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted2);cursor:pointer;white-space:nowrap">'
+          +'<input type="checkbox" data-acc="'+acc.number+'" data-field="isCredit" onchange="updateAccCheck(this)" '+(acc.isCredit?'checked':'')+' style="cursor:pointer;accent-color:var(--expense)"> Кредитная'
+        +'</label>'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+          +'<input type="number" placeholder="Остаток сейчас" value="'+(acc.currentBalance!=null&&acc.currentBalance!==''?acc.currentBalance:'')+'" data-acc="'+acc.number+'" data-field="currentBalance" onchange="updateAcc(this)" style="'+inputStyle+';width:120px">'
+          +'<span style="font-size:13px;color:var(--muted2);font-weight:500">'+sym+'</span>'
+        +'</div>'
+        +'</div>';
+    }).join('')
+      :'<div style="color:var(--muted);padding:20px 0;text-align:center">Счета появятся после загрузки выписок</div>')
     +'</div>';
 }
 function updateAcc(el){
