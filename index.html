@@ -8,345 +8,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-(function(){
-  const PASS_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; // sha256('2457')
-  function sha256(str){
-    const buf = new TextEncoder().encode(str);
-    return crypto.subtle.digest('SHA-256', buf).then(b =>
-      Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')
-    );
-  }
-  function showLock(){
-    document.documentElement.style.visibility='hidden';
-    const overlay = document.createElement('div');
-    overlay.id='lock-overlay';
-    overlay.style.cssText='position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;visibility:visible;';
-    overlay.innerHTML=`
-      <div style="background:#1e293b;border-radius:16px;padding:40px;text-align:center;width:320px;box-shadow:0 25px 50px rgba(0,0,0,0.5);">
-        <div style="font-size:48px;margin-bottom:16px;">🔐</div>
-        <div style="color:#f1f5f9;font-size:22px;font-weight:700;margin-bottom:8px;">Семейные финансы</div>
-        <div style="color:#94a3b8;font-size:14px;margin-bottom:28px;">Введите пароль для входа</div>
-        <input id="lock-input" type="password" placeholder="Пароль"
-          style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:8px;border:2px solid #334155;background:#0f172a;color:#f1f5f9;font-size:18px;letter-spacing:4px;text-align:center;outline:none;margin-bottom:12px;"
-          autofocus/>
-        <div id="lock-error" style="color:#ef4444;font-size:13px;min-height:20px;margin-bottom:12px;"></div>
-        <button id="lock-btn"
-          style="width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">
-          Войти
-        </button>
-      </div>`;
-    document.body.appendChild(overlay);
-    const input = document.getElementById('lock-input');
-    const btn = document.getElementById('lock-btn');
-    const err = document.getElementById('lock-error');
-    async function tryUnlock(){
-      const hash = await sha256(input.value.trim());
-      if(hash === PASS_HASH){
-        sessionStorage.setItem('sf_auth','1');
-        overlay.remove();
-        document.documentElement.style.visibility='';
-      } else {
-        err.textContent='Неверный пароль';
-        input.value='';
-        input.focus();
-        setTimeout(()=>err.textContent='',2000);
-      }
-    }
-    btn.addEventListener('click', tryUnlock);
-    input.addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
-  }
-  if(sessionStorage.getItem('sf_auth')!=='1'){
-    document.addEventListener('DOMContentLoaded', showLock);
-  }
-})();
-</script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
-
-/* ── Light theme (default) ── */
-:root,[data-theme="light"]{
-  --bg:#f5f5f3;
-  --bg2:#ffffff;
-  --bg3:#f0eeeb;
-  --bg4:#e8e6e2;
-  --border:#e2e0dc;
-  --border2:#d0cdc8;
-  --text:#1a1916;
-  --muted:#999691;
-  --muted2:#6b6965;
-  --accent:#4f46e5;
-  --accent-soft:rgba(79,70,229,0.08);
-  --income:#16a34a;
-  --income-soft:rgba(22,163,74,0.08);
-  --expense:#dc2626;
-  --expense-soft:rgba(220,38,38,0.08);
-  --transfer:#92400e;
-  --transfer-soft:rgba(146,64,14,0.08);
-  --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
-  --r:7px;--r2:11px;--font:'Inter',system-ui,sans-serif;
-}
-
-/* ── Dark theme ── */
-[data-theme="dark"]{
-  --bg:#0c0c0b;
-  --bg2:#141413;
-  --bg3:#1c1c1a;
-  --bg4:#242422;
-  --border:#2c2c2a;
-  --border2:#383836;
-  --text:#e8e6e2;
-  --muted:#5a5856;
-  --muted2:#8a8885;
-  --accent:#6366f1;
-  --accent-soft:rgba(99,102,241,0.1);
-  --income:#22c55e;
-  --income-soft:rgba(34,197,94,0.08);
-  --expense:#ef4444;
-  --expense-soft:rgba(239,68,68,0.08);
-  --transfer:#d97706;
-  --transfer-soft:rgba(217,119,6,0.08);
-  --shadow:none;
-}
-
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;transition:background 0.2s,color 0.2s}
-
-/* ── Layout ── */
-.app{display:grid;grid-template-rows:52px 1fr;height:100vh}
-.topbar{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:var(--shadow)}
-.logo{font-size:15px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
-.logo em{color:var(--accent);font-style:normal}
-.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
-.body{display:grid;grid-template-columns:204px 1fr;overflow:hidden}
-.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto}
-.content{overflow-y:auto;padding:24px;background:var(--bg)}
-
-/* ── Sidebar ── */
-.nav-label{font-size:10px;font-weight:600;letter-spacing:0.7px;color:var(--muted);text-transform:uppercase;padding:10px 16px 4px}
-.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin:0 6px 1px;border-radius:var(--r);cursor:pointer;color:var(--muted2);font-size:13px;transition:all 0.12s}
-.nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:500}
-.nav-divider{height:1px;background:var(--border);margin:8px 10px}
-.period-list{padding:0 6px}
-.period-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--muted2);transition:all 0.12s;margin-bottom:1px}
-.period-item:hover{background:var(--bg3);color:var(--text)}
-.period-item.active{background:var(--accent-soft);color:var(--accent);font-weight:500}
-.badge{font-size:10px;padding:2px 6px;border-radius:20px;background:var(--bg4);color:var(--muted)}
-.period-item.active .badge{background:var(--accent-soft);color:var(--accent)}
-
-/* ── Cards ── */
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
-.card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px;box-shadow:var(--shadow)}
-.card-title{font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
-
-/* ── Metrics ── */
-.metric-label{font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.4px;font-weight:500}
-.metric-value{font-size:22px;font-weight:600;letter-spacing:-0.5px;color:var(--text)}
-.metric-value.income{color:var(--income)}
-.metric-value.expense{color:var(--expense)}
-.metric-value.accent{color:var(--accent)}
-.delta{font-size:12px;margin-top:4px;color:var(--muted)}
-.delta.up{color:var(--income)}.delta.down{color:var(--expense)}
-
-/* ── Page header ── */
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.page-title{font-size:17px;font-weight:600;letter-spacing:-0.3px}
-.page-actions{display:flex;gap:8px;align-items:center}
-
-/* ── Buttons ── */
-.btn{padding:7px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px;cursor:pointer;transition:all 0.12s;font-family:var(--font);display:inline-flex;align-items:center;gap:6px;font-weight:400;box-shadow:var(--shadow)}
-.btn:hover{background:var(--bg3);border-color:var(--border2)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:none}
-.btn.primary:hover{opacity:0.88}
-.btn.sm{padding:5px 10px;font-size:12px;box-shadow:none}
-.btn.ghost{border-color:transparent;background:transparent;box-shadow:none;color:var(--muted2)}
-.btn.ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border)}
-.btn.danger{border-color:var(--border2);color:var(--expense);background:var(--bg2)}
-.btn.danger:hover{background:var(--expense-soft);border-color:var(--expense)}
-
-/* ── Theme toggle ── */
-.theme-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:var(--shadow);transition:all 0.12s}
-.theme-btn:hover{background:var(--bg3)}
-
-/* ── Upload ── */
-.upload-area{border:1.5px dashed var(--border2);border-radius:var(--r2);padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg2);margin-bottom:16px}
-.upload-area:hover,.upload-area.drag{border-color:var(--accent);background:var(--accent-soft)}
-
-/* ── Table ── */
-.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)}
-.tbl-toolbar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--bg2)}
-.tbl-toolbar input,.tbl-toolbar select{padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);transition:border 0.12s}
-.tbl-toolbar input{width:180px}
-.tbl-toolbar input:focus,.tbl-toolbar select:focus{outline:none;border-color:var(--accent);background:var(--bg2)}
-.tbl-count{margin-left:auto;font-size:12px;color:var(--muted)}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:9px 14px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;font-weight:600;background:var(--bg3)}
-td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:top}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--bg3)}
-
-/* ── Amount colors — only where meaningful ── */
-.amt-income{color:var(--income);font-weight:500}
-.amt-expense{color:var(--expense);font-weight:500}
-.amt-transfer{color:var(--muted2);font-weight:400}
-
-/* ── Category pill — neutral, no color circus ── */
-.cat-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;font-size:12px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all 0.12s;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted2)}
-.cat-pill:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.cat-pill.transfer{color:var(--muted);background:var(--bg3)}
-
-/* ── Type tag — minimal ── */
-.type-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
-.type-tag.income{background:var(--income-soft);color:var(--income)}
-.type-tag.expense{background:var(--expense-soft);color:var(--expense)}
-.type-tag.transfer{background:var(--bg4);color:var(--muted2)}
-
-/* ── P&L table ── */
-.pl-header{display:grid;grid-template-columns:1fr 130px 130px 80px;padding:8px 14px;margin-bottom:2px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);font-weight:600;background:var(--bg3);border-radius:var(--r) var(--r) 0 0}
-.pl-row{display:grid;grid-template-columns:1fr 130px 130px 80px;padding:9px 14px;border-bottom:1px solid var(--border);transition:background 0.1s}
-.pl-row:hover{background:var(--bg3)}
-.pl-row:last-child{border-bottom:none}
-.pl-row.group{font-weight:500;color:var(--text)}
-.pl-row.sub{color:var(--muted2);font-size:13px;padding-left:30px}
-.pl-row.total{font-weight:600;font-size:15px;padding:13px 14px;background:var(--bg3);border-top:2px solid var(--border2);border-bottom:none}
-.pl-val{text-align:right;font-variant-numeric:tabular-nums}
-.pl-val.income{color:var(--income)}.pl-val.expense{color:var(--expense)}
-.pl-val.pos{color:var(--income)}.pl-val.neg{color:var(--expense)}
-
-/* ── Chart ── */
-.chart-wrap{position:relative;height:240px}
-
-/* ── Progress ── */
-.progress{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:6px}
-.progress-bar{height:100%;border-radius:2px;background:var(--expense);opacity:0.6}
-
-/* ── Toast ── */
-.toast{position:fixed;bottom:24px;right:24px;padding:11px 18px;border-radius:var(--r);font-size:13px;z-index:999;opacity:0;transition:opacity 0.25s;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-.toast.ok{background:var(--bg2);border:1px solid var(--income);color:var(--income)}
-.toast.err{background:var(--bg2);border:1px solid var(--expense);color:var(--expense)}
-.toast.info{background:var(--bg2);border:1px solid var(--accent);color:var(--accent)}
-.toast.show{opacity:1}
-
-/* ── Modal ── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
-.modal-bg.open{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:28px;width:480px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
-.modal h3{font-size:16px;font-weight:600;margin-bottom:20px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
-.field input,.field select{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);transition:border 0.12s}
-.field input:focus,.field select:focus{outline:none;border-color:var(--accent);background:var(--bg2)}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
-
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--muted)}
-
-@media(max-width:900px){
-  .body{grid-template-columns:1fr}
-  .sidebar{display:none}
-  .grid-4{grid-template-columns:1fr 1fr}
-  .grid-3{grid-template-columns:1fr 1fr}
-}
-</style>
-</head>
-<body>
-<div class="app">
-<div class="topbar">
-  <div class="logo">семья<em>.</em>финансы</div>
-  <div class="topbar-right">
-    <select id="periodSelect" onchange="onPeriodChange()" style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
-    <button class="btn sm" onclick="showPage('upload')">+ Загрузить</button>
-    <button class="btn sm primary" onclick="saveToGithub()">↑ GitHub</button>
-    <button class="btn sm ghost" onclick="openGhModal()">⚙</button>
-    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
-  </div>
-</div>
-<div class="body">
-  <div class="sidebar">
-    <div class="nav-label">Отчёты</div>
-    <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">◈ Дашборд</div>
-    <div class="nav-item" id="nav-pl" onclick="showPage('pl')">≡ P&amp;L</div>
-    <div class="nav-item" id="nav-cashflow" onclick="showPage('cashflow')">⇅ Cash Flow</div>
-    <div class="nav-item" id="nav-balance" onclick="showPage('balance')">◎ Баланс</div>
-    <div class="nav-divider"></div>
-    <div class="nav-label">Данные</div>
-    <div class="nav-item" id="nav-transactions" onclick="showPage('transactions')">☰ Операции</div>
-    <div class="nav-item" id="nav-upload" onclick="showPage('upload')">↑ Загрузить</div>
-    <div class="nav-item" id="nav-accounts" onclick="showPage('accounts')">◻ Счета</div>
-    <div class="nav-item" id="nav-assets" onclick="showPage('assets')">◇ Активы и долги</div>
-    <div class="nav-item" id="nav-rules" onclick="showPage('rules')">⊞ Правила</div>
-    <div class="nav-divider"></div>
-    <div class="nav-label">Периоды</div>
-    <div class="period-list" id="periodList"></div>
-  </div>
-  <div class="content" id="mainContent"></div>
-</div>
-</div>
-
-<!-- Category modal -->
-<div class="modal-bg" id="catModal">
-  <div class="modal">
-    <h3>Категория операции</h3>
-    <div id="catInfo" style="display:none;font-size:12px;color:var(--muted2);background:var(--bg3);padding:8px 12px;border-radius:var(--r);margin-bottom:14px;line-height:1.5"></div>
-    <div class="field"><label>Группа</label><select id="catGroup" onchange="onCatGroupChange()"></select></div>
-    <div class="field"><label>Подкатегория</label><select id="catSub"></select></div>
-    <div class="field"><label>Тип</label>
-      <select id="catType">
-        <option value="expense">Расход</option>
-        <option value="income">Доход</option>
-        <option value="transfer">Внутренний перевод</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeCatModal()">Отмена</button>
-      <button class="btn" onclick="saveCatModal(false)">Сохранить</button>
-      <button class="btn primary" onclick="saveCatModal(true)">Применить ко всем ↺</button>
-    </div>
-  </div>
-</div>
-
-<!-- Assets modal -->
-<div class="modal-bg" id="assetsModal">
-  <div class="modal">
-    <h3>Активы и обязательства</h3>
-    <div class="field"><label>Квартира (рыночная стоимость, ₽)</label><input type="number" id="aFlat" placeholder="0"></div>
-    <div class="field"><label>Машина (оценочная стоимость, ₽)</label><input type="number" id="aCar" placeholder="0"></div>
-    <div class="field"><label>Брокерский счёт (₽)</label><input type="number" id="aBroker" placeholder="0"></div>
-    <div class="field"><label>Торговый счёт (арбитраж, ₽)</label><input type="number" id="aTrading" placeholder="0"></div>
-    <div class="field"><label>Кэш на счетах (₽)</label><input type="number" id="aCash" placeholder="0"></div>
-    <div style="height:1px;background:var(--border);margin:16px 0"></div>
-    <div class="field"><label>Остаток ипотеки (₽)</label><input type="number" id="lMortgage" placeholder="0"></div>
-    <div class="field"><label>Рассрочка на обучение (₽)</label><input type="number" id="lEdu" placeholder="0"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="document.getElementById('assetsModal').classList.remove('open')">Отмена</button>
-      <button class="btn primary" onclick="saveAssets()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- GitHub modal -->
-<div class="modal-bg" id="ghModal">
-  <div class="modal">
-    <h3>Настройки GitHub</h3>
-    <div class="field"><label>Username</label><input type="text" id="ghUser" placeholder="iambescen"></div>
-    <div class="field"><label>Репозиторий</label><input type="text" id="ghRepo" placeholder="finance-tracker"></div>
-    <div class="field"><label>Personal Access Token</label><input type="password" id="ghToken" placeholder="ghp_..."></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="document.getElementById('ghModal').classList.remove('open')">Отмена</button>
-      <button class="btn primary" onclick="saveGhModal()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-<input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.pdf" multiple style="display:none">
-
-<script>
 const OWN_INN='570701153846';
 const OWN_ACCOUNTS=new Set(['40802810100000077444','40802810500004846488','40817810400000461363','42109810600000071861','40802810600000071861']);
 const CASH_ACCOUNTS={me:'cash_me',wife:'cash_wife'};
@@ -1223,6 +884,12 @@ async function processPDFFile(file) {
       return;
     }
     ingest(txns);
+    // Auto-push accounts so credit accounts (mortgage, loans) persist in GitHub
+    const{token}=ghCfg();
+    if(token){
+      const date=new Date().toLocaleDateString('ru-RU');
+      ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Auto-update accounts — '+date).catch(()=>{});
+    }
   } catch(e) {
     console.error('PDF parse error:', e);
     toast('Ошибка чтения PDF: '+e.message,'err');
@@ -1799,7 +1466,9 @@ async function loadFromGithub(){
   try{
     const load=async(path)=>{const r=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/'+path+'?t='+Date.now());return r.ok?r.json():null;};
     const[assets,accounts,rules]=await Promise.all([load('data/assets.json'),load('data/accounts.json'),load('data/rules.json')]);
-    if(assets)DB.assets=assets;if(accounts)DB.accounts=accounts;if(rules)DB.rules=rules;
+    if(assets)DB.assets=assets;
+    if(accounts)DB.accounts=Object.assign({},DB.accounts,accounts);
+    if(rules)DB.rules=rules;
     const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',{headers:{Authorization:'token '+token}});
     if(lr.ok){
       const files=await lr.json();
@@ -1860,6 +1529,7 @@ const initP=Object.keys(DB.periods).sort().reverse();
 if(initP.length)currentPeriod=initP[0];
 refreshUI();
 loadFromGithub();
+
 
 </script>
 </body>
