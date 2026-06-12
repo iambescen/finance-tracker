@@ -493,11 +493,13 @@ function applyCategForTx(tx){
 }
 
 function reapplyAllRules(){
+  const PROTECTED_SOURCES=['vtb_mortgage_pdf','sber_loan_pdf'];
   let changed=0;
   for(const period of Object.keys(DB.periods)){
     const txns=getTxns(period);
     for(const tx of txns){
       if(tx.manualCategory)continue;
+      if(PROTECTED_SOURCES.includes(tx.source))continue; // don't touch mortgage/loan txns
       const c=applyCategForTx(tx);
       if(c.g!==tx.group||c.s!==tx.sub||c.t!==tx.type){tx.group=c.g;tx.sub=c.s;tx.type=c.t;changed++;}
     }
@@ -1680,8 +1682,8 @@ function updateAccCheck(el){
 function pageAssets(){
   const a=DB.assets;
   const allTxns=Object.values(DB.periods).flatMap(p=>p.transactions||[]);
-  const vtbPaid=allTxns.filter(t=>t.account==='mortgage_vtb'&&t.sub==='Погашение тела ипотеки').reduce((s,t)=>s+Math.abs(t.amtRub),0);
-  const sberPaid=allTxns.filter(t=>t.account&&t.account.startsWith('sber_loan')&&t.sub==='Погашение тела кредита').reduce((s,t)=>s+Math.abs(t.amtRub),0);
+  const vtbPaid=allTxns.filter(t=>t.source==='vtb_mortgage_pdf'&&(t.sub==='Погашение тела ипотеки'||t.type==='transfer')).reduce((s,t)=>s+Math.abs(t.amtRub),0);
+  const sberPaid=allTxns.filter(t=>t.source==='sber_loan_pdf'&&(t.sub==='Погашение тела кредита'||t.desc==='Тело кредита (погашение долга)')).reduce((s,t)=>s+Math.abs(t.amtRub),0);
   const vtbMortgage=Math.max(0,3436983.50-vtbPaid);
   const sberLoan=Math.max(0,148585.50-sberPaid);
   const sqm=a.flatSqm||54.5,ppm=a.flatPricePerSqm||200000,ppmMin=a.flatPpmMin||190000,ppmMax=a.flatPpmMax||210000;
@@ -1956,12 +1958,12 @@ function pageLoans(){
 
   // VTB mortgage: sum principal payments by month
   const vtbPaid = {};
-  allTxns.filter(t => t.account === 'mortgage_vtb' && t.sub === 'Погашение тела ипотеки')
+  allTxns.filter(t => t.source === 'vtb_mortgage_pdf' && (t.sub === 'Погашение тела ипотеки' || t.type === 'transfer'))
     .forEach(t => { vtbPaid[t.month] = (vtbPaid[t.month] || 0) + Math.abs(t.amtRub); });
 
   // Sber loan: sum principal payments by month (any sber_loan account)
   const sberPaid = {};
-  allTxns.filter(t => t.account && t.account.startsWith('sber_loan') && t.sub === 'Погашение тела кредита')
+  allTxns.filter(t => t.source === 'sber_loan_pdf' && (t.sub === 'Погашение тела кредита' || t.desc === 'Тело кредита (погашение долга)'))
     .forEach(t => { sberPaid[t.month] = (sberPaid[t.month] || 0) + Math.abs(t.amtRub); });
 
   // ── VTB schedule ──
