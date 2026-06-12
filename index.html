@@ -934,6 +934,116 @@ function parseVTBCreditPDF(pages) {
   return transactions;
 }
 
+
+// ── VTB Mortgage PDF parser ──
+// Format: date at x~99, amount at x~220-325 (same Y), description at x>340 (row above)
+// Three operation types: Выдача кредита / Погашение процентов / Погашение кредита / Погашение пени
+function parseVTBMortgagePDF(pages) {
+  const transactions = [];
+  const CONTRACT = '634/4151-0003464';
+  const NOISE = new Set(['RUB','Описание','операции','валюте','Дата','проведения','Сумма','счета','в',
+    'Поступления','Информация','о','счете','Номер','договора','Период','выписки',
+    'Всегда','Ваш','Банк','ВТБ','Спасибо','что','Вы','нами','с','нас']);
+
+  for(const pageWords of pages) {
+    const dateWords = pageWords.filter(w =>
+      w.x >= 85 && w.x <= 115 && /^\d{2}\.\d{2}\.\d{4}$/.test(w.text)
+    ).sort((a,b) => a.top - b.top);
+
+    if(!dateWords.length) continue;
+
+    for(let i=0; i<dateWords.length; i++) {
+      const dw = dateWords[i];
+      const dy = dw.top;
+      const nextDy = i+1 < dateWords.length ? dateWords[i+1].top : dy+60;
+
+      const band = pageWords.filter(w => w.top >= dy-30 && w.top < nextDy);
+
+      let amtParts = [], descWords = [];
+
+      for(const w of band) {
+        if(w.text === dw.text && Math.abs(w.top - dy) < 3) continue;
+        if(NOISE.has(w.text) || w.text.includes('8-800') || w.text.includes('777-24')) continue;
+
+        if(w.x >= 220 && w.x <= 325 && Math.abs(w.top - dy) < 8) {
+          if(!w.text.startsWith('634')) amtParts.push(w.text);
+        } else if(w.x > 340 && w.text.length > 1) {
+          descWords.push({top: w.top, x: w.x, text: w.text});
+        }
+      }
+
+      if(!amtParts.length) continue;
+
+      const amt = parseFloat(amtParts.join('').replace(/,/g,'.').replace(/\s/g,''));
+      if(isNaN(amt)) continue;
+
+      descWords.sort((a,b) => a.top!==b.top ? a.top-b.top : a.x-b.x);
+      // Take only description words from the band above the date (the actual row header)
+      const descAbove = descWords.filter(w => w.top < dy + 5);
+      let desc = descAbove.map(w=>w.text).join(' ')
+        .replace(/по$/,'').replace(/договору/g,'').replace(CONTRACT,'').replace(/\s+/g,' ').trim();
+
+      if(!desc) desc = descWords.slice(0,4).map(w=>w.text).join(' ').replace(CONTRACT,'').trim();
+
+      // Determine operation type from desc
+      const descLow = desc.toLowerCase();
+      const isCredit = amt > 0; // Выдача кредита
+      const isInterest = descLow.includes('процент');
+      const isPrincipal = descLow.includes('кредит') && !isCredit;
+      const isPenalty = descLow.includes('пени') || descLow.includes('штраф') || descLow.includes('просроч');
+
+      if(isCredit) continue; // Skip the initial loan disbursement
+
+      const dateISO = toISO(dw.text);
+      const month = dateISO.slice(0,7);
+
+      let type, group, sub;
+      if(isInterest) {
+        // Interest = real expense
+        type = 'expense'; group = 'Жильё'; sub = 'Аренда/Ипотека (платёж)';
+        desc = 'Проценты по ипотеке';
+      } else if(isPenalty) {
+        type = 'expense'; group = 'Жильё'; sub = 'Аренда/Ипотека (платёж)';
+        desc = 'Пени/штраф по ипотеке';
+      } else if(isPrincipal) {
+        // Principal repayment = transfer (converts cash to reduced debt)
+        type = 'transfer'; group = 'Перевод'; sub = 'Погашение тела ипотеки';
+        desc = 'Тело ипотеки (погашение долга)';
+      } else {
+        type = 'expense'; group = 'Жильё'; sub = 'Аренда/Ипотека (платёж)';
+      }
+
+      transactions.push({
+        id: uid(), date: dateISO, month, dateDisplay: dw.text,
+        desc,
+        card: 'ипотека', account: 'mortgage_vtb',
+        bankCat: 'Ипотека', amtOp: amt, curOp: 'RUB', amtRub: amt,
+        status: 'OK', source: 'vtb_mortgage_pdf',
+        counterparty: 'Банк ВТБ (ипотека)', counterpartyINN: '', counterpartyAcc: '',
+        manualCategory: false, linkedTo: null, linkedAccount: null,
+        type, group, sub
+      });
+    }
+  }
+
+  // Register mortgage as a special account
+  if(!DB.accounts['mortgage_vtb']) {
+    DB.accounts['mortgage_vtb'] = {
+      number: 'mortgage_vtb',
+      display: 'Ипотека ВТБ',
+      bank: 'ВТБ Ипотека',
+      name: 'Ипотека ВТБ '+CONTRACT,
+      owner: 'me',
+      source: 'vtb_mortgage_pdf',
+      currentBalance: null,
+      currency: 'RUB',
+      isCredit: true,
+      virtual: false
+    };
+  }
+  return transactions;
+}
+
 async function processPDFFile(file) {
   toast('Читаем PDF...','info');
   try {
@@ -943,6 +1053,7 @@ async function processPDFFile(file) {
     if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines);
     else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
     else if(bank === 'vtb_credit') txns = parseVTBCreditPDF(pdfData.pages);
+    else if(bank === 'vtb_mortgage') txns = parseVTBMortgagePDF(pdfData.pages);
     else {
       toast('Банк не распознан. Пришли файл — добавим поддержку','err');
       return;
