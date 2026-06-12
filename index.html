@@ -1839,93 +1839,245 @@ loadFromGithub();
   document.getElementById('lb').addEventListener('click',chk);
   document.getElementById('lp').addEventListener('keydown',function(e){if(e.key==='Enter')chk();});
 })();
+
 // ── Loans ──
 function pageLoans(){
-  const tableRows = `<tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2026</td><td style="text-align:right;padding:8px 12px">12 464</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 922</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 568 544</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2026</td><td style="text-align:right;padding:8px 12px">12 780</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 606</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 555 765</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2026</td><td style="text-align:right;padding:8px 12px">12 590</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 796</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 543 175</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2026</td><td style="text-align:right;padding:8px 12px">12 653</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 733</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 530 521</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2026</td><td style="text-align:right;padding:8px 12px">12 964</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 422</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 517 557</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2026</td><td style="text-align:right;padding:8px 12px">12 782</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 604</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 504 776</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2026</td><td style="text-align:right;padding:8px 12px">13 089</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 297</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 491 687</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2027</td><td style="text-align:right;padding:8px 12px">12 911</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 475</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 478 776</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2027</td><td style="text-align:right;padding:8px 12px">12 976</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 410</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 465 800</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2027</td><td style="text-align:right;padding:8px 12px">13 752</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 634</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 452 048</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2027</td><td style="text-align:right;padding:8px 12px">13 110</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 276</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 438 938</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2027</td><td style="text-align:right;padding:8px 12px">13 408</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 978</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 425 530</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2027</td><td style="text-align:right;padding:8px 12px">13 243</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 143</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 412 287</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2027</td><td style="text-align:right;padding:8px 12px">13 537</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 849</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 398 750</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2027</td><td style="text-align:right;padding:8px 12px">13 377</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">7 009</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 385 373</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2027</td><td style="text-align:right;padding:8px 12px">13 444</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 942</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 371 929</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2027</td><td style="text-align:right;padding:8px 12px">13 733</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 653</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 358 196</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2027</td><td style="text-align:right;padding:8px 12px">13 580</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 806</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 344 616</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2027</td><td style="text-align:right;padding:8px 12px">13 866</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 520</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 330 750</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2028</td><td style="text-align:right;padding:8px 12px">13 726</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 660</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 317 024</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2028</td><td style="text-align:right;padding:8px 12px">13 804</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 582</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 303 219</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2028</td><td style="text-align:right;padding:8px 12px">14 294</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 092</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 288 926</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2028</td><td style="text-align:right;padding:8px 12px">13 945</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 441</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 274 981</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2028</td><td style="text-align:right;padding:8px 12px">14 220</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 166</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 260 761</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2028</td><td style="text-align:right;padding:8px 12px">14 086</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 300</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 246 675</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2028</td><td style="text-align:right;padding:8px 12px">14 357</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 029</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 232 318</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2028</td><td style="text-align:right;padding:8px 12px">14 228</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 158</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 218 090</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2028</td><td style="text-align:right;padding:8px 12px">14 299</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">6 087</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 203 791</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2028</td><td style="text-align:right;padding:8px 12px">14 564</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 822</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 189 227</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2028</td><td style="text-align:right;padding:8px 12px">14 443</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 943</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 174 784</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2028</td><td style="text-align:right;padding:8px 12px">14 705</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 681</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 160 079</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2029</td><td style="text-align:right;padding:8px 12px">14 581</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 805</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 145 498</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2029</td><td style="text-align:right;padding:8px 12px">14 646</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 740</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 130 852</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2029</td><td style="text-align:right;padding:8px 12px">15 268</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 118</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 115 584</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2029</td><td style="text-align:right;padding:8px 12px">14 796</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 590</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 100 789</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2029</td><td style="text-align:right;padding:8px 12px">15 048</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 338</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 085 741</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2029</td><td style="text-align:right;padding:8px 12px">14 945</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 441</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 070 795</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2029</td><td style="text-align:right;padding:8px 12px">15 193</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 193</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 055 602</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2029</td><td style="text-align:right;padding:8px 12px">15 096</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 290</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 040 505</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2029</td><td style="text-align:right;padding:8px 12px">15 172</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 214</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 025 333</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2029</td><td style="text-align:right;padding:8px 12px">15 414</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 972</td><td style="text-align:right;padding:8px 12px;font-weight:600">1 009 920</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2029</td><td style="text-align:right;padding:8px 12px">15 325</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">5 061</td><td style="text-align:right;padding:8px 12px;font-weight:600">994 594</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2029</td><td style="text-align:right;padding:8px 12px">15 563</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 823</td><td style="text-align:right;padding:8px 12px;font-weight:600">979 031</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2030</td><td style="text-align:right;padding:8px 12px">15 480</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 906</td><td style="text-align:right;padding:8px 12px;font-weight:600">963 551</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2030</td><td style="text-align:right;padding:8px 12px">15 558</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 828</td><td style="text-align:right;padding:8px 12px;font-weight:600">947 994</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2030</td><td style="text-align:right;padding:8px 12px">16 095</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 291</td><td style="text-align:right;padding:8px 12px;font-weight:600">931 898</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2030</td><td style="text-align:right;padding:8px 12px">15 716</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 670</td><td style="text-align:right;padding:8px 12px;font-weight:600">916 182</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2030</td><td style="text-align:right;padding:8px 12px">15 943</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 443</td><td style="text-align:right;padding:8px 12px;font-weight:600">900 239</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2030</td><td style="text-align:right;padding:8px 12px">15 875</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 511</td><td style="text-align:right;padding:8px 12px;font-weight:600">884 364</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2030</td><td style="text-align:right;padding:8px 12px">16 097</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 289</td><td style="text-align:right;padding:8px 12px;font-weight:600">868 266</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2030</td><td style="text-align:right;padding:8px 12px">16 035</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 351</td><td style="text-align:right;padding:8px 12px;font-weight:600">852 231</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2030</td><td style="text-align:right;padding:8px 12px">16 116</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 270</td><td style="text-align:right;padding:8px 12px;font-weight:600">836 116</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2030</td><td style="text-align:right;padding:8px 12px">16 331</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 055</td><td style="text-align:right;padding:8px 12px;font-weight:600">819 784</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2030</td><td style="text-align:right;padding:8px 12px">16 278</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">4 108</td><td style="text-align:right;padding:8px 12px;font-weight:600">803 506</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2030</td><td style="text-align:right;padding:8px 12px">16 490</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 896</td><td style="text-align:right;padding:8px 12px;font-weight:600">787 017</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2031</td><td style="text-align:right;padding:8px 12px">16 442</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 944</td><td style="text-align:right;padding:8px 12px;font-weight:600">770 574</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2031</td><td style="text-align:right;padding:8px 12px">16 525</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 861</td><td style="text-align:right;padding:8px 12px;font-weight:600">754 050</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2031</td><td style="text-align:right;padding:8px 12px">16 973</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 413</td><td style="text-align:right;padding:8px 12px;font-weight:600">737 077</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2031</td><td style="text-align:right;padding:8px 12px">16 693</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 693</td><td style="text-align:right;padding:8px 12px;font-weight:600">720 384</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2031</td><td style="text-align:right;padding:8px 12px">16 893</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 493</td><td style="text-align:right;padding:8px 12px;font-weight:600">703 491</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2031</td><td style="text-align:right;padding:8px 12px">16 861</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 525</td><td style="text-align:right;padding:8px 12px;font-weight:600">686 631</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2031</td><td style="text-align:right;padding:8px 12px">17 056</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 330</td><td style="text-align:right;padding:8px 12px;font-weight:600">669 574</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2031</td><td style="text-align:right;padding:8px 12px">17 031</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 355</td><td style="text-align:right;padding:8px 12px;font-weight:600">652 543</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2031</td><td style="text-align:right;padding:8px 12px">17 116</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 270</td><td style="text-align:right;padding:8px 12px;font-weight:600">635 427</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2031</td><td style="text-align:right;padding:8px 12px">17 305</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 081</td><td style="text-align:right;padding:8px 12px;font-weight:600">618 123</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2031</td><td style="text-align:right;padding:8px 12px">17 289</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">3 097</td><td style="text-align:right;padding:8px 12px;font-weight:600">600 834</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2031</td><td style="text-align:right;padding:8px 12px">17 472</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 914</td><td style="text-align:right;padding:8px 12px;font-weight:600">583 362</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2032</td><td style="text-align:right;padding:8px 12px">17 467</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 919</td><td style="text-align:right;padding:8px 12px;font-weight:600">565 895</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2032</td><td style="text-align:right;padding:8px 12px">17 558</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 828</td><td style="text-align:right;padding:8px 12px;font-weight:600">548 337</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2032</td><td style="text-align:right;padding:8px 12px">17 823</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 563</td><td style="text-align:right;padding:8px 12px;font-weight:600">530 514</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2032</td><td style="text-align:right;padding:8px 12px">17 735</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 651</td><td style="text-align:right;padding:8px 12px;font-weight:600">512 779</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2032</td><td style="text-align:right;padding:8px 12px">17 906</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 480</td><td style="text-align:right;padding:8px 12px;font-weight:600">494 873</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2032</td><td style="text-align:right;padding:8px 12px">17 913</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 473</td><td style="text-align:right;padding:8px 12px;font-weight:600">476 960</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2032</td><td style="text-align:right;padding:8px 12px">18 079</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 307</td><td style="text-align:right;padding:8px 12px;font-weight:600">458 881</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2032</td><td style="text-align:right;padding:8px 12px">18 093</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 293</td><td style="text-align:right;padding:8px 12px;font-weight:600">440 788</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2032</td><td style="text-align:right;padding:8px 12px">18 183</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 203</td><td style="text-align:right;padding:8px 12px;font-weight:600">422 605</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2032</td><td style="text-align:right;padding:8px 12px">18 342</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 044</td><td style="text-align:right;padding:8px 12px;font-weight:600">404 263</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2032</td><td style="text-align:right;padding:8px 12px">18 366</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">2 020</td><td style="text-align:right;padding:8px 12px;font-weight:600">385 897</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2032</td><td style="text-align:right;padding:8px 12px">18 520</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 866</td><td style="text-align:right;padding:8px 12px;font-weight:600">367 377</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2033</td><td style="text-align:right;padding:8px 12px">18 548</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 838</td><td style="text-align:right;padding:8px 12px;font-weight:600">348 829</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2033</td><td style="text-align:right;padding:8px 12px">18 638</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 748</td><td style="text-align:right;padding:8px 12px;font-weight:600">330 191</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2033</td><td style="text-align:right;padding:8px 12px">18 892</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 494</td><td style="text-align:right;padding:8px 12px;font-weight:600">311 300</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2033</td><td style="text-align:right;padding:8px 12px">18 826</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 560</td><td style="text-align:right;padding:8px 12px;font-weight:600">292 474</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2033</td><td style="text-align:right;padding:8px 12px">18 968</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 418</td><td style="text-align:right;padding:8px 12px;font-weight:600">273 506</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2033</td><td style="text-align:right;padding:8px 12px">19 015</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 371</td><td style="text-align:right;padding:8px 12px;font-weight:600">254 490</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2033</td><td style="text-align:right;padding:8px 12px">19 152</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 234</td><td style="text-align:right;padding:8px 12px;font-weight:600">235 339</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">авг 2033</td><td style="text-align:right;padding:8px 12px">19 207</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 179</td><td style="text-align:right;padding:8px 12px;font-weight:600">216 132</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">сен 2033</td><td style="text-align:right;padding:8px 12px">19 303</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">1 083</td><td style="text-align:right;padding:8px 12px;font-weight:600">196 829</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">окт 2033</td><td style="text-align:right;padding:8px 12px">19 432</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">954</td><td style="text-align:right;padding:8px 12px;font-weight:600">177 397</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">ноя 2033</td><td style="text-align:right;padding:8px 12px">19 497</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">889</td><td style="text-align:right;padding:8px 12px;font-weight:600">157 900</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">дек 2033</td><td style="text-align:right;padding:8px 12px">19 620</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">766</td><td style="text-align:right;padding:8px 12px;font-weight:600">138 280</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">янв 2034</td><td style="text-align:right;padding:8px 12px">19 693</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">693</td><td style="text-align:right;padding:8px 12px;font-weight:600">118 587</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">фев 2034</td><td style="text-align:right;padding:8px 12px">19 792</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">594</td><td style="text-align:right;padding:8px 12px;font-weight:600">98 795</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">мар 2034</td><td style="text-align:right;padding:8px 12px">19 939</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">447</td><td style="text-align:right;padding:8px 12px;font-weight:600">78 856</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">апр 2034</td><td style="text-align:right;padding:8px 12px">19 991</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">395</td><td style="text-align:right;padding:8px 12px;font-weight:600">58 865</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">май 2034</td><td style="text-align:right;padding:8px 12px">20 101</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">285</td><td style="text-align:right;padding:8px 12px;font-weight:600">38 765</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июн 2034</td><td style="text-align:right;padding:8px 12px">20 192</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">194</td><td style="text-align:right;padding:8px 12px;font-weight:600">18 573</td></tr><tr><td style="color:var(--text-muted);font-size:13px;padding:8px 12px">июл 2034</td><td style="text-align:right;padding:8px 12px">18 573</td><td style="text-align:right;padding:8px 12px;color:var(--expense)">90</td><td style="text-align:right;padding:8px 12px;font-weight:600">0</td></tr>`;
+  // ── Collect paid principals from transactions ──
+  const allTxns = Object.values(DB.periods).flatMap(p => p.transactions || []);
+
+  // VTB mortgage: sum principal payments by month
+  const vtbPaid = {};
+  allTxns.filter(t => t.account === 'mortgage_vtb' && t.sub === 'Погашение тела ипотеки')
+    .forEach(t => { vtbPaid[t.month] = (vtbPaid[t.month] || 0) + Math.abs(t.amtRub); });
+
+  // Sber loan: sum principal payments by month (any sber_loan account)
+  const sberPaid = {};
+  allTxns.filter(t => t.account && t.account.startsWith('sber_loan') && t.sub === 'Погашение тела кредита')
+    .forEach(t => { sberPaid[t.month] = (sberPaid[t.month] || 0) + Math.abs(t.amtRub); });
+
+  // ── VTB schedule ──
+  const vtbSchedule = [
+    {num:62,date:"15.06.2026",month:"2026-06",principal:12463.63,interest:7922.37,balance:1568544.34},
+    {num:63,date:"15.07.2026",month:"2026-07",principal:12779.64,interest:7606.36,balance:1555764.7},
+    {num:64,date:"15.08.2026",month:"2026-08",principal:12590.13,interest:7795.87,balance:1543174.57},
+    {num:65,date:"15.09.2026",month:"2026-09",principal:12653.21,interest:7732.79,balance:1530521.36},
+    {num:66,date:"15.10.2026",month:"2026-10",principal:12964.02,interest:7421.98,balance:1517557.34},
+    {num:67,date:"15.11.2026",month:"2026-11",principal:12781.58,interest:7604.42,balance:1504775.76},
+    {num:68,date:"15.12.2026",month:"2026-12",principal:13088.87,interest:7297.13,balance:1491686.89},
+    {num:69,date:"15.01.2027",month:"2027-01",principal:12911.22,interest:7474.78,balance:1478775.67},
+    {num:70,date:"15.02.2027",month:"2027-02",principal:12975.92,interest:7410.08,balance:1465799.75},
+    {num:71,date:"15.03.2027",month:"2027-03",principal:13751.75,interest:6634.25,balance:1452048.0},
+    {num:72,date:"15.04.2027",month:"2027-04",principal:13109.84,interest:7276.16,balance:1438938.16},
+    {num:73,date:"15.05.2027",month:"2027-05",principal:13408.14,interest:6977.86,balance:1425530.02},
+    {num:74,date:"15.06.2027",month:"2027-06",principal:13242.73,interest:7143.27,balance:1412287.29},
+    {num:75,date:"15.07.2027",month:"2027-07",principal:13537.37,interest:6848.63,balance:1398749.92},
+    {num:76,date:"15.08.2027",month:"2027-08",principal:13376.92,interest:7009.08,balance:1385373.0},
+    {num:77,date:"15.09.2027",month:"2027-09",principal:13443.95,interest:6942.05,balance:1371929.05},
+    {num:78,date:"15.10.2027",month:"2027-10",principal:13733.09,interest:6652.91,balance:1358195.96},
+    {num:79,date:"15.11.2027",month:"2027-11",principal:13580.13,interest:6805.87,balance:1344615.83},
+    {num:80,date:"15.12.2027",month:"2027-12",principal:13865.54,interest:6520.46,balance:1330750.29},
+    {num:81,date:"15.01.2028",month:"2028-01",principal:13726.48,interest:6659.52,balance:1317023.81},
+    {num:82,date:"15.02.2028",month:"2028-02",principal:13804.48,interest:6581.52,balance:1303219.33},
+    {num:83,date:"15.03.2028",month:"2028-03",principal:14293.63,interest:6092.37,balance:1288925.7},
+    {num:84,date:"15.04.2028",month:"2028-04",principal:13944.89,interest:6441.11,balance:1274980.81},
+    {num:85,date:"15.05.2028",month:"2028-05",principal:14220.11,interest:6165.89,balance:1260760.7},
+    {num:86,date:"15.06.2028",month:"2028-06",principal:14085.64,interest:6300.36,balance:1246675.06},
+    {num:87,date:"15.07.2028",month:"2028-07",principal:14357.0,interest:6029.0,balance:1232318.06},
+    {num:88,date:"15.08.2028",month:"2028-08",principal:14227.77,interest:6158.23,balance:1218090.29},
+    {num:89,date:"15.09.2028",month:"2028-09",principal:14298.88,interest:6087.12,balance:1203791.41},
+    {num:90,date:"15.10.2028",month:"2028-10",principal:14564.39,interest:5821.61,balance:1189227.02},
+    {num:91,date:"15.11.2028",month:"2028-11",principal:14443.11,interest:5942.89,balance:1174783.91},
+    {num:92,date:"15.12.2028",month:"2028-12",principal:14704.67,interest:5681.33,balance:1160079.24},
+    {num:93,date:"15.01.2029",month:"2029-01",principal:14581.09,interest:5804.91,balance:1145498.15},
+    {num:94,date:"15.02.2029",month:"2029-02",principal:14645.95,interest:5740.05,balance:1130852.2},
+    {num:95,date:"15.03.2029",month:"2029-03",principal:15267.73,interest:5118.27,balance:1115584.47},
+    {num:96,date:"15.04.2029",month:"2029-04",principal:14795.86,interest:5590.14,balance:1100788.61},
+    {num:97,date:"15.05.2029",month:"2029-05",principal:15047.93,interest:5338.07,balance:1085740.68},
+    {num:98,date:"15.06.2029",month:"2029-06",principal:14945.39,interest:5440.61,balance:1070795.29},
+    {num:99,date:"15.07.2029",month:"2029-07",principal:15193.38,interest:5192.62,balance:1055601.91},
+    {num:100,date:"15.08.2029",month:"2029-08",principal:15096.42,interest:5289.58,balance:1040505.49},
+    {num:101,date:"15.09.2029",month:"2029-09",principal:15172.07,interest:5213.93,balance:1025333.42},
+    {num:102,date:"15.10.2029",month:"2029-10",principal:15413.84,interest:4972.16,balance:1009919.58},
+    {num:103,date:"15.11.2029",month:"2029-11",principal:15325.33,interest:5060.67,balance:994594.25},
+    {num:104,date:"15.12.2029",month:"2029-12",principal:15562.9,interest:4823.1,balance:979031.35},
+    {num:105,date:"15.01.2030",month:"2030-01",principal:15480.12,interest:4905.88,balance:963551.23},
+    {num:106,date:"15.02.2030",month:"2030-02",principal:15557.68,interest:4828.32,balance:947993.55},
+    {num:107,date:"15.03.2030",month:"2030-03",principal:16095.36,interest:4290.64,balance:931898.19},
+    {num:108,date:"15.04.2030",month:"2030-04",principal:15716.29,interest:4669.71,balance:916181.9},
+    {num:109,date:"15.05.2030",month:"2030-05",principal:15943.15,interest:4442.85,balance:900238.75},
+    {num:110,date:"15.06.2030",month:"2030-06",principal:15874.94,interest:4511.06,balance:884363.81},
+    {num:111,date:"15.07.2030",month:"2030-07",principal:16097.44,interest:4288.56,balance:868266.37},
+    {num:112,date:"15.08.2030",month:"2030-08",principal:16035.15,interest:4350.85,balance:852231.22},
+    {num:113,date:"15.09.2030",month:"2030-09",principal:16115.51,interest:4270.49,balance:836115.71},
+    {num:114,date:"15.10.2030",month:"2030-10",principal:16331.41,interest:4054.59,balance:819784.3},
+    {num:115,date:"15.11.2030",month:"2030-11",principal:16278.09,interest:4107.91,balance:803506.21},
+    {num:116,date:"15.12.2030",month:"2030-12",principal:16489.55,interest:3896.45,balance:787016.66},
+    {num:117,date:"15.01.2031",month:"2031-01",principal:16442.29,interest:3943.71,balance:770574.37},
+    {num:118,date:"15.02.2031",month:"2031-02",principal:16524.68,interest:3861.32,balance:754049.69},
+    {num:119,date:"15.03.2031",month:"2031-03",principal:16973.15,interest:3412.85,balance:737076.54},
+    {num:120,date:"15.04.2031",month:"2031-04",principal:16692.54,interest:3693.46,balance:720384.0},
+    {num:121,date:"15.05.2031",month:"2031-05",principal:16892.63,interest:3493.37,balance:703491.37},
+    {num:122,date:"15.06.2031",month:"2031-06",principal:16860.84,interest:3525.16,balance:686630.53},
+    {num:123,date:"15.07.2031",month:"2031-07",principal:17056.31,interest:3329.69,balance:669574.22},
+    {num:124,date:"15.08.2031",month:"2031-08",principal:17030.79,interest:3355.21,balance:652543.43},
+    {num:125,date:"15.09.2031",month:"2031-09",principal:17116.13,interest:3269.87,balance:635427.3},
+    {num:126,date:"15.10.2031",month:"2031-10",principal:17304.62,interest:3081.38,balance:618122.68},
+    {num:127,date:"15.11.2031",month:"2031-11",principal:17288.61,interest:3097.39,balance:600834.07},
+    {num:128,date:"15.12.2031",month:"2031-12",principal:17472.36,interest:2913.64,balance:583361.71},
+    {num:129,date:"15.01.2032",month:"2032-01",principal:17466.67,interest:2919.33,balance:565895.04},
+    {num:130,date:"15.02.2032",month:"2032-02",principal:17558.07,interest:2827.93,balance:548336.97},
+    {num:131,date:"15.03.2032",month:"2032-03",principal:17822.6,interest:2563.4,balance:530514.37},
+    {num:132,date:"15.04.2032",month:"2032-04",principal:17734.88,interest:2651.12,balance:512779.49},
+    {num:133,date:"15.05.2032",month:"2032-05",principal:17906.16,interest:2479.84,balance:494873.33},
+    {num:134,date:"15.06.2032",month:"2032-06",principal:17912.99,interest:2473.01,balance:476960.34},
+    {num:135,date:"15.07.2032",month:"2032-07",principal:18079.38,interest:2306.62,balance:458880.96},
+    {num:136,date:"15.08.2032",month:"2032-08",principal:18092.85,interest:2293.15,balance:440788.11},
+    {num:137,date:"15.09.2032",month:"2032-09",principal:18183.27,interest:2202.73,balance:422604.84},
+    {num:138,date:"15.10.2032",month:"2032-10",principal:18342.25,interest:2043.75,balance:404262.59},
+    {num:139,date:"15.11.2032",month:"2032-11",principal:18365.79,interest:2020.21,balance:385896.8},
+    {num:140,date:"15.12.2032",month:"2032-12",principal:18519.78,interest:1866.22,balance:367377.02},
+    {num:141,date:"15.01.2033",month:"2033-01",principal:18547.69,interest:1838.31,balance:348829.33},
+    {num:142,date:"15.02.2033",month:"2033-02",principal:18638.03,interest:1747.97,balance:330191.3},
+    {num:143,date:"15.03.2033",month:"2033-03",principal:18891.54,interest:1494.46,balance:311299.76},
+    {num:144,date:"15.04.2033",month:"2033-04",principal:18826.09,interest:1559.91,balance:292473.67},
+    {num:145,date:"15.05.2033",month:"2033-05",principal:18967.71,interest:1418.29,balance:273505.96},
+    {num:146,date:"15.06.2033",month:"2033-06",principal:19015.47,interest:1370.53,balance:254490.49},
+    {num:147,date:"15.07.2033",month:"2033-07",principal:19151.89,interest:1234.11,balance:235338.6},
+    {num:148,date:"15.08.2033",month:"2033-08",principal:19206.73,interest:1179.27,balance:216131.87},
+    {num:149,date:"15.09.2033",month:"2033-09",principal:19302.97,interest:1083.03,balance:196828.9},
+    {num:150,date:"15.10.2033",month:"2033-10",principal:19431.52,interest:954.48,balance:177397.38},
+    {num:151,date:"15.11.2033",month:"2033-11",principal:19497.07,interest:888.93,balance:157900.31},
+    {num:152,date:"15.12.2033",month:"2033-12",principal:19620.29,interest:765.71,balance:138280.02},
+    {num:153,date:"15.01.2034",month:"2034-01",principal:19693.08,interest:692.92,balance:118586.94},
+    {num:154,date:"15.02.2034",month:"2034-02",principal:19791.77,interest:594.23,balance:98795.17},
+    {num:155,date:"15.03.2034",month:"2034-03",principal:19938.85,interest:447.15,balance:78856.32},
+    {num:156,date:"15.04.2034",month:"2034-04",principal:19990.85,interest:395.15,balance:58865.47},
+    {num:157,date:"15.05.2034",month:"2034-05",principal:20100.55,interest:285.45,balance:38764.92},
+    {num:158,date:"15.06.2034",month:"2034-06",principal:20191.75,interest:194.25,balance:18573.17},
+    {num:159,date:"15.07.2034",month:"2034-07",principal:18573.17,interest:90.07,balance:0.0},
+  ];
+
+  // Calculate actual remaining balance based on paid months
+  // Starting balance 1,581,007.97 as of 2026-05 (before payment 62)
+  // For each schedule row, check if payment was made
+  let vtbBalance = 1581007.97;
+  vtbSchedule.forEach(r => {
+    if(vtbPaid[r.month] && vtbPaid[r.month] > 0) {
+      vtbBalance -= r.principal;
+      r.paid = true;
+    } else {
+      r.paid = false;
+    }
+  });
+  const vtbRemaining = vtbSchedule.filter(r => !r.paid);
+  const vtbActualBalance = vtbRemaining.length > 0 ? vtbRemaining[0].balance + vtbRemaining[0].principal : 0;
+  // Use actual balance if we have payments, else use starting balance
+  const vtbCurrentBalance = Object.keys(vtbPaid).length > 0 ? vtbActualBalance : vtbBalance;
+  const vtbTotalInterest = vtbRemaining.reduce((s,r) => s + r.interest, 0);
+  const vtbMonthsLeft = vtbRemaining.length;
+  const vtbYears = Math.floor(vtbMonthsLeft/12);
+  const vtbMos = vtbMonthsLeft % 12;
+  const vtbPct = Math.round((1 - vtbCurrentBalance/3436983.50)*100);
+
+  // Build VTB table
+  const vtbRows = vtbSchedule.map(r => {
+    const mark = r.paid ? '✓ ' : '';
+    const rowStyle = r.paid ? 'opacity:0.5;' : '';
+    const dateStyle = r.paid ? 'color:var(--income);font-size:13px;padding:8px 12px' : 'color:var(--text-muted);font-size:13px;padding:8px 12px';
+    return '<tr style="'+rowStyle+'">'
+      + '<td style="'+dateStyle+'">'+mark+r.date+'</td>'
+      + '<td style="padding:8px 12px;text-align:right">'+Math.round(r.principal).toLocaleString('ru-RU')+'</td>'
+      + '<td style="padding:8px 12px;text-align:right;color:var(--expense)">'+Math.round(r.interest).toLocaleString('ru-RU')+'</td>'
+      + '<td style="padding:8px 12px;text-align:right;font-weight:600">'+Math.round(r.balance).toLocaleString('ru-RU')+'</td>'
+      + '</tr>';
+  }).join('');
+
+  // ── Sber schedule ──
+  const sberSchedule = [
+    {date:"04.07.2026",month:"2026-07",principal:13562.18,interest:350.31,balance:27458.69},
+    {date:"04.08.2026",month:"2026-08",principal:13670.18,interest:242.31,balance:13788.51},
+    {date:"04.09.2026",month:"2026-09",principal:13788.51,interest:121.68,balance:0},
+  ];
+  const sberAllPaid = sberSchedule.every(r => sberPaid[r.month] && sberPaid[r.month] > 0);
+  let sberBalance = 41090.93;
+  sberSchedule.forEach(r => {
+    r.paid = !!(sberPaid[r.month] && sberPaid[r.month] > 0);
+    if(r.paid) sberBalance -= r.principal;
+  });
+  const sberPct = Math.round((1 - sberBalance/148585.50)*100);
+  const sberLeft = sberSchedule.filter(r => !r.paid).length;
+
+  const sberRows = sberSchedule.map(r => {
+    const mark = r.paid ? '✓ ' : '';
+    const rowStyle = r.paid ? 'opacity:0.5;' : '';
+    const dateStyle = r.paid ? 'color:var(--income);font-size:13px;padding:8px 12px' : 'color:var(--text-muted);font-size:13px;padding:8px 12px';
+    return '<tr style="'+rowStyle+'">'
+      + '<td style="'+dateStyle+'">'+mark+r.date+'</td>'
+      + '<td style="padding:8px 12px;text-align:right">'+Math.round(r.principal).toLocaleString('ru-RU')+'</td>'
+      + '<td style="padding:8px 12px;text-align:right;color:var(--expense)">'+Math.round(r.interest).toLocaleString('ru-RU')+'</td>'
+      + '<td style="padding:8px 12px;text-align:right;font-weight:600">'+Math.round(r.balance).toLocaleString('ru-RU')+'</td>'
+      + '</tr>';
+  }).join('');
+
+  const sberStatusBadge = sberAllPaid
+    ? '<span style="background:var(--income);color:#fff;font-size:11px;padding:3px 8px;border-radius:12px;margin-left:8px">✓ Закрыт</span>'
+    : '<span style="background:var(--expense);color:#fff;font-size:11px;padding:3px 8px;border-radius:12px;margin-left:8px">'+sberLeft+' платежей осталось</span>';
+
   return '<div class="page-inner">'
     + '<h2 style="margin-bottom:24px">⊘ Кредиты</h2>'
+
+    // ── VTB card ──
     + '<div class="card" style="margin-bottom:24px">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px">'
-    + '<div>'
-    + '<div style="font-size:18px;font-weight:700">Ипотека ВТБ</div>'
-    + '<div style="color:var(--text-muted);font-size:13px;margin-top:4px">Господдержка 2020 · 5,9% · до 18.08.2034</div>'
-    + '</div>'
+    + '<div><div style="font-size:18px;font-weight:700">Ипотека ВТБ</div>'
+    + '<div style="color:var(--text-muted);font-size:13px;margin-top:4px">Господдержка 2020 · 5,9% · до 18.08.2034</div></div>'
     + '<div style="text-align:right">'
-    + '<div style="font-size:22px;font-weight:700;color:var(--expense)">1 581 008 ₽</div>'
+    + '<div style="font-size:22px;font-weight:700;color:var(--expense)">'+Math.round(vtbCurrentBalance).toLocaleString('ru-RU')+' ₽</div>'
     + '<div style="color:var(--text-muted);font-size:12px">остаток долга</div>'
-    + '</div>'
-    + '</div>'
+    + '</div></div>'
     + '<div style="margin-bottom:16px">'
     + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px">'
-    + '<span>Выплачено 54%</span>'
-    + '<span>Осталось 8 л. 2 мес. (98 платежей)</span>'
+    + '<span>Выплачено '+vtbPct+'%</span>'
+    + '<span>Осталось '+vtbYears+' л. '+vtbMos+' мес. ('+vtbMonthsLeft+' платежей)</span>'
     + '</div>'
     + '<div style="background:var(--border);border-radius:4px;height:8px">'
-    + '<div style="background:var(--income);border-radius:4px;height:8px;width:54%"></div>'
-    + '</div>'
-    + '</div>'
+    + '<div style="background:var(--income);border-radius:4px;height:8px;width:'+vtbPct+'%"></div>'
+    + '</div></div>'
     + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px">'
-    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
-    + '<div style="font-size:18px;font-weight:700">20 386 ₽</div>'
-    + '<div style="font-size:12px;color:var(--text-muted)">платёж/мес</div>'
+    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center"><div style="font-size:18px;font-weight:700">20 386 ₽</div><div style="font-size:12px;color:var(--text-muted)">платёж/мес</div></div>'
+    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--expense)">'+Math.round(vtbTotalInterest).toLocaleString('ru-RU')+' ₽</div><div style="font-size:12px;color:var(--text-muted)">переплата (осталось)</div></div>'
+    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center"><div style="font-size:18px;font-weight:700">июл 2034</div><div style="font-size:12px;color:var(--text-muted)">последний платёж</div></div>'
     + '</div>'
-    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
-    + '<div style="font-size:18px;font-weight:700;color:var(--expense)">415 097 ₽</div>'
-    + '<div style="font-size:12px;color:var(--text-muted)">переплата (осталось)</div>'
-    + '</div>'
-    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
-    + '<div style="font-size:18px;font-weight:700">июл 2034</div>'
-    + '<div style="font-size:12px;color:var(--text-muted)">последний платёж</div>'
-    + '</div>'
-    + '</div>'
-    + '<div style="font-weight:600;margin-bottom:12px">График платежей (официальный)</div>'
+    + '<div style="font-weight:600;margin-bottom:12px">График платежей <span style="font-weight:400;color:var(--text-muted);font-size:12px">(✓ — платёж подтверждён из выписки)</span></div>'
     + '<div style="overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">'
     + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
-    + '<thead style="position:sticky;top:0;background:var(--card);z-index:1">'
-    + '<tr style="border-bottom:1px solid var(--border)">'
+    + '<thead style="position:sticky;top:0;background:var(--card);z-index:1"><tr style="border-bottom:1px solid var(--border)">'
     + '<th style="padding:10px 12px;text-align:left;font-weight:600">Дата</th>'
     + '<th style="padding:10px 12px;text-align:right;font-weight:600">Основной долг</th>'
     + '<th style="padding:10px 12px;text-align:right;font-weight:600;color:var(--expense)">Проценты</th>'
     + '<th style="padding:10px 12px;text-align:right;font-weight:600">Остаток</th>'
     + '</tr></thead>'
-    + '<tbody>' + tableRows + '</tbody>'
-    + '</table></div>'
+    + '<tbody>'+vtbRows+'</tbody></table></div>'
     + '</div>'
+
+    // ── Sber card ──
     + '<div class="card">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px">'
-    + '<div>'
-    + '<div style="font-size:18px;font-weight:700">Кредит Сбербанк</div>'
-    + '<div style="color:var(--text-muted);font-size:13px;margin-top:4px">Покупка · 10,39% · Татьяна · до 04.09.2026</div>'
-    + '</div>'
+    + '<div><div style="font-size:18px;font-weight:700">Кредит Сбербанк'+sberStatusBadge+'</div>'
+    + '<div style="color:var(--text-muted);font-size:13px;margin-top:4px">Покупка · 10,39% · Татьяна · до 04.09.2026</div></div>'
     + '<div style="text-align:right">'
-    + '<div style="font-size:22px;font-weight:700;color:var(--expense)">41 091 ₽</div>'
+    + '<div style="font-size:22px;font-weight:700;color:'+(sberAllPaid?'var(--income)':'var(--expense)')+'">'+Math.round(sberBalance).toLocaleString('ru-RU')+' ₽</div>'
     + '<div style="color:var(--text-muted);font-size:12px">остаток долга</div>'
-    + '</div>'
-    + '</div>'
+    + '</div></div>'
     + '<div style="margin-bottom:16px">'
     + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px">'
-    + '<span>Выплачено 72%</span>'
-    + '<span>Осталось 3 платежа</span>'
+    + '<span>Выплачено '+sberPct+'%</span>'
+    + (sberAllPaid ? '<span style="color:var(--income)">✓ Кредит закрыт!</span>' : '<span>Осталось '+sberLeft+' платежа</span>')
     + '</div>'
     + '<div style="background:var(--border);border-radius:4px;height:8px">'
-    + '<div style="background:var(--income);border-radius:4px;height:8px;width:72%"></div>'
-    + '</div>'
-    + '</div>'
-    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px">'
-    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
-    + '<div style="font-size:18px;font-weight:700">13 912 ₽</div>'
-    + '<div style="font-size:12px;color:var(--text-muted)">платёж/мес</div>'
-    + '</div>'
-    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
-    + '<div style="font-size:18px;font-weight:700;color:var(--expense)">714 ₽</div>'
-    + '<div style="font-size:12px;color:var(--text-muted)">переплата (осталось)</div>'
-    + '</div>'
-    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
-    + '<div style="font-size:18px;font-weight:700">сен 2026</div>'
-    + '<div style="font-size:12px;color:var(--text-muted)">последний платёж</div>'
-    + '</div>'
-    + '</div>'
-    + '<div style="font-weight:600;margin-bottom:12px">График платежей (осталось)</div>'
+    + '<div style="background:'+(sberAllPaid?'var(--income)':'var(--income)')+';border-radius:4px;height:8px;width:'+sberPct+'%"></div>'
+    + '</div></div>'
+    + '<div style="font-weight:600;margin-bottom:12px">График платежей <span style="font-weight:400;color:var(--text-muted);font-size:12px">(✓ — платёж подтверждён из выписки)</span></div>'
     + '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">'
     + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
     + '<thead><tr style="border-bottom:1px solid var(--border);background:var(--bg)">'
@@ -1934,11 +2086,7 @@ function pageLoans(){
     + '<th style="padding:10px 12px;text-align:right;font-weight:600;color:var(--expense)">Проценты</th>'
     + '<th style="padding:10px 12px;text-align:right;font-weight:600">Остаток</th>'
     + '</tr></thead>'
-    + '<tbody>'
-    + '<tr><td style="padding:8px 12px;color:var(--text-muted);font-size:13px">4 июл 2026</td><td style="padding:8px 12px;text-align:right">13 562</td><td style="padding:8px 12px;text-align:right;color:var(--expense)">350</td><td style="padding:8px 12px;text-align:right;font-weight:600">27 459</td></tr>'
-    + '<tr style="background:var(--bg)"><td style="padding:8px 12px;color:var(--text-muted);font-size:13px">4 авг 2026</td><td style="padding:8px 12px;text-align:right">13 670</td><td style="padding:8px 12px;text-align:right;color:var(--expense)">242</td><td style="padding:8px 12px;text-align:right;font-weight:600">13 789</td></tr>'
-    + '<tr><td style="padding:8px 12px;color:var(--text-muted);font-size:13px">4 сен 2026</td><td style="padding:8px 12px;text-align:right">13 789</td><td style="padding:8px 12px;text-align:right;color:var(--expense)">122</td><td style="padding:8px 12px;text-align:right;font-weight:600">0</td></tr>'
-    + '</tbody></table></div>'
+    + '<tbody>'+sberRows+'</tbody></table></div>'
     + '</div>'
     + '</div>';
 }
