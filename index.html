@@ -535,29 +535,38 @@ function linkTransferPairs(){
 // ══════════════════════════════════════════
 
 async function parsePDF(file) {
-  // PDF.js must be loaded
   if(!window.pdfjsLib) {
     toast('Загрузка PDF.js...','info');
     await loadPDFjs();
   }
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-  let fullText = [];
+  const pagesFlat = [];   // for bank detection (flat text)
+  const pagesCoord = [];  // for coordinate-based parsing (word objects per page)
+
   for(let i=1; i<=pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    // Sort items by Y position (top to bottom), then X (left to right)
-    const items = content.items.slice().sort((a,b) => {
-      const yDiff = Math.round(b.transform[5]) - Math.round(a.transform[5]);
-      if(Math.abs(yDiff) > 3) return yDiff;
-      return a.transform[4] - b.transform[4];
-    });
-    for(const item of items) {
-      const t = item.str.trim();
-      if(t) fullText.push(t);
+    const viewport = page.getViewport({scale:1});
+    const pageH = viewport.height;
+
+    const words = [];
+    const flatPage = [];
+
+    for(const item of content.items) {
+      const text = item.str.trim();
+      if(!text) continue;
+      // transform: [scaleX, skewY, skewX, scaleY, x, y]
+      // PDF y is bottom-up, convert to top-down
+      const x = item.transform[4];
+      const top = pageH - item.transform[5];
+      words.push({text, x, top});
+      flatPage.push(text);
     }
+    pagesFlat.push(...flatPage);
+    pagesCoord.push(words);
   }
-  return fullText;
+  return {flat: pagesFlat, pages: pagesCoord};
 }
 
 async function loadPDFjs() {
@@ -686,129 +695,114 @@ function parseSberPDF(lines) {
 }
 
 
-// ── VTB PDF parser ──
-function parseVTBPDF(lines) {
+// ── VTB PDF parser (coordinate-based) ──
+// VTB PDF has a columnar layout - parse by X zones:
+// x<40: op date | x128-205: signed amount+RUB | x>360: description
+// Each transaction starts at a row where x<40 has a DD.MM.YYYY date
+function parseVTBPDF(pages) {
   const transactions = [];
-
-  // Find account number
   let accountNum = '';
-  const allTextVTB = lines.join(' ');
-  const amVTB = allTextVTB.match(/408\d{16,18}/);
-  if(amVTB) accountNum = amVTB[0].replace(/\s/g,'');
+
+  for(const pageWords of pages) {
+    // Find account number once
+    if(!accountNum) {
+      for(const w of pageWords) {
+        if(w.text.startsWith('40817') && w.text.length >= 18) {
+          accountNum = w.text;
+          break;
+        }
+      }
+    }
+
+    // Find Y positions of transaction starts (x<40, date format DD.MM.YYYY)
+    const dateYs = pageWords
+      .filter(w => w.x < 40 && /^\d{2}\.\d{2}\.\d{4}$/.test(w.text))
+      .map(w => w.top)
+      .sort((a,b) => a-b);
+
+    if(!dateYs.length) continue;
+    const pageHeight = Math.max(...pageWords.map(w=>w.top)) + 100;
+    dateYs.push(pageHeight);
+
+    for(let i=0; i<dateYs.length-1; i++) {
+      const yStart = dateYs[i], yEnd = dateYs[i+1];
+      const band = pageWords.filter(w => w.top >= yStart && w.top < yEnd);
+
+      let opDate=null, signedAmt=null, isCredit=null;
+      const descWords = [];
+
+      for(const w of band) {
+        const {x, text, top} = w;
+        // Op date
+        if(x < 40 && /^\d{2}\.\d{2}\.\d{4}$/.test(text)) {
+          if(!opDate) opDate = text;
+        }
+        // Signed amount: x 128-205, numeric
+        else if(x >= 128 && x <= 205) {
+          const clean = text.replace(/[,]/g,'');
+          const val = parseFloat(clean);
+          if(!isNaN(val) && Math.abs(val) > 0.5) {
+            signedAmt = Math.abs(val);
+            isCredit = val >= 0;
+          }
+        }
+        // Description: x>360, skip noise
+        else if(x > 360 && text.length > 1 && !['RUB','Приход','Расход','Комиссия','0','0.00'].includes(text)) {
+          if(!/^[\d.,]+$/.test(text)) descWords.push({top, x, text});
+        }
+      }
+
+      if(!opDate || signedAmt === null) continue;
+
+      // Sort desc by Y then X for natural reading order
+      descWords.sort((a,b) => a.top!==b.top ? a.top-b.top : a.x-b.x);
+      let desc = descWords.map(w=>w.text).join(' ').trim();
+
+      // Clean up mortgage boilerplate
+      desc = desc.replace(/обязательств по кредитному договору N?\s*/gi, 'Погашение ипотеки ')
+                 .replace(/634\/4151-0003464 от \d+\.\d+\.\d+\s*/g, '')
+                 .replace(/Клиент Безценных Владислав Константинович со счета платежной банковской карты\.?\s*/gi, '')
+                 .replace(/ФИЛИАЛ № \d+ БАНКА ВТБ \(ПАО\)\.?/gi, '')
+                 .replace(/\s+/g, ' ').trim();
+
+      const dateISO = toISO(opDate);
+      const month = dateISO.slice(0,7);
+      const amtRub = isCredit ? signedAmt : -signedAmt;
+
+      const descLow = desc.toLowerCase();
+      const isOwnTransfer =
+        descLow.includes('безценных татьяна') || descLow.includes('безценных владислав') ||
+        descLow.includes('внутри втб. безценных') ||
+        (descLow.includes('переводы через сбп') && descLow.includes('безценных'));
+      const isMortgage = descLow.includes('погашение ипотеки') || descLow.includes('операции по кредитам');
+
+      const tx = {
+        id: uid(), date: dateISO, month, dateDisplay: opDate,
+        desc: desc.slice(0,200),
+        card: accountNum ? '***'+accountNum.slice(-4) : '',
+        account: accountNum,
+        bankCat: isCredit ? 'Приход' : 'Расход',
+        amtOp: amtRub, curOp: 'RUB', amtRub,
+        status: 'OK', source: 'vtb_pdf',
+        counterparty: desc, counterpartyINN: '', counterpartyAcc: '',
+        manualCategory: false, linkedTo: null, linkedAccount: null
+      };
+
+      if(isOwnTransfer) {
+        tx.type='transfer'; tx.group='Перевод'; tx.sub='Внутренний перевод';
+      } else if(isMortgage) {
+        tx.type='expense'; tx.group='Жильё'; tx.sub='Аренда/Ипотека (платёж)';
+      } else {
+        const c = applyCategForTx(tx);
+        tx.type=c.t; tx.group=c.g; tx.sub=c.s;
+      }
+      transactions.push(tx);
+    }
+  }
+
   if(accountNum) registerAccount(accountNum, 'vtb_pdf', 'ВТБ');
-
-  // VTB format tokens per row:
-  // DD.MM.YYYY HH:MM:SS | DD.MM.YYYY | AMOUNT RUB | INCOME_AMT RUB | EXPENSE_AMT RUB | 0.00 | DESCRIPTION
-  // Negative amount in "Сумма операции" = расход, positive = приход
-  // "Приход" column has income amount, "Расход" column has expense amount
-
-  const dateTimeRe = /^(\d{2}\.\d{2}\.\d{4})$/;
-  const timeRe = /^\d{2}:\d{2}:\d{2}$/;
-  const amountRe = /^-?[\d,]+\.?\d*$/;
-  const rubRe = /^RUB$/i;
-  const zeroRe = /^0\.?0*$/;
-  const commissionRe = /^\d+\.\d{2}$/;
-
-  // Clean and group lines into transactions
-  // Strategy: find date lines, collect tokens until next date
-  let i = 0;
-
-  // Skip header lines
-  while(i < lines.length) {
-    if(lines[i].match(/^\d{2}\.\d{2}\.\d{4}$/) && i+1 < lines.length && lines[i+1].match(/^\d{2}:\d{2}:\d{2}$/)) break;
-    i++;
-  }
-
-  while(i < lines.length) {
-    // Expect: date, time
-    if(!lines[i]?.match(/^\d{2}\.\d{2}\.\d{4}$/)) { i++; continue; }
-    const opDate = lines[i]; i++;
-    if(!lines[i]?.match(/^\d{2}:\d{2}:\d{2}$/)) continue;
-    i++; // skip time
-
-    // Processing date
-    if(lines[i]?.match(/^\d{2}\.\d{2}\.\d{4}$/)) i++;
-
-    // Collect numeric tokens and description
-    let amounts = [];
-    let descParts = [];
-    let j = i;
-    let limit = Math.min(i + 20, lines.length);
-
-    while(j < limit) {
-      const t = lines[j];
-      // Stop at next date+time pair
-      if(t.match(/^\d{2}\.\d{2}\.\d{4}$/) && j+1 < lines.length && lines[j+1]?.match(/^\d{2}:\d{2}:\d{2}$/)) break;
-      // Numeric amount (with optional minus, commas)
-      if(t.match(/^-?[\d,]+\.?\d*$/) || t.match(/^0RUB$/i)) {
-        if(!t.match(/^0RUB$/i)) amounts.push(t.replace(/,/g,''));
-      } else if(t.match(/^RUB$/i) || t.match(/^0\.00$/) || t.match(/^0$/)) {
-        // skip
-      } else if(t.length > 2) {
-        descParts.push(t);
-      }
-      j++;
-    }
-    i = j;
-
-    // Parse amounts: first is the signed operation amount
-    // e.g. ["-216000.00", "0", "216000.00", "0.00"]
-    // or   ["216000.00", "216000.00", "0", "0.00"]
-    let opAmt = 0, isCredit = false;
-    if(amounts.length > 0) {
-      const first = parseFloat(amounts[0]);
-      if(!isNaN(first)) {
-        opAmt = Math.abs(first);
-        isCredit = first >= 0;
-      }
-    }
-
-    if(!opAmt) continue;
-
-    const desc = descParts.join(' ').trim();
-    const dateISO = toISO(opDate);
-    const month = dateISO.slice(0,7);
-    const amtRub = isCredit ? opAmt : -opAmt;
-    const descLow = desc.toLowerCase();
-
-    // Own transfers detection for VTB
-    const isOwnTransfer =
-      descLow.includes('безценных татьяна') ||
-      descLow.includes('безценных владислав') ||
-      descLow.includes('внутри втб. безценных') ||
-      (descLow.includes('переводы через сбп') && (descLow.includes('безценных') ));
-
-    // Mortgage payment
-    const isMortgage = descLow.includes('погашение обязательств по кредитному договору') ||
-                       descLow.includes('операции по кредитам');
-
-    const tx = {
-      id: uid(), date: dateISO, month, dateDisplay: opDate,
-      desc: desc.slice(0, 200),
-      card: accountNum ? '***'+accountNum.slice(-4) : '',
-      account: accountNum,
-      bankCat: isMortgage ? 'Кредит' : (isCredit ? 'Приход' : 'Расход'),
-      amtOp: amtRub, curOp: 'RUB', amtRub,
-      status: 'OK', source: 'vtb_pdf',
-      counterparty: desc, counterpartyINN: '', counterpartyAcc: '',
-      manualCategory: false, linkedTo: null, linkedAccount: null
-    };
-
-    if(isOwnTransfer) {
-      tx.type='transfer'; tx.group='Перевод'; tx.sub='Внутренний перевод';
-    } else if(isMortgage) {
-      tx.type='expense'; tx.group='Жильё'; tx.sub='Аренда/Ипотека (платёж)';
-    } else {
-      const c = applyCategForTx(tx);
-      tx.type=c.t; tx.group=c.g; tx.sub=c.s;
-    }
-
-    transactions.push(tx);
-  }
-
   return transactions;
 }
-
 
 async function processPDFFile(file) {
   toast('Читаем PDF...','info');
