@@ -1402,6 +1402,7 @@ function pageDash(){
   const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
   const expense=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
   const profit=income-expense;
+  const savingsRate=income>0?Math.round(profit/income*100):0;
   const prevP=allP[allP.indexOf(currentPeriod)+1];
   const prevTxns=range==='month'&&prevP?getTxns(prevP).filter(t=>t.type!=='transfer'):[];
   const pI=prevTxns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
@@ -1503,7 +1504,7 @@ function pagePL(){
     +incRows+'<div style="height:10px"></div>'
     +'<div class="pl-row group" style="color:var(--expense)"><div>Расходы</div><div class="pl-val expense">'+fmtMoney(expense)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pE?fmtMoney(pE):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pE?(((expense-pE)/pE*100)>0?'+':'')+(((expense-pE)/pE*100)).toFixed(0)+'%':'—')+'</div></div>'
     +expRows
-    +'<div class="pl-row total"><div>Чистый результат</div><div class="pl-val '+(profit>=0?'pos':'neg')+'">'+fmtMoney(profit,true)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI||pE?fmtMoney(pI-pE,true):'—')+'</div><div></div></div></div>';
+    +'<div class="pl-row total"><div>Чистый результат</div><div class="pl-val '+(profit>=0?'pos':'neg')+'">'+fmtMoney(profit,true)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI||pE?fmtMoney(pI-pE,true):'—')+'</div><div class="pl-val" style="font-size:13px;font-weight:600;color:'+(savingsRate>=20?'var(--income)':savingsRate>=0?'var(--text)':'var(--expense)')+'">'+(income>0?savingsRate+'% сбережений':'—')+'</div></div></div>';
 }
 
 // ── Cash Flow ──
@@ -1517,7 +1518,10 @@ function pageCF(){
   const transfers=txns.filter(t=>t.type==='transfer');
   const opFlow=opIncome-opExpense,finFlow=-finExpense,total=opFlow+finFlow;
   function row(label,amt,sub){return '<div class="pl-row '+(sub?'sub':'group')+'"><div>'+label+'</div><div class="pl-val '+(amt>=0?'pos':'neg')+'">'+fmtMoney(amt,true)+'</div><div></div><div></div></div>';}
-  return '<div class="page-header"><div class="page-title">Cash Flow — '+fmtMonth(currentPeriod)+'</div></div>'
+  const cfPeriods=Object.keys(DB.periods).sort().reverse();
+  const cfSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
+  const cfPeriodOpts=cfPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
+  return '<div class="page-header"><div class="page-title">Cash Flow</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+cfSelStyle+'">'+cfPeriodOpts+'</select></div></div>'
     +'<div class="card"><div class="pl-header"><div>Поток</div><div style="text-align:right">Сумма</div><div></div><div></div></div>'
     +'<div class="pl-row group" style="color:var(--muted2);font-size:12px"><div>Операционная деятельность</div><div></div><div></div><div></div></div>'
     +row('Доходы',opIncome,true)+row('Операционные расходы',-opExpense,true)+row('Операционный поток',opFlow,false)
@@ -1588,7 +1592,10 @@ function pageTxns(){
   const txns=getTxns(currentPeriod);if(!txns.length)return pageEmpty();
   const groups=[...new Set(txns.map(t=>t.group))].sort();
   const accOpts=Object.values(DB.accounts).map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Операции — '+fmtMonth(currentPeriod)+'</div></div>'
+  const txPeriods=Object.keys(DB.periods).sort().reverse();
+  const txSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
+  const txPeriodOpts=txPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
+  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
     +'<div class="tbl-wrap"><div class="tbl-toolbar">'
     +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
     +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
@@ -2019,20 +2026,15 @@ async function loadFromGithub(){
 function refreshUI(){
   const periods=Object.keys(DB.periods).sort().reverse();
   const sel=document.getElementById('periodSelect');
-  if(sel){
-    const prev=sel.value;
-    sel.innerHTML=periods.map(p=>'<option value="'+p+'">'+fmtMonth(p)+'</option>').join('');
-    if(prev&&periods.includes(prev))sel.value=prev;
-    else if(periods.length){sel.value=periods[0];currentPeriod=periods[0];}
-  } else if(periods.length&&!currentPeriod){
-    currentPeriod=periods[0];
-  }
-  const pl=document.getElementById('periodList');
-  if(pl)pl.innerHTML=periods.map(p=>'<div class="period-item '+(p===currentPeriod?'active':'')+'" onclick="selectPeriod(\''+p+'\')">'+fmtMonth(p)+'<span class="badge">'+getTxns(p).length+'</span></div>').join('');
+  const prev=sel.value;
+  sel.innerHTML=periods.map(p=>'<option value="'+p+'">'+fmtMonth(p)+'</option>').join('');
+  if(prev&&periods.includes(prev))sel.value=prev;
+  else if(periods.length){sel.value=periods[0];currentPeriod=periods[0];}
+  document.getElementById('periodList').innerHTML=periods.map(p=>'<div class="period-item '+(p===currentPeriod?'active':'')+'" onclick="selectPeriod(\''+p+'\')">'+fmtMonth(p)+'<span class="badge">'+getTxns(p).length+'</span></div>').join('');
   renderPage();
 }
-function onPeriodChange(){const s=document.getElementById('periodSelect');if(s)currentPeriod=s.value;refreshUI();}
-function selectPeriod(p){currentPeriod=p;const s=document.getElementById('periodSelect');if(s)s.value=p;refreshUI();}
+function onPeriodChange(){currentPeriod=document.getElementById('periodSelect').value;refreshUI();}
+function selectPeriod(p){currentPeriod=p;document.getElementById('periodSelect').value=p;refreshUI();}
 function delPeriod(p){if(!confirm('Удалить '+fmtMonth(p)+'?'))return;delete DB.periods[p];const ps=Object.keys(DB.periods).sort().reverse();currentPeriod=ps[0]||null;saveLocal();refreshUI();}
 
 // ── Storage ──
@@ -2065,6 +2067,7 @@ document.addEventListener('click',e=>{
 // ── Init ──
 loadLocal();
 ensureCashAccounts();
+initTheme();
 const initP=Object.keys(DB.periods).sort().reverse();
 if(initP.length)currentPeriod=initP[0];
 refreshUI();
@@ -2372,6 +2375,22 @@ function updateBottomNav(page){
     localStorage.setItem('gh_repo','finance-tracker');
   }
 })();
+
+
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  localStorage.setItem('theme',isDark?'light':'dark');
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=isDark?'☀️':'🌙';
+}
+function initTheme(){
+  const t=localStorage.getItem('theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
+}
 
 </script>
 </body>
