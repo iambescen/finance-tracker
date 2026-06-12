@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Семейный портфель</title>
+<title>Семейные финансы</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -61,8 +61,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 /* ── Layout ── */
 .app{display:grid;grid-template-rows:52px 1fr;height:100vh}
 .topbar{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:var(--shadow)}
-.logo{font-size:15px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
-.logo em{color:var(--accent);font-style:normal;font-weight:400}
+.logo{font-size:15px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
+.logo em{color:var(--accent);font-style:normal}
 .topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
 .body{display:grid;grid-template-columns:204px 1fr;overflow:hidden}
 .sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto}
@@ -242,11 +242,10 @@ tr:hover td{background:var(--bg3)}
 <body>
 <div class="app">
 <div class="topbar">
-  <div class="logo">Семейный<em> портфель</em></div>
+  <div class="logo">семья<em>.</em>финансы</div>
   <div class="topbar-right">
     <select id="periodSelect" onchange="onPeriodChange()" style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
     <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub">⚙</button>
-    <button class="btn sm primary" onclick="saveToGithub()">↑ GitHub</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
 </div>
@@ -1311,6 +1310,25 @@ function ingest(newTxns){
   ensureCashAccounts();
   saveLocal();refreshUI();
   toast('Добавлено '+added+' операций за '+months.join(', ')+(pairs?' · связано '+pairs+' пар переводов':''),'ok');
+  // Auto-save to GitHub in background
+  autoSaveToGithub();
+}
+
+async function autoSaveToGithub(){
+  const{token}=ghCfg();
+  if(!token)return; // no token — skip silently
+  try{
+    const date=new Date().toLocaleDateString('ru-RU');
+    for(const[period,data]of Object.entries(DB.periods)){
+      await ghPut('data/'+period+'.json',JSON.stringify(data,null,2),'Auto-save '+period+' — '+date);
+    }
+    await ghPut('data/assets.json',JSON.stringify(DB.assets,null,2),'Auto-save assets — '+date);
+    await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Auto-save accounts — '+date);
+    await ghPut('data/rules.json',JSON.stringify(DB.rules,null,2),'Auto-save rules — '+date);
+    toast('✓ Сохранено в GitHub','ok');
+  }catch(e){
+    toast('GitHub: '+e.message,'err');
+  }
 }
 
 // ── Balance history ──
@@ -1961,8 +1979,6 @@ async function ghPut(path,content,msg){
 
 async function saveToGithub(){
   const{token}=ghCfg();if(!token){toast('Введите токен GitHub (кнопка ⚙)','err');openGhModal();return;}
-  const btnEl=document.querySelector('[onclick="saveToGithub()"]');
-  if(btnEl){btnEl.textContent='Сохраняем...';btnEl.disabled=true;}
   try{
     const date=new Date().toLocaleDateString('ru-RU');
     for(const[period,data]of Object.entries(DB.periods)){
