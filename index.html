@@ -9,41 +9,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 (function(){
-  const PASS_HASH='ea279eca5412c45d2c582a3971b688b3e13cdb893f7bba5c5faaea499fa21ffd';
-  function sha256(str){
-    return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str))
-      .then(b=>Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''));
-  }
-  function showLock(){
-    const o=document.createElement('div');
-    o.id='lock-screen';
-    o.style.cssText='position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;';
-    o.innerHTML='<div style="background:#1e293b;border-radius:16px;padding:40px;text-align:center;width:300px;box-shadow:0 25px 50px rgba(0,0,0,.5)">'
-      +'<div style="font-size:48px;margin-bottom:16px">🔐</div>'
-      +'<div style="color:#f1f5f9;font-size:20px;font-weight:700;margin-bottom:8px">Семейные финансы</div>'
-      +'<div style="color:#94a3b8;font-size:13px;margin-bottom:24px">Введите пароль</div>'
-      +'<input id="li" type="password" placeholder="Пароль" autofocus style="width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:2px solid #334155;background:#0f172a;color:#f1f5f9;font-size:20px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px">'
-      +'<div id="le" style="color:#ef4444;font-size:12px;min-height:18px;margin-bottom:10px"></div>'
-      +'<button id="lb" style="width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">Войти</button>'
-      +'</div>';
+  const H='ea279eca5412c45d2c582a3971b688b3e13cdb893f7bba5c5faaea499fa21ffd';
+  function go(){
+    if(sessionStorage.getItem('sf_auth')==='1')return;
+    var o=document.createElement('div');
+    o.id='ls';
+    o.style.cssText='position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999';
+    o.innerHTML='<div style="background:#1e293b;border-radius:16px;padding:40px;text-align:center;min-width:280px"><div style="font-size:48px">🔐</div><div style="color:#f1f5f9;font-size:20px;font-weight:700;margin:12px 0 4px">Семейные финансы</div><div style="color:#94a3b8;font-size:13px;margin-bottom:20px">Введите пароль</div><input id="lp" type="password" autofocus style="width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:2px solid #334155;background:#0f172a;color:#f1f5f9;font-size:22px;letter-spacing:8px;text-align:center;outline:none"><p id="le" style="color:#ef4444;font-size:12px;min-height:16px;margin:8px 0"></p><button onclick="chk()" style="width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">Войти</button></div>';
     document.body.appendChild(o);
-    const inp=document.getElementById('li'),btn=document.getElementById('lb'),err=document.getElementById('le');
-    async function tryUnlock(){
-      const h=await sha256(inp.value.trim());
-      if(h===PASS_HASH){
-        sessionStorage.setItem('sf_auth','1');
-        document.getElementById('lock-screen').remove();
-      } else {
-        err.textContent='Неверный пароль';inp.value='';inp.focus();
-        setTimeout(()=>err.textContent='',2000);
-      }
-    }
-    btn.addEventListener('click',tryUnlock);
-    inp.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
+    document.getElementById('lp').addEventListener('keydown',function(e){if(e.key==='Enter')chk();});
   }
-  if(sessionStorage.getItem('sf_auth')!=='1'){
-    document.addEventListener('DOMContentLoaded',showLock);
-  }
+  window.chk=function(){
+    var v=document.getElementById('lp').value;
+    crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)).then(function(b){
+      var h=Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
+      if(h===H){sessionStorage.setItem('sf_auth','1');document.getElementById('ls').remove();}
+      else{document.getElementById('le').textContent='Неверный пароль';document.getElementById('lp').value='';document.getElementById('lp').focus();setTimeout(function(){document.getElementById('le').textContent=''},2000);}
+    });
+  };
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',go);}else{go();}
 })();
 </script>
 <script>
