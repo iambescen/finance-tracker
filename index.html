@@ -226,6 +226,7 @@ tr:hover td{background:var(--bg3)}
     <div class="nav-item" id="nav-upload" onclick="showPage('upload')">↑ Загрузить</div>
     <div class="nav-item" id="nav-accounts" onclick="showPage('accounts')">◻ Счета</div>
     <div class="nav-item" id="nav-assets" onclick="showPage('assets')">◇ Активы и долги</div>
+    <div class="nav-item" id="nav-loans" onclick="showPage('loans')">⊘ Кредиты</div>
     <div class="nav-item" id="nav-rules" onclick="showPage('rules')">⊞ Правила</div>
     <div class="nav-divider"></div>
     <div class="nav-label">Периоды</div>
@@ -1268,6 +1269,7 @@ function renderPage(){
   else if(currentPage==='assets')c.innerHTML=pageAssets();
   else if(currentPage==='accounts'){c.innerHTML=pageAccounts();}
   else if(currentPage==='rules')c.innerHTML=pageRules();
+  else if(currentPage==='loans')c.innerHTML=pageLoans();
   if(currentPage==='dashboard')renderDashCharts();
 }
 
@@ -1837,6 +1839,128 @@ loadFromGithub();
   document.getElementById('lb').addEventListener('click',chk);
   document.getElementById('lp').addEventListener('keydown',function(e){if(e.key==='Enter')chk();});
 })();
+// ── Loans ──
+function pageLoans(){
+  // Ипотека ВТБ данные
+  const vtb = {
+    name: 'Ипотека ВТБ (5,9%)',
+    balance: 1581007.97,
+    rate: 5.9,
+    payment: 20386,
+    endDate: new Date('2034-08-18'),
+    startDate: new Date('2026-06-15')
+  };
+
+  function buildSchedule(loan){
+    const rows = [];
+    let bal = loan.balance;
+    const monthly = loan.rate / 100 / 12;
+    let date = new Date(loan.startDate);
+    let totalInterest = 0;
+    while(bal > 0 && date <= loan.endDate){
+      const interest = Math.round(bal * monthly * 100) / 100;
+      let principal = Math.round((loan.payment - interest) * 100) / 100;
+      if(principal > bal) principal = bal;
+      bal = Math.round((bal - principal) * 100) / 100;
+      totalInterest += interest;
+      rows.push({
+        date: date.toLocaleDateString('ru-RU', {month:'short', year:'numeric'}),
+        interest: interest,
+        principal: principal,
+        balance: bal < 0 ? 0 : bal
+      });
+      date = new Date(date);
+      date.setMonth(date.getMonth() + 1);
+    }
+    return {rows, totalInterest: Math.round(totalInterest)};
+  }
+
+  const {rows: vtbRows, totalInterest: vtbInterest} = buildSchedule(vtb);
+  const monthsLeft = vtbRows.length;
+  const yearsLeft = Math.floor(monthsLeft / 12);
+  const mLeft = monthsLeft % 12;
+
+  // Build table rows — show all but style past vs future
+  const tableRows = vtbRows.map((r, i) => {
+    const isPast = i === 0 ? false : false; // all future from today
+    return '<tr>'
+      + '<td style="color:var(--text-muted);font-size:13px">' + r.date + '</td>'
+      + '<td style="text-align:right">' + r.principal.toLocaleString('ru-RU',{maximumFractionDigits:0}) + '</td>'
+      + '<td style="text-align:right;color:var(--expense)">' + r.interest.toLocaleString('ru-RU',{maximumFractionDigits:0}) + '</td>'
+      + '<td style="text-align:right;font-weight:600">' + r.balance.toLocaleString('ru-RU',{maximumFractionDigits:0}) + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const pct = Math.round((1 - vtb.balance / 3436983.5) * 100);
+
+  return '<div class="page-inner">'
+    + '<h2 style="margin-bottom:24px">⊘ Кредиты</h2>'
+
+    // VTB card
+    + '<div class="card" style="margin-bottom:24px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px">'
+    + '<div>'
+    + '<div style="font-size:18px;font-weight:700">Ипотека ВТБ</div>'
+    + '<div style="color:var(--text-muted);font-size:13px;margin-top:4px">Господдержка 2020 · 5,9% · до 18.08.2034</div>'
+    + '</div>'
+    + '<div style="text-align:right">'
+    + '<div style="font-size:22px;font-weight:700;color:var(--expense)">' + vtb.balance.toLocaleString('ru-RU',{maximumFractionDigits:0}) + ' ₽</div>'
+    + '<div style="color:var(--text-muted);font-size:12px">остаток долга</div>'
+    + '</div>'
+    + '</div>'
+
+    // Progress bar
+    + '<div style="margin-bottom:16px">'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px">'
+    + '<span>Выплачено ' + pct + '%</span>'
+    + '<span>Осталось ' + yearsLeft + ' л. ' + mLeft + ' мес.</span>'
+    + '</div>'
+    + '<div style="background:var(--border);border-radius:4px;height:8px">'
+    + '<div style="background:var(--income);border-radius:4px;height:8px;width:' + pct + '%"></div>'
+    + '</div>'
+    + '</div>'
+
+    // Stats row
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px">'
+    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
+    + '<div style="font-size:18px;font-weight:700">' + vtb.payment.toLocaleString('ru-RU') + ' ₽</div>'
+    + '<div style="font-size:12px;color:var(--text-muted)">платёж/мес</div>'
+    + '</div>'
+    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
+    + '<div style="font-size:18px;font-weight:700;color:var(--expense)">' + vtbInterest.toLocaleString('ru-RU') + ' ₽</div>'
+    + '<div style="font-size:12px;color:var(--text-muted)">переплата (осталось)</div>'
+    + '</div>'
+    + '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">'
+    + '<div style="font-size:18px;font-weight:700">' + monthsLeft + ' мес.</div>'
+    + '<div style="font-size:12px;color:var(--text-muted)">платежей осталось</div>'
+    + '</div>'
+    + '</div>'
+
+    // Schedule table
+    + '<div style="font-weight:600;margin-bottom:12px">График платежей</div>'
+    + '<div style="overflow-x:auto;max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">'
+    + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+    + '<thead style="position:sticky;top:0;background:var(--card);z-index:1">'
+    + '<tr style="border-bottom:1px solid var(--border)">'
+    + '<th style="padding:10px 12px;text-align:left;font-weight:600">Дата</th>'
+    + '<th style="padding:10px 12px;text-align:right;font-weight:600">Основной долг</th>'
+    + '<th style="padding:10px 12px;text-align:right;font-weight:600;color:var(--expense)">Проценты</th>'
+    + '<th style="padding:10px 12px;text-align:right;font-weight:600">Остаток</th>'
+    + '</tr></thead>'
+    + '<tbody>' + tableRows + '</tbody>'
+    + '</table></div>'
+    + '</div>' // end vtb card
+
+    // Sber placeholder
+    + '<div class="card" style="opacity:0.5;text-align:center;padding:32px">'
+    + '<div style="font-size:32px;margin-bottom:8px">⊕</div>'
+    + '<div style="font-weight:600;margin-bottom:4px">Кредит Сбербанк</div>'
+    + '<div style="color:var(--text-muted);font-size:13px">Добавьте данные для отображения графика</div>'
+    + '</div>'
+
+    + '</div>';
+}
+
 </script>
 </body>
 </html>
