@@ -586,6 +586,7 @@ function detectPDFBank(lines) {
   const text = lines.join(' ').toLowerCase();
   console.log('[PDF detect] first 300 chars:', text.slice(0,300));
   console.log('[PDF detect] has kk-:', text.includes('kk-'), 'has кредитный лимит:', text.includes('кредитный лимит'), 'has беспроцентный:', text.includes('беспроцентный'));
+  if(text.includes('справка об уплаченных процентах') || text.includes('погашение основного долга') && text.includes('сбербанк')) return 'sber_loan';
   if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
   if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный'))) return 'vtb_credit';
   if(text.includes('банк втб') || text.includes('втб (пао)') || (text.includes('втб') && text.includes('филиал'))) return 'vtb';
@@ -1044,13 +1045,119 @@ function parseVTBMortgagePDF(pages) {
   return transactions;
 }
 
+
+// ── Sber Loan Interest Statement parser ──
+// "Справка об уплаченных процентах и основном долге"
+// Columns: date(x~48) | principal parts(x~123-170) | dash | interest parts(x~361-420) | dash
+function parseSberLoanPDF(flatLines, pages) {
+  const transactions = [];
+
+  // Extract contract number from flat text
+  let contractNum = '';
+  const contractMatch = flatLines.join(' ').match(/№(\d{15,18})/);
+  if(contractMatch) contractNum = contractMatch[1];
+
+  // Extract borrower name - detect whose loan this is
+  const fullText = flatLines.join(' ').toLowerCase();
+  const isTanya = fullText.includes('безценных татьяна') || fullText.includes('татьяна владимировна');
+  const owner = isTanya ? 'wife' : 'me';
+  const accountId = 'sber_loan_' + (contractNum || 'unknown');
+
+  for(const pageWords of pages) {
+    // Find transaction date rows: x~40-60, date format, in data section
+    // Skip header dates (passport issue date, period dates)
+    const dataWords = pageWords.filter(w =>
+      w.x >= 40 && w.x <= 65 &&
+      /^\d{2}\.\d{2}\.\d{4}$/.test(w.text) &&
+      w.top > 300  // skip header area
+    );
+
+    for(const dw of dataWords) {
+      const dy = dw.top;
+      const row = pageWords.filter(w => Math.abs(w.top - dy) < 8);
+
+      // Principal: x 120-230 (two parts like "13" "431,98")
+      const principalParts = row.filter(w => w.x >= 115 && w.x <= 230 && w.text !== '-')
+        .sort((a,b) => a.x - b.x)
+        .map(w => w.text);
+
+      // Interest: x 355-460 (could be "480,51" or "1" "058,64")
+      const interestParts = row.filter(w => w.x >= 355 && w.x <= 465 && w.text !== '-')
+        .sort((a,b) => a.x - b.x)
+        .map(w => w.text);
+
+      if(!principalParts.length && !interestParts.length) continue;
+
+      const parseAmt = (parts) => {
+        if(!parts.length) return 0;
+        return parseFloat(parts.join('').replace(/\s/g,'').replace(',','.')) || 0;
+      };
+
+      const principal = parseAmt(principalParts);
+      const interest = parseAmt(interestParts);
+
+      if(!principal && !interest) continue;
+
+      const dateISO = toISO(dw.text);
+      const month = dateISO.slice(0, 7);
+
+      // Principal repayment → transfer (reduces debt, not an expense)
+      if(principal > 0) {
+        transactions.push({
+          id: uid(), date: dateISO, month, dateDisplay: dw.text,
+          desc: 'Тело кредита (погашение долга)',
+          card: 'Сбер кредит', account: accountId,
+          bankCat: 'Кредит', amtOp: -principal, curOp: 'RUB', amtRub: -principal,
+          status: 'OK', source: 'sber_loan_pdf',
+          counterparty: 'ПАО Сбербанк', counterpartyINN: '', counterpartyAcc: '',
+          manualCategory: false, linkedTo: null, linkedAccount: null,
+          type: 'transfer', group: 'Перевод', sub: 'Погашение тела кредита'
+        });
+      }
+
+      // Interest → real expense
+      if(interest > 0) {
+        transactions.push({
+          id: uid(), date: dateISO, month, dateDisplay: dw.text,
+          desc: 'Проценты по кредиту Сбер',
+          card: 'Сбер кредит', account: accountId,
+          bankCat: 'Кредит', amtOp: -interest, curOp: 'RUB', amtRub: -interest,
+          status: 'OK', source: 'sber_loan_pdf',
+          counterparty: 'ПАО Сбербанк', counterpartyINN: '', counterpartyAcc: '',
+          manualCategory: false, linkedTo: null, linkedAccount: null,
+          type: 'expense', group: 'Жильё', sub: 'Аренда/Ипотека (платёж)'
+        });
+      }
+    }
+  }
+
+  // Register loan account
+  if(contractNum && !DB.accounts[accountId]) {
+    DB.accounts[accountId] = {
+      number: accountId,
+      display: 'Сбер кредит',
+      bank: 'Сбербанк Кредит',
+      name: 'Кредит Сбер №' + contractNum,
+      owner,
+      source: 'sber_loan_pdf',
+      currentBalance: null,
+      currency: 'RUB',
+      isCredit: true,
+      virtual: false
+    };
+  }
+
+  return transactions;
+}
+
 async function processPDFFile(file) {
   toast('Читаем PDF...','info');
   try {
     const pdfData = await parsePDF(file);
     const bank = detectPDFBank(pdfData.flatLines);
     let txns = [];
-    if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines);
+    if(bank === 'sber_loan') txns = parseSberLoanPDF(pdfData.flatLines, pdfData.pages);
+    else if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines);
     else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
     else if(bank === 'vtb_credit') txns = parseVTBCreditPDF(pdfData.pages);
     else if(bank === 'vtb_mortgage') txns = parseVTBMortgagePDF(pdfData.pages);
