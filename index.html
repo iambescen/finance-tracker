@@ -296,6 +296,7 @@ tr:hover td{background:var(--bg3)}
 <script>
 const OWN_INN='570701153846';
 const OWN_ACCOUNTS=new Set(['40802810100000077444','40802810500004846488','40817810400000461363','42109810600000071861','40802810600000071861']);
+const CASH_ACCOUNTS={me:'cash_me',wife:'cash_wife',joint:'cash_joint'};
 
 const CAT_TREE={
   income:{subs:['Выручка от услуг/курсов/товаров','Дивиденды/купоны/курсовая разница','Кэшбэк/проценты на остаток','Пособия/вычеты','Возвраты','Прочие доходы']},
@@ -335,6 +336,7 @@ const BASE_RULES=[
   {m:['детский сад','садик'], g:'Дети', s:'Детский сад/школа', t:'expense'},
   {m:['wildberries','ozon','lamoda'], g:'Покупки', s:'Одежда/обувь', t:'expense'},
   {m:['пакет x5','сравни'], g:'Сервисы/Связь', s:'Банковские комиссии', t:'expense'},
+  {m:['снятие в банкомате','снятие наличных','выдача наличных','cash withdrawal','атм'], g:'Перевод', s:'Снятие наличных', t:'transfer'},
 ];
 const BANK_CAT={
   'супермаркеты':{g:'Питание',s:'Продукты/супермаркеты',t:'expense'},
@@ -366,7 +368,16 @@ function toISO(raw){const s=String(raw||'').split(' ')[0];const p=s.split('.');i
 function fmtMoney(n,sign=false){const a=Math.abs(n),s=a.toLocaleString('ru-RU',{maximumFractionDigits:0});if(sign&&n>0)return '+'+s+' ₽';if(n<0)return '−'+s+' ₽';return s+' ₽';}
 function fmtMonth(ym){if(!ym)return '';const[y,m]=ym.split('-');return['','Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][+m]+' '+y;}
 function getTxns(p){return DB.periods[p]?.transactions||[];}
-function accLabel(accNum){if(!accNum)return '—';const k=String(accNum).replace(/\*/g,'').trim();const acc=DB.accounts[k];if(acc)return acc.name;return '***'+k.slice(-4);}
+function accLabel(accNum){
+  if(!accNum)return '—';
+  const k=String(accNum).replace(/\*/g,'').trim();
+  const acc=DB.accounts[k];
+  if(acc)return acc.name;
+  if(k==='cash_me')return 'Наличные Влад';
+  if(k==='cash_wife')return 'Наличные Таня';
+  if(k==='cash_joint')return 'Наличные общие';
+  return '***'+k.slice(-4);
+}
 
 function applyRules(tx){
   for(const rule of DB.rules){
@@ -377,6 +388,18 @@ function applyRules(tx){
   for(const r of BASE_RULES){if(r.m.some(m=>d.includes(m)||b.includes(m)))return{g:r.g,s:r.s,t:r.t};}
   if(BANK_CAT[b]){const c=BANK_CAT[b];return{g:c.g,s:c.s,t:c.t};}
   return{g:'Прочее',s:'Прочие расходы',t:'expense'};
+}
+
+function isCashWithdrawal(tx){
+  const d=(tx.desc||'').toLowerCase();
+  return d.includes('снятие в банкомате')||d.includes('снятие наличных')||d.includes('выдача наличных')||d.includes('cash withdrawal')||d.includes('атм');
+}
+
+function getCashAccountForTx(tx){
+  const acc=DB.accounts[tx.account]||{};
+  if(acc.owner==='wife') return CASH_ACCOUNTS.wife;
+  if(acc.owner==='joint') return CASH_ACCOUNTS.joint;
+  return CASH_ACCOUNTS.me;
 }
 
 function applyCategForTx(tx){
@@ -423,6 +446,7 @@ function parseTinkoff(rows){
     const date=toISO(dateRaw),month=date.slice(0,7);
     const tx={id:uid(),date,month,dateDisplay:dateRaw.split(' ')[0],desc,card,account:card.replace(/\*/g,'').trim()||'',bankCat,amtOp,curOp,amtRub,status:r['Статус']||'',source:'tinkoff',counterparty:'',counterpartyINN:'',counterpartyAcc:'',manualCategory:false,linkedTo:null,linkedAccount:null};
     const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;
+    if(tx.type==='transfer'&&isCashWithdrawal(tx))tx.linkedAccount=getCashAccountForTx(tx);
     if(card)registerAccount(card,'tinkoff','Тинькофф');
     return tx;
   }).filter(Boolean);
@@ -446,6 +470,7 @@ function parseTinkoffBusiness(rows){
     const counterpartyAcc=isCredit?(payerAcc||ctgAcc):ctgAcc;
     const tx={id:uid(),date,month,dateDisplay:dateRaw,desc:desc||ctgName,card:'*'+acc.slice(-4),account:acc,bankCat:opType,amtOp:amtRub,curOp:cur,amtRub,status:'OK',source:'tinkoff_business',counterparty:ctgName,counterpartyINN,counterpartyAcc,manualCategory:false,linkedTo:null,linkedAccount:null};
     const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;
+    if(tx.type==='transfer'&&isCashWithdrawal(tx))tx.linkedAccount=getCashAccountForTx(tx);
     registerAccount(acc,'tinkoff_business','Тинькофф Бизнес');
     return tx;
   }).filter(Boolean);
@@ -539,6 +564,7 @@ function ingest(newTxns){
   const months=Object.keys(byMonth);
   if(!currentPeriod&&months.length)currentPeriod=months.sort().reverse()[0];
   const pairs=linkTransferPairs();
+  ensureCashAccounts();
   saveLocal();refreshUI();
   toast('Добавлено '+added+' операций за '+months.join(', ')+(pairs?' · связано '+pairs+' пар переводов':''),'ok');
 }
@@ -1022,6 +1048,7 @@ async function loadFromGithub(){
       for(const f of files){if(f.name.match(/^\d{4}-\d{2}\.json$/)){const dr=await fetch(f.download_url+'?t='+Date.now());if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();}}
     }
     const p=Object.keys(DB.periods).sort().reverse();if(p.length)currentPeriod=p[0];
+    ensureCashAccounts();
     saveLocal();refreshUI();toast('Данные загружены из GitHub','info');
   }catch(e){console.error(e);}
 }
@@ -1045,6 +1072,15 @@ function delPeriod(p){if(!confirm('Удалить '+fmtMonth(p)+'?'))return;dele
 function saveLocal(){try{localStorage.setItem('ff_db',JSON.stringify(DB));}catch(e){}}
 function loadLocal(){try{const d=localStorage.getItem('ff_db');if(d){const p=JSON.parse(d);DB.periods=p.periods||{};DB.assets=p.assets||DB.assets;DB.accounts=p.accounts||{};DB.rules=p.rules||[];}}catch(e){}}
 
+function ensureCashAccounts(){
+  if(!DB.accounts[CASH_ACCOUNTS.me])
+    DB.accounts[CASH_ACCOUNTS.me]={number:CASH_ACCOUNTS.me,display:'Наличные Влад',bank:'Наличные',name:'Наличные Влад',owner:'me',source:'manual',currentBalance:null,virtual:true};
+  if(!DB.accounts[CASH_ACCOUNTS.wife])
+    DB.accounts[CASH_ACCOUNTS.wife]={number:CASH_ACCOUNTS.wife,display:'Наличные Таня',bank:'Наличные',name:'Наличные Таня',owner:'wife',source:'manual',currentBalance:null,virtual:true};
+  if(!DB.accounts[CASH_ACCOUNTS.joint])
+    DB.accounts[CASH_ACCOUNTS.joint]={number:CASH_ACCOUNTS.joint,display:'Наличные общие',bank:'Наличные',name:'Наличные общие',owner:'joint',source:'manual',currentBalance:null,virtual:true};
+}
+
 // ── Toast ──
 function toast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(type||'info')+' show';setTimeout(()=>el.classList.remove('show'),3500);}
 
@@ -1061,6 +1097,7 @@ document.addEventListener('click',e=>{
 
 // ── Init ──
 loadLocal();
+ensureCashAccounts();
 const initP=Object.keys(DB.periods).sort().reverse();
 if(initP.length)currentPeriod=initP[0];
 refreshUI();
