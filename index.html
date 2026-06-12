@@ -7,6 +7,59 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function(){
+  const PASS_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; // sha256('2457')
+  function sha256(str){
+    const buf = new TextEncoder().encode(str);
+    return crypto.subtle.digest('SHA-256', buf).then(b =>
+      Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')
+    );
+  }
+  function showLock(){
+    document.documentElement.style.visibility='hidden';
+    const overlay = document.createElement('div');
+    overlay.id='lock-overlay';
+    overlay.style.cssText='position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;visibility:visible;';
+    overlay.innerHTML=`
+      <div style="background:#1e293b;border-radius:16px;padding:40px;text-align:center;width:320px;box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+        <div style="font-size:48px;margin-bottom:16px;">🔐</div>
+        <div style="color:#f1f5f9;font-size:22px;font-weight:700;margin-bottom:8px;">Семейные финансы</div>
+        <div style="color:#94a3b8;font-size:14px;margin-bottom:28px;">Введите пароль для входа</div>
+        <input id="lock-input" type="password" placeholder="Пароль"
+          style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:8px;border:2px solid #334155;background:#0f172a;color:#f1f5f9;font-size:18px;letter-spacing:4px;text-align:center;outline:none;margin-bottom:12px;"
+          autofocus/>
+        <div id="lock-error" style="color:#ef4444;font-size:13px;min-height:20px;margin-bottom:12px;"></div>
+        <button id="lock-btn"
+          style="width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">
+          Войти
+        </button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = document.getElementById('lock-input');
+    const btn = document.getElementById('lock-btn');
+    const err = document.getElementById('lock-error');
+    async function tryUnlock(){
+      const hash = await sha256(input.value.trim());
+      if(hash === PASS_HASH){
+        sessionStorage.setItem('sf_auth','1');
+        overlay.remove();
+        document.documentElement.style.visibility='';
+      } else {
+        err.textContent='Неверный пароль';
+        input.value='';
+        input.focus();
+        setTimeout(()=>err.textContent='',2000);
+      }
+    }
+    btn.addEventListener('click', tryUnlock);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
+  }
+  if(sessionStorage.getItem('sf_auth')!=='1'){
+    document.addEventListener('DOMContentLoaded', showLock);
+  }
+})();
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
