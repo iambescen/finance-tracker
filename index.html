@@ -807,11 +807,11 @@ function parseVTBPDF(pages) {
 async function processPDFFile(file) {
   toast('Читаем PDF...','info');
   try {
-    const lines = await parsePDF(file);
-    const bank = detectPDFBank(lines);
+    const pdfData = await parsePDF(file);
+    const bank = detectPDFBank(pdfData.flat);
     let txns = [];
-    if(bank === 'sber') txns = parseSberPDF(lines);
-    else if(bank === 'vtb') txns = parseVTBPDF(lines);
+    if(bank === 'sber') txns = parseSberPDF(pdfData.flat);
+    else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
     else {
       toast('Банк не распознан. Пришли файл — добавим поддержку','err');
       return;
