@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Семейный портфель</title>
+<title>Семейные финансы</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -61,8 +61,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 /* ── Layout ── */
 .app{display:grid;grid-template-rows:52px 1fr;height:100vh}
 .topbar{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:var(--shadow)}
-.logo{font-size:15px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
-.logo em{color:var(--accent);font-style:normal;font-weight:400}
+.logo{font-size:15px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
+.logo em{color:var(--accent);font-style:normal}
 .topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
 .body{display:grid;grid-template-columns:204px 1fr;overflow:hidden}
 .sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto}
@@ -242,10 +242,11 @@ tr:hover td{background:var(--bg3)}
 <body>
 <div class="app">
 <div class="topbar">
-  <div class="logo">семейный<em> портфель</em></div>
+  <div class="logo">семья<em>.</em>финансы</div>
   <div class="topbar-right">
-    <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub" style="display:none" id="ghSettingsBtn">⚙</button>
-    <button class="btn sm primary" onclick="saveToGithub()" id="ghSaveBtn">↑ GitHub</button>
+    <select id="periodSelect" onchange="onPeriodChange()" style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
+    <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub">⚙</button>
+    <button class="btn sm primary" onclick="saveToGithub()">↑ GitHub</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
 </div>
@@ -296,20 +297,29 @@ tr:hover td{background:var(--bg3)}
 
 <!-- Assets modal -->
 <div class="modal-bg" id="assetsModal">
-  <div class="modal">
+  <div class="modal" style="width:560px">
     <h3>Активы и обязательства</h3>
-    <div class="field"><label>Квартира — площадь (м²)</label><input type="number" id="aFlatSqm" placeholder="54.5" step="0.1"></div>
-    <div class="field"><label>Цена м² — минимум (₽) <span style="font-size:11px;color:var(--text-muted)">консервативная оценка</span></label><input type="number" id="aFlatPpmMin" placeholder="190000"></div>
-    <div class="field"><label>Цена м² — базовая (₽) <span style="font-size:11px;color:var(--text-muted)">середина рынка</span></label><input type="number" id="aFlatPpm" placeholder="200000"></div>
-    <div class="field"><label>Цена м² — максимум (₽) <span style="font-size:11px;color:var(--text-muted)">оптимистичная</span></label><input type="number" id="aFlatPpmMax" placeholder="210000"></div>
-    <div class="field"><label>Материнский капитал (₽) <span style="font-size:11px;color:var(--text-muted)">вложен как первоначальный взнос</span></label><input type="number" id="aMatkapital" placeholder="483881.83"></div>
-    <div class="field"><label>Машина (оценочная стоимость, ₽)</label><input type="number" id="aCar" placeholder="0"></div>
+
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Недвижимость</div>
+    <div id="realtyList"></div>
+    <button class="btn sm" onclick="addRealtyRow()" style="margin-bottom:16px">+ Добавить объект</button>
+
+    <div style="height:1px;background:var(--border);margin:4px 0 16px"></div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Автомобили</div>
+    <div id="vehicleList"></div>
+    <button class="btn sm" onclick="addVehicleRow()" style="margin-bottom:16px">+ Добавить автомобиль</button>
+
+    <div style="height:1px;background:var(--border);margin:4px 0 16px"></div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Прочие активы</div>
     <div class="field"><label>Брокерский счёт (₽)</label><input type="number" id="aBroker" placeholder="0"></div>
     <div class="field"><label>Торговый счёт (арбитраж, ₽)</label><input type="number" id="aTrading" placeholder="0"></div>
     <div class="field"><label>Кэш на счетах (₽)</label><input type="number" id="aCash" placeholder="0"></div>
-    <div style="height:1px;background:var(--border);margin:16px 0"></div>
-    <div style="padding:8px 0;color:var(--text-muted);font-size:13px">Остаток ипотеки рассчитывается автоматически из загруженных выписок ВТБ</div>
+
+    <div style="height:1px;background:var(--border);margin:4px 0 16px"></div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Обязательства</div>
+    <div style="padding:8px 0 12px;color:var(--text-muted);font-size:13px">Ипотека и кредиты рассчитываются автоматически из выписок</div>
     <div class="field"><label>Рассрочка на обучение (₽)</label><input type="number" id="lEdu" placeholder="0"></div>
+
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('assetsModal').classList.remove('open')">Отмена</button>
       <button class="btn primary" onclick="saveAssets()">Сохранить</button>
@@ -435,7 +445,10 @@ const BANK_CAT={
 
 let DB={
   periods:{},
-  assets:{flat:0,flatSqm:54.5,flatPricePerSqm:200000,flatPpmMin:190000,flatPpmMax:210000,matkapital:483881.83,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null},
+  assets:{
+    realty:[{name:'Квартира, пр. Плевицкой 21',sqm:54.5,ppmMin:190000,ppm:200000,ppmMax:210000,matkapital:483881.83}],
+    vehicles:[{name:'Hyundai Palisade',balanceCost:4044000,marketCost:4823185}],
+    broker:0,trading:0,cash:0,eduLoan:0,updatedAt:null},
   accounts:{},
   rules:[]
 };
@@ -1390,13 +1403,10 @@ function pageDash(){
       +'<td style="text-align:right;color:'+(res>=0?'var(--income)':'var(--expense)')+'">'+fmtMoney(res,true)+'</td></tr>';
   }).join(''):'';
   const selStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  const dashPeriods=Object.keys(DB.periods).sort().reverse();
-  const dashPeriodOpts=dashPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Дашборд</div>'
+  return '<div class="page-header"><div class="page-title">Дашборд — '+label+'</div>'
     +'<div class="page-actions">'
     +'<select id="ownerFilter" onchange="renderPage()" style="'+selStyle+'"><option value="all">Все счета</option><option value="me">Влад</option><option value="wife">Таня</option><option value="joint">Общие</option></select>'
     +'<select id="dashRange" onchange="renderPage()" style="'+selStyle+'"><option value="month">Месяц</option><option value="quarter">Квартал</option><option value="year">Год</option><option value="all">Всё время</option></select>'
-    +'<select onchange="selectPeriod(this.value)" style="'+selStyle+'">'+dashPeriodOpts+'</select>'
     +'</div></div>'
     +'<div class="grid-4">'
     +'<div class="card-sm"><div class="metric-label">Доходы</div><div class="metric-value income">'+fmtMoney(income)+'</div>'+(dI!==null?'<div class="delta '+(+dI>=0?'up':'down')+'">'+(+dI>=0?'↑':'↓')+Math.abs(dI)+'% к пред.</div>':'')+'</div>'
@@ -1464,10 +1474,7 @@ function pagePL(){
     expRows+='<div class="pl-row group"><div>'+group+'</div><div class="pl-val expense">'+fmtMoney(gt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pg?fmtMoney(pg):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(delta!==null?(+delta>0?'+':'')+delta+'%':'—')+'</div></div>';
     for(const[sub,amt]of Object.entries(subs).sort((a,b)=>b[1]-a[1]))expRows+='<div class="pl-row sub"><div>'+sub+'</div><div class="pl-val expense">'+fmtMoney(amt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">—</div><div></div></div>';
   }
-  const allPeriods=Object.keys(DB.periods).sort().reverse();
-  const selStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  const periodOpts=allPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">P&amp;L</div>'    +'<div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+selStyle+'">'+periodOpts+'</select></div></div>'
+  return '<div class="page-header"><div class="page-title">P&amp;L — '+fmtMonth(currentPeriod)+'</div></div>'
     +'<div class="card"><div class="pl-header"><div>Статья</div><div style="text-align:right">'+fmtMonth(currentPeriod)+'</div><div style="text-align:right">'+(prevP?fmtMonth(prevP):'Пред. период')+'</div><div style="text-align:right">Δ%</div></div>'
     +'<div class="pl-row group" style="color:var(--income)"><div>Доходы</div><div class="pl-val income">+'+income.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?fmtMoney(pI):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?(((income-pI)/pI*100)>0?'+':'')+(((income-pI)/pI*100)).toFixed(0)+'%':'—')+'</div></div>'
     +incRows+'<div style="height:10px"></div>'
@@ -1487,10 +1494,7 @@ function pageCF(){
   const transfers=txns.filter(t=>t.type==='transfer');
   const opFlow=opIncome-opExpense,finFlow=-finExpense,total=opFlow+finFlow;
   function row(label,amt,sub){return '<div class="pl-row '+(sub?'sub':'group')+'"><div>'+label+'</div><div class="pl-val '+(amt>=0?'pos':'neg')+'">'+fmtMoney(amt,true)+'</div><div></div><div></div></div>';}
-  const allPeriodsCF=Object.keys(DB.periods).sort().reverse();
-  const selStyleCF='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  const periodOptsCF=allPeriodsCF.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Cash Flow</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+selStyleCF+'">'+periodOptsCF+'</select></div></div>'
+  return '<div class="page-header"><div class="page-title">Cash Flow — '+fmtMonth(currentPeriod)+'</div></div>'
     +'<div class="card"><div class="pl-header"><div>Поток</div><div style="text-align:right">Сумма</div><div></div><div></div></div>'
     +'<div class="pl-row group" style="color:var(--muted2);font-size:12px"><div>Операционная деятельность</div><div></div><div></div><div></div></div>'
     +row('Доходы',opIncome,true)+row('Операционные расходы',-opExpense,true)+row('Операционный поток',opFlow,false)
@@ -1689,45 +1693,94 @@ function updateAccCheck(el){
 // ── Assets ──
 function pageAssets(){
   const a=DB.assets;
+  // migrate
+  if(!a.realty)a.realty=[{name:'Квартира, пр. Плевицкой 21',sqm:a.flatSqm||54.5,ppmMin:a.flatPpmMin||190000,ppm:a.flatPricePerSqm||200000,ppmMax:a.flatPpmMax||210000,matkapital:a.matkapital||483881.83}];
+  if(!a.vehicles)a.vehicles=[{name:'Hyundai Palisade',balanceCost:a.car||4044000,marketCost:a.car||4823185}];
+
+  // Dynamic mortgage/loan balances
   const allTxns=Object.values(DB.periods).flatMap(p=>p.transactions||[]);
   const vtbPaid=allTxns.filter(t=>t.source==='vtb_mortgage_pdf'&&(t.sub==='Погашение тела ипотеки'||t.type==='transfer')).reduce((s,t)=>s+Math.abs(t.amtRub),0);
   const sberPaid=allTxns.filter(t=>t.source==='sber_loan_pdf'&&(t.sub==='Погашение тела кредита'||t.desc==='Тело кредита (погашение долга)')).reduce((s,t)=>s+Math.abs(t.amtRub),0);
   const vtbMortgage=Math.max(0,3436983.50-vtbPaid);
   const sberLoan=Math.max(0,148585.50-sberPaid);
-  const sqm=a.flatSqm||54.5,ppm=a.flatPricePerSqm||200000,ppmMin=a.flatPpmMin||190000,ppmMax=a.flatPpmMax||210000;
-  const flatVal=Math.round(sqm*ppm),flatMin=Math.round(sqm*ppmMin),flatMax=Math.round(sqm*ppmMax);
-  const matk=a.matkapital||483881.83;
-  const other=(a.car||0)+(a.broker||0)+(a.trading||0)+(a.cash||0);
-  const tA=flatVal+other,tAmin=flatMin+other,tAmax=flatMax+other;
+
+  // Realty totals
+  const realtyBase=a.realty.reduce((s,r)=>s+Math.round((r.sqm||0)*(r.ppm||0)),0);
+  const realtyMin=a.realty.reduce((s,r)=>s+Math.round((r.sqm||0)*(r.ppmMin||0)),0);
+  const realtyMax=a.realty.reduce((s,r)=>s+Math.round((r.sqm||0)*(r.ppmMax||0)),0);
+  const totalMatk=a.realty.reduce((s,r)=>s+(r.matkapital||0),0);
+
+  // Vehicles — use market cost for assets
+  const vehiclesTotal=a.vehicles.reduce((s,v)=>s+(v.marketCost||0),0);
+
+  const other=(a.broker||0)+(a.trading||0)+(a.cash||0);
+  const tA=realtyBase+vehiclesTotal+other;
+  const tAmin=realtyMin+vehiclesTotal+other;
+  const tAmax=realtyMax+vehiclesTotal+other;
   const tL=vtbMortgage+sberLoan+(a.eduLoan||0);
-  const equity=tA-tL,equityMin=tAmin-tL,equityMax=tAmax-tL;
+  const equity=tA-tL, equityMin=tAmin-tL, equityMax=tAmax-tL;
+
+  // Realty rows
+  const realtyRows=a.realty.map(r=>{
+    const val=Math.round((r.sqm||0)*(r.ppm||0));
+    const min=Math.round((r.sqm||0)*(r.ppmMin||0));
+    const max=Math.round((r.sqm||0)*(r.ppmMax||0));
+    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<div><div style="color:var(--text-muted)">'+(r.name||'Недвижимость')+'</div>'
+      +'<div style="font-size:11px;color:var(--text-muted)">'+(r.sqm||0)+' м² · '+(r.ppmMin||0).toLocaleString('ru-RU')+'–'+(r.ppmMax||0).toLocaleString('ru-RU')+' ₽/м²</div></div>'
+      +'<div style="text-align:right"><div style="color:var(--income)">'+fmtMoney(val)+'</div>'
+      +'<div style="font-size:11px;color:var(--text-muted)">'+fmtMoney(min)+' – '+fmtMoney(max)+'</div></div>'
+      +'</div>';
+  }).join('');
+
+  // Vehicle rows
+  const vehicleRows=a.vehicles.map(v=>{
+    const gain=((v.marketCost||0)-(v.balanceCost||0));
+    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<div><div style="color:var(--text-muted)">'+(v.name||'Автомобиль')+'</div>'
+      +'<div style="font-size:11px;color:var(--text-muted)">Баланс: '+fmtMoney(v.balanceCost||0)+'</div></div>'
+      +'<div style="text-align:right"><div style="color:var(--income)">'+fmtMoney(v.marketCost||0)+'</div>'
+      +'<div style="font-size:11px;color:'+(gain>=0?'var(--income)':'var(--expense)')+'">'+( gain>=0?'+':'')+fmtMoney(gain)+'</div></div>'
+      +'</div>';
+  }).join('');
+
   return '<div class="page-header"><div class="page-title">Активы и долги</div>'
-    +'<div class="page-actions"><button class="btn primary" onclick="openAssets()">✎ Цены</button></div></div>'
+    +'<div class="page-actions"><button class="btn primary" onclick="openAssets()">✎ Редактировать</button></div></div>'
+    // Summary
     +'<div class="card" style="margin-bottom:16px">'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">'
-    +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--income)">'+fmtMoney(equity)+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+fmtMoney(equityMin)+' – '+fmtMoney(equityMax)+'</div><div style="font-size:12px;color:var(--text-muted)">Собственный капитал</div></div>'
+    +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--income)">'+fmtMoney(equity)+'</div>'
+    +'<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+fmtMoney(equityMin)+' – '+fmtMoney(equityMax)+'</div>'
+    +'<div style="font-size:12px;color:var(--text-muted)">Собственный капитал</div></div>'
     +'<div style="text-align:center"><div style="font-size:24px;font-weight:700">'+fmtMoney(tA)+'</div><div style="font-size:12px;color:var(--text-muted)">Активы</div></div>'
     +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--expense)">'+fmtMoney(tL)+'</div><div style="font-size:12px;color:var(--text-muted)">Долги</div></div>'
     +'</div></div>'
     +'<div class="grid-2">'
+    // Assets card
     +'<div class="card"><div class="card-title">Активы</div>'
-    +'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
-    +'<div><div style="color:var(--text-muted)">Квартира</div><div style="font-size:11px;color:var(--text-muted)">'+sqm+' м² × '+ppm.toLocaleString('ru-RU')+' ₽/м²</div></div>'
-    +'<span style="color:var(--income)">'+fmtMoney(flatVal)+'</span></div>'
-    +[['Машина',a.car],['Брокерский счёт',a.broker],['Торговый счёт',a.trading],['Кэш на счетах',a.cash]].map(([l,v])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">'+l+'</span><span style="color:var(--income)">'+(v?fmtMoney(v):'-')+'</span></div>').join('')
+    +'<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Недвижимость</div>'
+    +realtyRows
+    +'<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin:12px 0 6px">Автомобили</div>'
+    +vehicleRows
+    +(a.broker||a.trading||a.cash?'<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin:12px 0 6px">Финансовые активы</div>':'')
+    +(a.broker?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Брокерский счёт</span><span style="color:var(--income)">'+fmtMoney(a.broker)+'</span></div>':'')
+    +(a.trading?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Торговый счёт</span><span style="color:var(--income)">'+fmtMoney(a.trading)+'</span></div>':'')
+    +(a.cash?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Кэш на счетах</span><span style="color:var(--income)">'+fmtMoney(a.cash)+'</span></div>':'')
     +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600"><span>Итого</span><span style="color:var(--income)">'+fmtMoney(tA)+'</span></div></div>'
+    // Liabilities card
     +'<div class="card"><div class="card-title">Обязательства</div>'
     +'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="color:var(--text-muted)">Ипотека ВТБ</div><div style="font-size:11px;color:var(--text-muted)">выплачено '+Math.round(vtbPaid).toLocaleString('ru-RU')+' ₽</div></div><span style="color:var(--expense)">'+fmtMoney(vtbMortgage)+'</span></div>'
     +(sberLoan>0?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="color:var(--text-muted)">Кредит Сбер</div><div style="font-size:11px;color:var(--text-muted)">выплачено '+Math.round(sberPaid).toLocaleString('ru-RU')+' ₽</div></div><span style="color:var(--expense)">'+fmtMoney(sberLoan)+'</span></div>':'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Кредит Сбер</span><span style="color:var(--income)">✓ Закрыт</span></div>')
     +(a.eduLoan?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Рассрочка на обучение</span><span style="color:var(--expense)">'+fmtMoney(a.eduLoan)+'</span></div>':'')
-    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600;border-bottom:1px solid var(--border)"><span>Итого долги</span><span style="color:var(--expense)">'+fmtMoney(tL)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:700;border-bottom:1px solid var(--border)"><span>Итого долги</span><span style="color:var(--expense)">'+fmtMoney(tL)+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:700;border-bottom:1px solid var(--border)"><span>Собственный капитал</span><span style="color:var(--income)">'+fmtMoney(equity)+'</span></div>'
-    +'<div style="padding:10px 0"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);padding:3px 0"><span>в т.ч. маткапитал</span><span>'+fmtMoney(matk)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);padding:3px 0"><span>ваши вложения</span><span>'+fmtMoney(equity-matk)+'</span></div></div>'
-    +'</div></div>';
+    +'<div style="padding:10px 0">'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);padding:3px 0"><span>в т.ч. маткапитал</span><span>'+fmtMoney(totalMatk)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);padding:3px 0"><span>ваши вложения</span><span>'+fmtMoney(equity-totalMatk)+'</span></div>'
+    +'</div></div>'
+    +'</div>';
 }
 
-// ── Rules ──
 function pageRules(){
   return '<div class="page-header"><div class="page-title">Правила категоризации</div>'
     +'<div class="page-actions"><button class="btn primary" onclick="forceReapply()">↺ Пересчитать все операции</button></div></div>'
@@ -1814,17 +1867,79 @@ function saveCatModal(applyToAll){
 function closeCatModal(){document.getElementById('catModal').classList.remove('open');editTxId=null;}
 
 // ── Assets modal ──
+function renderRealtyRows(){
+  const a=DB.assets;
+  if(!a.realty)a.realty=[];
+  const el=document.getElementById('realtyList');
+  if(!el)return;
+  el.innerHTML=a.realty.map((r,i)=>`
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <input value="${r.name||''}" placeholder="Название (напр. Квартира Курск)" oninput="DB.assets.realty[${i}].name=this.value"
+          style="flex:1;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <button class="btn sm danger" onclick="DB.assets.realty.splice(${i},1);renderRealtyRows()" style="margin-left:8px">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field" style="margin:0"><label>Площадь (м²)</label><input type="number" value="${r.sqm||''}" step="0.1" oninput="DB.assets.realty[${i}].sqm=+this.value" style="width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></div>
+        <div class="field" style="margin:0"><label>Маткапитал (₽)</label><input type="number" value="${r.matkapital||''}" oninput="DB.assets.realty[${i}].matkapital=+this.value" style="width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></div>
+        <div class="field" style="margin:0"><label>Цена м² мин (₽)</label><input type="number" value="${r.ppmMin||''}" oninput="DB.assets.realty[${i}].ppmMin=+this.value" style="width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></div>
+        <div class="field" style="margin:0"><label>Цена м² база (₽)</label><input type="number" value="${r.ppm||''}" oninput="DB.assets.realty[${i}].ppm=+this.value" style="width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></div>
+        <div class="field" style="grid-column:1/-1;margin:0"><label>Цена м² макс (₽)</label><input type="number" value="${r.ppmMax||''}" oninput="DB.assets.realty[${i}].ppmMax=+this.value" style="width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></div>
+      </div>
+    </div>`).join('');
+}
+function addRealtyRow(){
+  if(!DB.assets.realty)DB.assets.realty=[];
+  DB.assets.realty.push({name:'',sqm:0,ppmMin:0,ppm:0,ppmMax:0,matkapital:0});
+  renderRealtyRows();
+}
+function renderVehicleRows(){
+  const a=DB.assets;
+  if(!a.vehicles)a.vehicles=[];
+  const el=document.getElementById('vehicleList');
+  if(!el)return;
+  el.innerHTML=a.vehicles.map((v,i)=>`
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <input value="${v.name||''}" placeholder="Название (напр. Hyundai Palisade)" oninput="DB.assets.vehicles[${i}].name=this.value"
+          style="flex:1;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <button class="btn sm danger" onclick="DB.assets.vehicles.splice(${i},1);renderVehicleRows()" style="margin-left:8px">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field" style="margin:0"><label>Балансовая стоимость (₽) <span style="font-size:10px;color:var(--text-muted)">сколько потратили</span></label><input type="number" value="${v.balanceCost||''}" oninput="DB.assets.vehicles[${i}].balanceCost=+this.value" style="width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></div>
+        <div class="field" style="margin:0"><label>Оценочная стоимость (₽) <span style="font-size:10px;color:var(--text-muted)">сейчас на рынке</span></label><input type="number" value="${v.marketCost||''}" oninput="DB.assets.vehicles[${i}].marketCost=+this.value" style="width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></div>
+      </div>
+    </div>`).join('');
+}
+function addVehicleRow(){
+  if(!DB.assets.vehicles)DB.assets.vehicles=[];
+  DB.assets.vehicles.push({name:'',balanceCost:0,marketCost:0});
+  renderVehicleRows();
+}
 function openAssets(){
   const a=DB.assets;
-  const map={aFlatSqm:'flatSqm',aFlatPpmMin:'flatPpmMin',aFlatPpm:'flatPricePerSqm',aFlatPpmMax:'flatPpmMax',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
-  Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.value=a[key]||'';});
+  // migrate old format
+  if(!a.realty){
+    a.realty=[{name:'Квартира, пр. Плевицкой 21',sqm:a.flatSqm||54.5,ppmMin:a.flatPpmMin||190000,ppm:a.flatPricePerSqm||200000,ppmMax:a.flatPpmMax||210000,matkapital:a.matkapital||483881.83}];
+  }
+  if(!a.vehicles){
+    a.vehicles=[{name:'Hyundai Palisade',balanceCost:a.car||4044000,marketCost:a.car||4823185}];
+  }
+  renderRealtyRows();
+  renderVehicleRows();
+  document.getElementById('aBroker').value=a.broker||'';
+  document.getElementById('aTrading').value=a.trading||'';
+  document.getElementById('aCash').value=a.cash||'';
+  document.getElementById('lEdu').value=a.eduLoan||'';
   document.getElementById('assetsModal').classList.add('open');
 }
 function saveAssets(){
-  const map={aFlatSqm:'flatSqm',aFlatPpmMin:'flatPpmMin',aFlatPpm:'flatPricePerSqm',aFlatPpmMax:'flatPpmMax',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
-  Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)DB.assets[key]=+el.value||0;});
-  DB.assets.flat = Math.round((DB.assets.flatSqm||0)*(DB.assets.flatPricePerSqm||0));
-  DB.assets.updatedAt=new Date().toISOString();
+  const a=DB.assets;
+  a.broker=+document.getElementById('aBroker').value||0;
+  a.trading=+document.getElementById('aTrading').value||0;
+  a.cash=+document.getElementById('aCash').value||0;
+  a.eduLoan=+document.getElementById('lEdu').value||0;
+  a.updatedAt=new Date().toISOString();
   saveLocal();document.getElementById('assetsModal').classList.remove('open');
   toast('Активы сохранены','ok');
   if(currentPage==='balance'||currentPage==='assets')renderPage();
