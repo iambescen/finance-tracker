@@ -291,7 +291,7 @@ tr:hover td{background:var(--bg3)}
 </div>
 
 <div class="toast" id="toast"></div>
-<input type="file" id="fileInput" accept=".csv,.xlsx,.xls" multiple style="display:none">
+<input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.pdf" multiple style="display:none">
 
 <script>
 const OWN_INN='570701153846';
@@ -529,8 +529,199 @@ function linkTransferPairs(){
   return linked;
 }
 
+
+// ══════════════════════════════════════════
+// PDF PARSERS (PDF.js based)
+// ══════════════════════════════════════════
+
+async function parsePDF(file) {
+  // PDF.js must be loaded
+  if(!window.pdfjsLib) {
+    toast('Загрузка PDF.js...','info');
+    await loadPDFjs();
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+  let fullText = [];
+  for(let i=1; i<=pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    // Sort items by Y position (top to bottom), then X (left to right)
+    const items = content.items.slice().sort((a,b) => {
+      const yDiff = Math.round(b.transform[5]) - Math.round(a.transform[5]);
+      if(Math.abs(yDiff) > 3) return yDiff;
+      return a.transform[4] - b.transform[4];
+    });
+    for(const item of items) {
+      const t = item.str.trim();
+      if(t) fullText.push(t);
+    }
+  }
+  return fullText;
+}
+
+async function loadPDFjs() {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve();
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+function detectPDFBank(lines) {
+  const text = lines.join(' ').toLowerCase();
+  if(text.includes('сбербанк') || text.includes('sberbank') || text.includes('сбер')) return 'sber';
+  if(text.includes('втб') || text.includes('vtb')) return 'vtb';
+  if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff')) return 'tinkoff_pdf';
+  return 'unknown';
+}
+
+// ── Sber PDF parser ──
+function parseSberPDF(lines) {
+  const transactions = [];
+  // Find account number
+  let accountNum = '';
+  for(const line of lines) {
+    const m = line.match(/^(408\d{17,20})$/);
+    if(m) { accountNum = m[1].replace(/\s/g,''); break; }
+  }
+  if(!accountNum) {
+    // Try with spaces
+    for(const line of lines) {
+      const m = line.match(/40817[\s\d]{15,25}/);
+      if(m) { accountNum = m[0].replace(/\s/g,''); break; }
+    }
+  }
+
+  const dateRe = /^(\d{2}\.\d{2}\.\d{4})$/;
+  const timeRe = /^(\d{2}:\d{2})$/;
+  const amountRe = /^([+-]?)\s*(\d[\d\s]*,\d{2})$/;
+  const authRe = /^\d{6}$/;
+
+  // Sber format per row (extracted tokens):
+  // DATE TIME | DATE AUTHCODE | CATEGORY | DESCRIPTION | AMOUNT | BALANCE
+  // We need to find groups of: date, time, category, description, amount, balance
+
+  let i = 0;
+  while(i < lines.length) {
+    const line = lines[i];
+    // Look for date pattern DD.MM.YYYY
+    if(!dateRe.test(line)) { i++; continue; }
+    const opDate = line;
+
+    // Next tokens: time, then processing date, then authcode
+    let time='', category='', descParts=[], amount=0, isCredit=false;
+    i++;
+    if(i < lines.length && timeRe.test(lines[i])) { time=lines[i]; i++; }
+
+    // Skip processing date + authcode (next 2 lines)
+    if(i < lines.length && dateRe.test(lines[i])) i++; // processing date
+    if(i < lines.length && authRe.test(lines[i])) i++; // auth code
+
+    // Category
+    if(i < lines.length) { category = lines[i]; i++; }
+
+    // Description (one or more lines until we hit an amount)
+    while(i < lines.length) {
+      const t = lines[i];
+      // Check if it's an amount
+      const am = t.replace(/\s/g,'').match(/^([+-]?)(\d+,\d{2})$/);
+      if(am) {
+        isCredit = am[1] === '+';
+        amount = parseFloat(am[2].replace(',','.').replace(/\s/g,''));
+        if(!isCredit && am[1]!=='+') isCredit = false;
+        i++;
+        // Skip balance (next amount)
+        if(i < lines.length && lines[i].replace(/\s/g,'').match(/^\d+,\d{2}$/)) i++;
+        break;
+      }
+      // Skip "Операция по счету" boilerplate or add to desc
+      if(!t.includes('Продолжение на следующей странице') && !t.includes('Страница')) {
+        descParts.push(t);
+      }
+      i++;
+    }
+
+    if(!amount) continue;
+    const desc = descParts.join(' ').trim();
+    const dateISO = toISO(opDate);
+    const month = dateISO.slice(0,7);
+    const amtRub = isCredit ? amount : -amount;
+
+    // Detect own transfers (Б. Татьяна, Б. Владислав, себе)
+    const descLow = desc.toLowerCase();
+    const isOwnTransfer =
+      descLow.includes('б. татьяна') || descLow.includes('б. владислав') ||
+      descLow.includes('vladislav') || descLow.includes('безценных') ||
+      descLow.includes('sberbank onl@in vklad') ||
+      (category.toLowerCase().includes('перевод') && (descLow.includes('для б.') || descLow.includes('от б.')));
+
+    const tx = {
+      id: uid(), date: dateISO, month, dateDisplay: opDate,
+      desc: (category + (desc?' · '+desc:'')).slice(0,200),
+      card: accountNum ? '***'+accountNum.slice(-4) : '',
+      account: accountNum,
+      bankCat: category,
+      amtOp: amtRub, curOp:'RUB', amtRub,
+      status:'OK', source:'sber_pdf',
+      counterparty: desc, counterpartyINN:'', counterpartyAcc:'',
+      manualCategory: false, linkedTo:null, linkedAccount:null
+    };
+
+    if(isOwnTransfer) {
+      tx.type='transfer'; tx.group='Перевод'; tx.sub='Внутренний перевод';
+    } else {
+      const c = applyCategForTx(tx);
+      tx.type=c.t; tx.group=c.g; tx.sub=c.s;
+    }
+
+    transactions.push(tx);
+  }
+
+  return transactions;
+}
+
+// ── VTB PDF parser (placeholder — structure TBD after seeing their PDF) ──
+function parseVTBPDF(lines) {
+  // Will implement after seeing VTB PDF structure
+  toast('Формат ВТБ PDF — пришли файл, добавим парсер','info');
+  return [];
+}
+
+async function processPDFFile(file) {
+  toast('Читаем PDF...','info');
+  try {
+    const lines = await parsePDF(file);
+    const bank = detectPDFBank(lines);
+    let txns = [];
+    if(bank === 'sber') txns = parseSberPDF(lines);
+    else if(bank === 'vtb') txns = parseVTBPDF(lines);
+    else {
+      toast('Банк не распознан. Пришли файл — добавим поддержку','err');
+      return;
+    }
+    if(txns.length === 0) {
+      toast('Не удалось извлечь операции из PDF. Попробуй CSV если банк поддерживает','err');
+      return;
+    }
+    ingest(txns);
+  } catch(e) {
+    console.error('PDF parse error:', e);
+    toast('Ошибка чтения PDF: '+e.message,'err');
+  }
+}
+
 function processFile(file){
   const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='pdf'){
+    processPDFFile(file);
+    return;
+  }
   if(['xlsx','xls'].includes(ext)){
     const fr=new FileReader();
     fr.onload=e=>{const wb=XLSX.read(e.target.result,{type:'array'});ingest(processRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])));};
@@ -868,7 +1059,7 @@ function pageUpload(){
   return '<div class="page-header"><div class="page-title">Загрузить выписку</div></div>'
     +'<div class="upload-area" id="uploadArea"><div style="font-size:32px;margin-bottom:12px">📂</div>'
     +'<div style="font-size:15px;font-weight:500;margin-bottom:6px">Перетащите файлы или нажмите</div>'
-    +'<div style="color:var(--muted);font-size:13px;line-height:1.8">CSV или Excel · Тинькофф личный и бизнес<br>Несколько файлов за разные месяцы — OK · Дубли исключаются</div>'
+    +'<div style="color:var(--muted);font-size:13px;line-height:1.8">CSV / Excel / PDF · Тинькофф · Сбербанк · ВТБ<br>Несколько файлов за разные месяцы — OK · Дубли исключаются</div>'
     +'<div style="margin-top:16px"><button class="btn primary" onclick="document.getElementById(\'fileInput\').click()">Выбрать файлы</button></div></div>'
     +(periods.length?'<div class="card"><div class="card-title">Загруженные периоды</div>'
       +periods.map(p=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
