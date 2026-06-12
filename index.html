@@ -196,8 +196,46 @@ tr:hover td{background:var(--bg3)}
 @media(max-width:900px){
   .body{grid-template-columns:1fr}
   .sidebar{display:none}
+  .content{padding:16px;padding-bottom:80px}
   .grid-4{grid-template-columns:1fr 1fr}
   .grid-3{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 12px}
+  .topbar-right .btn{display:none}
+  /* Show only theme and github save button on mobile */
+  .topbar-right .btn.primary{display:inline-flex}
+  .theme-btn{display:inline-flex}
+}
+/* Bottom nav for mobile */
+.bottom-nav{display:none}
+@media(max-width:900px){
+  .bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;
+    background:var(--bg2);border-top:1px solid var(--border);
+    z-index:50;height:58px;
+  }
+  .bn-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:500;
+    transition:color 0.15s;padding:6px 0;
+  }
+  .bn-item.active{color:var(--accent)}
+  .bn-item svg,.bn-icon{font-size:18px;line-height:1}
+  .bn-more-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:500;
+  }
+  /* Drawer overlay */
+  .nav-drawer{
+    display:none;position:fixed;inset:0;z-index:200;
+  }
+  .nav-drawer.open{display:block}
+  .nav-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,0.4)}
+  .nav-drawer-panel{
+    position:absolute;bottom:0;left:0;right:0;
+    background:var(--bg2);border-radius:16px 16px 0 0;
+    padding:12px 0 32px;max-height:80vh;overflow-y:auto;
+  }
+  .nav-drawer-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
 }
 </style>
 </head>
@@ -207,9 +245,8 @@ tr:hover td{background:var(--bg3)}
   <div class="logo">семья<em>.</em>финансы</div>
   <div class="topbar-right">
     <select id="periodSelect" onchange="onPeriodChange()" style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
-    <button class="btn sm" onclick="showPage('upload')">+ Загрузить</button>
+    <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub">⚙</button>
     <button class="btn sm primary" onclick="saveToGithub()">↑ GitHub</button>
-    <button class="btn sm ghost" onclick="openGhModal()">⚙</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
 </div>
@@ -295,6 +332,44 @@ tr:hover td{background:var(--bg3)}
   </div>
 </div>
 
+
+<!-- Mobile bottom nav -->
+<div class="bottom-nav" id="bottomNav">
+  <div class="bn-item" id="bn-dashboard" onclick="showPage('dashboard')">
+    <span class="bn-icon">◈</span><span>Дашборд</span>
+  </div>
+  <div class="bn-item" id="bn-pl" onclick="showPage('pl')">
+    <span class="bn-icon">≡</span><span>P&L</span>
+  </div>
+  <div class="bn-item" id="bn-transactions" onclick="showPage('transactions')">
+    <span class="bn-icon">☰</span><span>Операции</span>
+  </div>
+  <div class="bn-item" id="bn-upload" onclick="showPage('upload')">
+    <span class="bn-icon">↑</span><span>Загрузить</span>
+  </div>
+  <div class="bn-more-btn" onclick="openNavDrawer()">
+    <span class="bn-icon">⋯</span><span style="font-size:10px;color:var(--muted2)">Ещё</span>
+  </div>
+</div>
+
+<!-- Mobile nav drawer -->
+<div class="nav-drawer" id="navDrawer">
+  <div class="nav-drawer-bg" onclick="closeNavDrawer()"></div>
+  <div class="nav-drawer-panel">
+    <div class="nav-drawer-handle"></div>
+    <div style="padding:0 8px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.7px;color:var(--muted);text-transform:uppercase;padding:4px 8px 8px">Отчёты</div>
+      <div class="nav-item" onclick="showPage('cashflow');closeNavDrawer()">⇅ Cash Flow</div>
+      <div class="nav-item" onclick="showPage('balance');closeNavDrawer()">◎ Баланс</div>
+      <div style="height:1px;background:var(--border);margin:8px 6px"></div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.7px;color:var(--muted);text-transform:uppercase;padding:4px 8px 8px">Данные</div>
+      <div class="nav-item" onclick="showPage('accounts');closeNavDrawer()">◻ Счета</div>
+      <div class="nav-item" onclick="showPage('assets');closeNavDrawer()">◇ Активы и долги</div>
+      <div class="nav-item" onclick="showPage('loans');closeNavDrawer()">⊘ Кредиты</div>
+      <div class="nav-item" onclick="showPage('rules');closeNavDrawer()">⊞ Правила</div>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.pdf" multiple style="display:none">
 
@@ -1255,7 +1330,7 @@ function calcTotalBalanceHistory(){
 }
 
 // ══ PAGES ══
-function showPage(page){
+function showPage(page){updateBottomNav(page);
   currentPage=page;
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
@@ -2122,6 +2197,17 @@ function pageLoans(){
     + '<tbody>'+sberRows+'</tbody></table></div>'
     + '</div>'
     + '</div>';
+}
+
+function openNavDrawer(){document.getElementById('navDrawer').classList.add('open');}
+function closeNavDrawer(){document.getElementById('navDrawer').classList.remove('open');}
+
+// Update bottom nav active state
+function updateBottomNav(page){
+  ['dashboard','pl','transactions','upload'].forEach(p=>{
+    const el=document.getElementById('bn-'+p);
+    if(el) el.classList.toggle('active', p===page);
+  });
 }
 
 </script>
