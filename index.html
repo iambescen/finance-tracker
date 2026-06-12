@@ -669,6 +669,7 @@ function detectPDFBank(lines) {
   if(text.includes('справка об уплаченных процентах') || text.includes('погашение основного долга') && text.includes('сбербанк')) return 'sber_loan';
   if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
   if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный'))) return 'vtb_credit';
+  if(text.includes('выдача кредита по договору') || (text.includes('погашение кредита по договору') && text.includes('погашение процентов по договору'))) return 'vtb_mortgage';
   if(text.includes('банк втб') || text.includes('втб (пао)') || (text.includes('втб') && text.includes('филиал'))) return 'vtb';
   if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff')) return 'tinkoff_pdf';
   return 'unknown';
