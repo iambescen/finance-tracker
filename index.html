@@ -771,7 +771,7 @@ function pageBalance(){
       +'<td style="text-align:right;color:'+(net>=0?'var(--income)':'var(--expense)')+'">'+fmtMoney(net,true)+'</td>'
       +'<td style="text-align:right;font-weight:500">'+fmtMoney(h.end)+'</td>'+'</tr>';
   }).join(''):'';
-  const curSymbolMap={'RUB':'₽','USD':'$','EUR':'€','KGS':'с','CNY':'¥','TRY':'₺','AED':'د','GBP':'£','KZT':'₸'};
+  const curSymbolMap={'RUB':'₽','USD':'$','EUR':'€','KGS':'с'};
   function fmtCur(n,cur){const s=Math.abs(n).toLocaleString('ru-RU',{maximumFractionDigits:2,minimumFractionDigits:0});const sym=curSymbolMap[cur||'RUB']||cur||'₽';return (n<0?'−':'')+s+' '+sym;}
   const accsWithBalance=Object.values(DB.accounts).filter(a=>a.currentBalance!=null&&a.currentBalance!=='');
   const accRows=accsWithBalance.map(acc=>{
@@ -883,8 +883,8 @@ function pageUpload(){
 function pageAccounts(){
   const accs=Object.values(DB.accounts);
   const inputStyle='background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;padding:6px 10px;font-family:var(--font)';
-  const CURRENCIES=['RUB','USD','EUR','KGS','CNY','TRY','AED','GBP','KZT'];
-  const curSymbol={'RUB':'₽','USD':'$','EUR':'€','KGS':'с','CNY':'¥','TRY':'₺','AED':'د','GBP':'£','KZT':'₸'};
+  const CURRENCIES=['RUB','USD','EUR','KGS'];
+  const curSymbol={'RUB':'₽','USD':'$','EUR':'€','KGS':'с'};
   return '<div class="page-header"><div class="page-title">Счета</div>'
     +'<div style="font-size:13px;color:var(--muted2)">Введите текущий остаток — система посчитает историю балансов</div></div>'
     +'<div class="card"><div class="card-title">Список счетов</div>'
