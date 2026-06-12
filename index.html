@@ -575,8 +575,8 @@ async function loadPDFjs() {
 
 function detectPDFBank(lines) {
   const text = lines.join(' ').toLowerCase();
-  if(text.includes('сбербанк') || text.includes('sberbank') || text.includes('сбер')) return 'sber';
-  if(text.includes('втб') || text.includes('vtb')) return 'vtb';
+  if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
+  if(text.includes('банк втб') || text.includes('bank vtb') || text.includes('филиал') && text.includes('vtb') || text.includes('втб (пао)')) return 'vtb';
   if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff')) return 'tinkoff_pdf';
   return 'unknown';
 }
@@ -686,12 +686,130 @@ function parseSberPDF(lines) {
   return transactions;
 }
 
-// ── VTB PDF parser (placeholder — structure TBD after seeing their PDF) ──
+
+// ── VTB PDF parser ──
 function parseVTBPDF(lines) {
-  // Will implement after seeing VTB PDF structure
-  toast('Формат ВТБ PDF — пришли файл, добавим парсер','info');
-  return [];
+  const transactions = [];
+
+  // Find account number
+  let accountNum = '';
+  for(const line of lines) {
+    const m = line.match(/408\d{16,18}/);
+    if(m) { accountNum = m[0]; break; }
+  }
+
+  // VTB format tokens per row:
+  // DD.MM.YYYY HH:MM:SS | DD.MM.YYYY | AMOUNT RUB | INCOME_AMT RUB | EXPENSE_AMT RUB | 0.00 | DESCRIPTION
+  // Negative amount in "Сумма операции" = расход, positive = приход
+  // "Приход" column has income amount, "Расход" column has expense amount
+
+  const dateTimeRe = /^(\d{2}\.\d{2}\.\d{4})$/;
+  const timeRe = /^\d{2}:\d{2}:\d{2}$/;
+  const amountRe = /^-?[\d,]+\.?\d*$/;
+  const rubRe = /^RUB$/i;
+  const zeroRe = /^0\.?0*$/;
+  const commissionRe = /^\d+\.\d{2}$/;
+
+  // Clean and group lines into transactions
+  // Strategy: find date lines, collect tokens until next date
+  let i = 0;
+
+  // Skip header lines
+  while(i < lines.length) {
+    if(lines[i].match(/^\d{2}\.\d{2}\.\d{4}$/) && i+1 < lines.length && lines[i+1].match(/^\d{2}:\d{2}:\d{2}$/)) break;
+    i++;
+  }
+
+  while(i < lines.length) {
+    // Expect: date, time
+    if(!lines[i]?.match(/^\d{2}\.\d{2}\.\d{4}$/)) { i++; continue; }
+    const opDate = lines[i]; i++;
+    if(!lines[i]?.match(/^\d{2}:\d{2}:\d{2}$/)) continue;
+    i++; // skip time
+
+    // Processing date
+    if(lines[i]?.match(/^\d{2}\.\d{2}\.\d{4}$/)) i++;
+
+    // Collect numeric tokens and description
+    let amounts = [];
+    let descParts = [];
+    let j = i;
+    let limit = Math.min(i + 20, lines.length);
+
+    while(j < limit) {
+      const t = lines[j];
+      // Stop at next date+time pair
+      if(t.match(/^\d{2}\.\d{2}\.\d{4}$/) && j+1 < lines.length && lines[j+1]?.match(/^\d{2}:\d{2}:\d{2}$/)) break;
+      // Numeric amount (with optional minus, commas)
+      if(t.match(/^-?[\d,]+\.?\d*$/) || t.match(/^0RUB$/i)) {
+        if(!t.match(/^0RUB$/i)) amounts.push(t.replace(/,/g,''));
+      } else if(t.match(/^RUB$/i) || t.match(/^0\.00$/) || t.match(/^0$/)) {
+        // skip
+      } else if(t.length > 2) {
+        descParts.push(t);
+      }
+      j++;
+    }
+    i = j;
+
+    // Parse amounts: first is the signed operation amount
+    // e.g. ["-216000.00", "0", "216000.00", "0.00"]
+    // or   ["216000.00", "216000.00", "0", "0.00"]
+    let opAmt = 0, isCredit = false;
+    if(amounts.length > 0) {
+      const first = parseFloat(amounts[0]);
+      if(!isNaN(first)) {
+        opAmt = Math.abs(first);
+        isCredit = first >= 0;
+      }
+    }
+
+    if(!opAmt) continue;
+
+    const desc = descParts.join(' ').trim();
+    const dateISO = toISO(opDate);
+    const month = dateISO.slice(0,7);
+    const amtRub = isCredit ? opAmt : -opAmt;
+    const descLow = desc.toLowerCase();
+
+    // Own transfers detection for VTB
+    const isOwnTransfer =
+      descLow.includes('безценных татьяна') ||
+      descLow.includes('безценных владислав') ||
+      descLow.includes('внутри втб. безценных') ||
+      (descLow.includes('переводы через сбп') && (descLow.includes('безценных') ));
+
+    // Mortgage payment
+    const isMortgage = descLow.includes('погашение обязательств по кредитному договору') ||
+                       descLow.includes('операции по кредитам');
+
+    const tx = {
+      id: uid(), date: dateISO, month, dateDisplay: opDate,
+      desc: desc.slice(0, 200),
+      card: accountNum ? '***'+accountNum.slice(-4) : '',
+      account: accountNum,
+      bankCat: isMortgage ? 'Кредит' : (isCredit ? 'Приход' : 'Расход'),
+      amtOp: amtRub, curOp: 'RUB', amtRub,
+      status: 'OK', source: 'vtb_pdf',
+      counterparty: desc, counterpartyINN: '', counterpartyAcc: '',
+      manualCategory: false, linkedTo: null, linkedAccount: null
+    };
+
+    if(isOwnTransfer) {
+      tx.type='transfer'; tx.group='Перевод'; tx.sub='Внутренний перевод';
+    } else if(isMortgage) {
+      tx.type='expense'; tx.group='Жильё'; tx.sub='Аренда/Ипотека (платёж)';
+    } else {
+      const c = applyCategForTx(tx);
+      tx.type=c.t; tx.group=c.g; tx.sub=c.s;
+    }
+
+    transactions.push(tx);
+  }
+
+  return transactions;
 }
+
 
 async function processPDFFile(file) {
   toast('Читаем PDF...','info');
