@@ -8,30 +8,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-(function(){
-  var H='ea279eca5412c45d2c582a3971b688b3e13cdb893f7bba5c5faaea499fa21ffd';
-  function go(){
-    if(sessionStorage.getItem('sf_auth')==='1')return;
-    var o=document.createElement('div');
-    o.id='ls';
-    o.style.cssText='position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999';
-    o.innerHTML='<div style="background:#1e293b;border-radius:16px;padding:40px;text-align:center;min-width:280px"><div style="font-size:48px">🔐</div><div style="color:#f1f5f9;font-size:20px;font-weight:700;margin:12px 0 4px">Семейные финансы</div><div style="color:#94a3b8;font-size:13px;margin-bottom:20px">Введите пароль</div><input id="lp" type="password" autofocus style="width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:2px solid #334155;background:#0f172a;color:#f1f5f9;font-size:22px;letter-spacing:8px;text-align:center;outline:none"><p id="le" style="color:#ef4444;font-size:12px;min-height:16px;margin:8px 0"></p><button id="lb" style="width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">Войти</button></div>';
-    document.body.appendChild(o);
-    document.getElementById('lb').addEventListener('click', chk);
-    document.getElementById('lp').addEventListener('keydown',function(e){if(e.key==='Enter')chk();});
-  }
-  window.chk=function(){
-    var v=document.getElementById('lp').value;
-    crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)).then(function(b){
-      var h=Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
-      if(h===H){sessionStorage.setItem('sf_auth','1');document.getElementById('ls').remove();}
-      else{document.getElementById('le').textContent='Неверный пароль';document.getElementById('lp').value='';document.getElementById('lp').focus();setTimeout(function(){document.getElementById('le').textContent=''},2000);}
-    });
-  };
-  window.addEventListener('DOMContentLoaded', go);
-})();
-</script>
-<script>
 const OWN_INN='570701153846';
 const OWN_ACCOUNTS=new Set(['40802810100000077444','40802810500004846488','40817810400000461363','42109810600000071861','40802810600000071861']);
 const CASH_ACCOUNTS={me:'cash_me',wife:'cash_wife'};
@@ -1535,24 +1511,24 @@ function ensureCashAccounts(){
 // ── Toast ──
 function toast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(type||'info')+' show';setTimeout(()=>el.classList.remove('show'),3500);}
 
-// ── Events & Init ──
-window.addEventListener('DOMContentLoaded',function(){
-  document.addEventListener('dragover',e=>e.preventDefault());
-  document.addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].forEach(processFile);});
-  document.getElementById('fileInput').addEventListener('change',e=>{[...e.target.files].forEach(processFile);e.target.value='';});
-  document.addEventListener('click',e=>{
-    if((e.target.id==='uploadArea'||e.target.closest('#uploadArea'))&&!e.target.closest('button'))document.getElementById('fileInput').click();
-    if(e.target===document.getElementById('catModal'))closeCatModal();
-    if(e.target===document.getElementById('assetsModal'))document.getElementById('assetsModal').classList.remove('open');
-    if(e.target===document.getElementById('ghModal'))document.getElementById('ghModal').classList.remove('open');
-  });
-  loadLocal();
-  ensureCashAccounts();
-  const initP=Object.keys(DB.periods).sort().reverse();
-  if(initP.length)currentPeriod=initP[0];
-  refreshUI();
-  loadFromGithub();
+// ── Events ──
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].forEach(processFile);});
+document.getElementById('fileInput').addEventListener('change',e=>{[...e.target.files].forEach(processFile);e.target.value='';});
+document.addEventListener('click',e=>{
+  if((e.target.id==='uploadArea'||e.target.closest('#uploadArea'))&&!e.target.closest('button'))document.getElementById('fileInput').click();
+  if(e.target===document.getElementById('catModal'))closeCatModal();
+  if(e.target===document.getElementById('assetsModal'))document.getElementById('assetsModal').classList.remove('open');
+  if(e.target===document.getElementById('ghModal'))document.getElementById('ghModal').classList.remove('open');
 });
+
+// ── Init ──
+loadLocal();
+ensureCashAccounts();
+const initP=Object.keys(DB.periods).sort().reverse();
+if(initP.length)currentPeriod=initP[0];
+refreshUI();
+loadFromGithub();
 
 
 </script>
