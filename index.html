@@ -1535,24 +1535,24 @@ function ensureCashAccounts(){
 // ── Toast ──
 function toast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(type||'info')+' show';setTimeout(()=>el.classList.remove('show'),3500);}
 
-// ── Events ──
-document.addEventListener('dragover',e=>e.preventDefault());
-document.addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].forEach(processFile);});
-document.getElementById('fileInput').addEventListener('change',e=>{[...e.target.files].forEach(processFile);e.target.value='';});
-document.addEventListener('click',e=>{
-  if((e.target.id==='uploadArea'||e.target.closest('#uploadArea'))&&!e.target.closest('button'))document.getElementById('fileInput').click();
-  if(e.target===document.getElementById('catModal'))closeCatModal();
-  if(e.target===document.getElementById('assetsModal'))document.getElementById('assetsModal').classList.remove('open');
-  if(e.target===document.getElementById('ghModal'))document.getElementById('ghModal').classList.remove('open');
+// ── Events & Init ──
+window.addEventListener('DOMContentLoaded',function(){
+  document.addEventListener('dragover',e=>e.preventDefault());
+  document.addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].forEach(processFile);});
+  document.getElementById('fileInput').addEventListener('change',e=>{[...e.target.files].forEach(processFile);e.target.value='';});
+  document.addEventListener('click',e=>{
+    if((e.target.id==='uploadArea'||e.target.closest('#uploadArea'))&&!e.target.closest('button'))document.getElementById('fileInput').click();
+    if(e.target===document.getElementById('catModal'))closeCatModal();
+    if(e.target===document.getElementById('assetsModal'))document.getElementById('assetsModal').classList.remove('open');
+    if(e.target===document.getElementById('ghModal'))document.getElementById('ghModal').classList.remove('open');
+  });
+  loadLocal();
+  ensureCashAccounts();
+  const initP=Object.keys(DB.periods).sort().reverse();
+  if(initP.length)currentPeriod=initP[0];
+  refreshUI();
+  loadFromGithub();
 });
-
-// ── Init ──
-loadLocal();
-ensureCashAccounts();
-const initP=Object.keys(DB.periods).sort().reverse();
-if(initP.length)currentPeriod=initP[0];
-refreshUI();
-loadFromGithub();
 
 
 </script>
