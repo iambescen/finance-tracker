@@ -263,7 +263,9 @@ tr:hover td{background:var(--bg3)}
   <div class="modal">
     <h3>Активы и обязательства</h3>
     <div class="field"><label>Квартира — площадь (м²)</label><input type="number" id="aFlatSqm" placeholder="54.5" step="0.1"></div>
-    <div class="field"><label>Квартира — цена м² (₽) <span style="font-size:11px;color:var(--text-muted)">обновляй раз в полгода</span></label><input type="number" id="aFlatPpm" placeholder="120000"></div>
+    <div class="field"><label>Цена м² — минимум (₽) <span style="font-size:11px;color:var(--text-muted)">консервативная оценка</span></label><input type="number" id="aFlatPpmMin" placeholder="190000"></div>
+    <div class="field"><label>Цена м² — базовая (₽) <span style="font-size:11px;color:var(--text-muted)">середина рынка</span></label><input type="number" id="aFlatPpm" placeholder="200000"></div>
+    <div class="field"><label>Цена м² — максимум (₽) <span style="font-size:11px;color:var(--text-muted)">оптимистичная</span></label><input type="number" id="aFlatPpmMax" placeholder="210000"></div>
     <div class="field"><label>Материнский капитал (₽) <span style="font-size:11px;color:var(--text-muted)">вложен как первоначальный взнос</span></label><input type="number" id="aMatkapital" placeholder="483881.83"></div>
     <div class="field"><label>Машина (оценочная стоимость, ₽)</label><input type="number" id="aCar" placeholder="0"></div>
     <div class="field"><label>Брокерский счёт (₽)</label><input type="number" id="aBroker" placeholder="0"></div>
@@ -359,7 +361,7 @@ const BANK_CAT={
 
 let DB={
   periods:{},
-  assets:{flat:0,flatSqm:54.5,flatPricePerSqm:120000,matkapital:483881.83,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null},
+  assets:{flat:0,flatSqm:54.5,flatPricePerSqm:200000,flatPpmMin:190000,flatPpmMax:210000,matkapital:483881.83,car:0,broker:0,trading:0,cash:0,mortgage:0,eduLoan:0,updatedAt:null},
   accounts:{},
   rules:[]
 };
@@ -1606,17 +1608,18 @@ function pageAssets(){
   const sberPaid=allTxns.filter(t=>t.account&&t.account.startsWith('sber_loan')&&t.sub==='Погашение тела кредита').reduce((s,t)=>s+Math.abs(t.amtRub),0);
   const vtbMortgage=Math.max(0,3436983.50-vtbPaid);
   const sberLoan=Math.max(0,148585.50-sberPaid);
-  const sqm=a.flatSqm||54.5,ppm=a.flatPricePerSqm||120000;
-  const flatVal=Math.round(sqm*ppm);
+  const sqm=a.flatSqm||54.5,ppm=a.flatPricePerSqm||200000,ppmMin=a.flatPpmMin||190000,ppmMax=a.flatPpmMax||210000;
+  const flatVal=Math.round(sqm*ppm),flatMin=Math.round(sqm*ppmMin),flatMax=Math.round(sqm*ppmMax);
   const matk=a.matkapital||483881.83;
-  const tA=flatVal+(a.car||0)+(a.broker||0)+(a.trading||0)+(a.cash||0);
+  const other=(a.car||0)+(a.broker||0)+(a.trading||0)+(a.cash||0);
+  const tA=flatVal+other,tAmin=flatMin+other,tAmax=flatMax+other;
   const tL=vtbMortgage+sberLoan+(a.eduLoan||0);
-  const equity=tA-tL;
+  const equity=tA-tL,equityMin=tAmin-tL,equityMax=tAmax-tL;
   return '<div class="page-header"><div class="page-title">Активы и долги</div>'
     +'<div class="page-actions"><button class="btn primary" onclick="openAssets()">✎ Цены</button></div></div>'
     +'<div class="card" style="margin-bottom:16px">'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">'
-    +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--income)">'+fmtMoney(equity)+'</div><div style="font-size:12px;color:var(--text-muted)">Собственный капитал</div></div>'
+    +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--income)">'+fmtMoney(equity)+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+fmtMoney(equityMin)+' – '+fmtMoney(equityMax)+'</div><div style="font-size:12px;color:var(--text-muted)">Собственный капитал</div></div>'
     +'<div style="text-align:center"><div style="font-size:24px;font-weight:700">'+fmtMoney(tA)+'</div><div style="font-size:12px;color:var(--text-muted)">Активы</div></div>'
     +'<div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--expense)">'+fmtMoney(tL)+'</div><div style="font-size:12px;color:var(--text-muted)">Долги</div></div>'
     +'</div></div>'
@@ -1727,12 +1730,12 @@ function closeCatModal(){document.getElementById('catModal').classList.remove('o
 // ── Assets modal ──
 function openAssets(){
   const a=DB.assets;
-  const map={aFlatSqm:'flatSqm',aFlatPpm:'flatPricePerSqm',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
+  const map={aFlatSqm:'flatSqm',aFlatPpmMin:'flatPpmMin',aFlatPpm:'flatPricePerSqm',aFlatPpmMax:'flatPpmMax',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
   Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.value=a[key]||'';});
   document.getElementById('assetsModal').classList.add('open');
 }
 function saveAssets(){
-  const map={aFlatSqm:'flatSqm',aFlatPpm:'flatPricePerSqm',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
+  const map={aFlatSqm:'flatSqm',aFlatPpmMin:'flatPpmMin',aFlatPpm:'flatPricePerSqm',aFlatPpmMax:'flatPpmMax',aMatkapital:'matkapital',aCar:'car',aBroker:'broker',aTrading:'trading',aCash:'cash',lEdu:'eduLoan'};
   Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)DB.assets[key]=+el.value||0;});
   DB.assets.flat = Math.round((DB.assets.flatSqm||0)*(DB.assets.flatPricePerSqm||0));
   DB.assets.updatedAt=new Date().toISOString();
