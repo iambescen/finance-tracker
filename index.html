@@ -584,10 +584,10 @@ async function loadPDFjs() {
 
 function detectPDFBank(lines) {
   const text = lines.join(' ').toLowerCase();
+  console.log('[PDF detect] first 300 chars:', text.slice(0,300));
+  console.log('[PDF detect] has kk-:', text.includes('kk-'), 'has кредитный лимит:', text.includes('кредитный лимит'), 'has беспроцентный:', text.includes('беспроцентный'));
   if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
-  // VTB credit card: has KK- contract number and credit limit info (no "банк втб" in header)
-  if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный период'))) return 'vtb_credit';
-  // VTB debit: has "банк втб" or "втб (пао)"
+  if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный'))) return 'vtb_credit';
   if(text.includes('банк втб') || text.includes('втб (пао)') || (text.includes('втб') && text.includes('филиал'))) return 'vtb';
   if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff')) return 'tinkoff_pdf';
   return 'unknown';
