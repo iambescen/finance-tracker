@@ -942,6 +942,7 @@ async function processPDFFile(file) {
     let txns = [];
     if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines);
     else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
+    else if(bank === 'vtb_credit') txns = parseVTBCreditPDF(pdfData.pages);
     else {
       toast('Банк не распознан. Пришли файл — добавим поддержку','err');
       return;
