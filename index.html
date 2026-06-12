@@ -296,7 +296,7 @@ tr:hover td{background:var(--bg3)}
 <script>
 const OWN_INN='570701153846';
 const OWN_ACCOUNTS=new Set(['40802810100000077444','40802810500004846488','40817810400000461363','42109810600000071861','40802810600000071861']);
-const CASH_ACCOUNTS={me:'cash_me',wife:'cash_wife',joint:'cash_joint'};
+const CASH_ACCOUNTS={me:'cash_me',wife:'cash_wife'};
 
 const CAT_TREE={
   income:{subs:['Выручка от услуг/курсов/товаров','Дивиденды/купоны/курсовая разница','Кэшбэк/проценты на остаток','Пособия/вычеты','Возвраты','Прочие доходы']},
@@ -375,7 +375,6 @@ function accLabel(accNum){
   if(acc)return acc.name;
   if(k==='cash_me')return 'Наличные Влад';
   if(k==='cash_wife')return 'Наличные Таня';
-  if(k==='cash_joint')return 'Наличные общие';
   return '***'+k.slice(-4);
 }
 
@@ -392,13 +391,12 @@ function applyRules(tx){
 
 function isCashWithdrawal(tx){
   const d=(tx.desc||'').toLowerCase();
-  return d.includes('снятие в банкомате')||d.includes('снятие наличных')||d.includes('выдача наличных')||d.includes('cash withdrawal')||d.includes('атм');
+  return d.includes('снятие в банкомате')||d.includes('снятие наличных')||d.includes('выдача наличных')||d.includes('cash withdrawal')||d.includes('снятие в т-банк')||d.includes('снятие в t-bank');
 }
 
 function getCashAccountForTx(tx){
   const acc=DB.accounts[tx.account]||{};
   if(acc.owner==='wife') return CASH_ACCOUNTS.wife;
-  if(acc.owner==='joint') return CASH_ACCOUNTS.joint;
   return CASH_ACCOUNTS.me;
 }
 
@@ -936,7 +934,8 @@ function pageAssets(){
 
 // ── Rules ──
 function pageRules(){
-  return '<div class="page-header"><div class="page-title">Правила категоризации</div></div>'
+  return '<div class="page-header"><div class="page-title">Правила категоризации</div>'
+    +'<div class="page-actions"><button class="btn primary" onclick="forceReapply()">↺ Пересчитать все операции</button></div></div>'
     +'<div class="card"><div class="card-title">Применяются ко всем периодам автоматически</div>'
     +(DB.rules.length?DB.rules.map((r,i)=>'<div style="display:grid;grid-template-columns:70px 1fr 1fr 80px 36px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
       +'<span style="font-size:11px;background:var(--bg4);padding:2px 8px;border-radius:4px;color:var(--muted2)">'+(r.type==='inn'?'ИНН':'Слово')+'</span>'
@@ -947,6 +946,24 @@ function pageRules(){
       +'</div>').join('')
       :'<div style="color:var(--muted);padding:20px 0;text-align:center">Правила появятся когда вы измените категорию и нажмёте «Применить ко всем»</div>')
     +'</div>';
+}
+
+function forceReapply(){
+  // Reapply withdrawal detection too
+  for(const period of Object.keys(DB.periods)){
+    const txns=getTxns(period);
+    for(const tx of txns){
+      if(tx.manualCategory)continue;
+      // Re-check cash withdrawal
+      if(isCashWithdrawal(tx)){
+        tx.type='transfer';tx.group='Перевод';tx.sub='Снятие наличных';
+        tx.linkedAccount=getCashAccountForTx(tx);
+      }
+    }
+  }
+  const changed=reapplyAllRules();
+  toast('Пересчитано '+changed+' операций','ok');
+  renderPage();
 }
 
 function deleteRule(i){
@@ -1087,11 +1104,11 @@ function loadLocal(){try{const d=localStorage.getItem('ff_db');if(d){const p=JSO
 
 function ensureCashAccounts(){
   if(!DB.accounts[CASH_ACCOUNTS.me])
-    DB.accounts[CASH_ACCOUNTS.me]={number:CASH_ACCOUNTS.me,display:'Наличные Влад',bank:'Наличные',name:'Наличные Влад',owner:'me',source:'manual',currentBalance:null,virtual:true};
+    DB.accounts[CASH_ACCOUNTS.me]={number:CASH_ACCOUNTS.me,display:'Наличные Влад',bank:'Наличные',name:'Наличные Влад',owner:'me',source:'manual',currentBalance:null,currency:'RUB',virtual:true};
   if(!DB.accounts[CASH_ACCOUNTS.wife])
-    DB.accounts[CASH_ACCOUNTS.wife]={number:CASH_ACCOUNTS.wife,display:'Наличные Таня',bank:'Наличные',name:'Наличные Таня',owner:'wife',source:'manual',currentBalance:null,virtual:true};
-  if(!DB.accounts[CASH_ACCOUNTS.joint])
-    DB.accounts[CASH_ACCOUNTS.joint]={number:CASH_ACCOUNTS.joint,display:'Наличные общие',bank:'Наличные',name:'Наличные общие',owner:'joint',source:'manual',currentBalance:null,virtual:true};
+    DB.accounts[CASH_ACCOUNTS.wife]={number:CASH_ACCOUNTS.wife,display:'Наличные Таня',bank:'Наличные',name:'Наличные Таня',owner:'wife',source:'manual',currentBalance:null,currency:'RUB',virtual:true};
+  // Remove joint cash if it was created before
+  delete DB.accounts['cash_joint'];
 }
 
 // ── Toast ──
