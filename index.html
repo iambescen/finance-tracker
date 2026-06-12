@@ -15,9 +15,9 @@
       .then(b=>Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''));
   }
   function showLock(){
-    document.documentElement.style.visibility='hidden';
     const o=document.createElement('div');
-    o.style.cssText='position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;visibility:visible;';
+    o.id='lock-screen';
+    o.style.cssText='position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;';
     o.innerHTML='<div style="background:#1e293b;border-radius:16px;padding:40px;text-align:center;width:300px;box-shadow:0 25px 50px rgba(0,0,0,.5)">'
       +'<div style="font-size:48px;margin-bottom:16px">🔐</div>'
       +'<div style="color:#f1f5f9;font-size:20px;font-weight:700;margin-bottom:8px">Семейные финансы</div>'
@@ -30,13 +30,20 @@
     const inp=document.getElementById('li'),btn=document.getElementById('lb'),err=document.getElementById('le');
     async function tryUnlock(){
       const h=await sha256(inp.value.trim());
-      if(h===PASS_HASH){sessionStorage.setItem('sf_auth','1');o.remove();document.documentElement.style.visibility='';}
-      else{err.textContent='Неверный пароль';inp.value='';inp.focus();setTimeout(()=>err.textContent='',2000);}
+      if(h===PASS_HASH){
+        sessionStorage.setItem('sf_auth','1');
+        document.getElementById('lock-screen').remove();
+      } else {
+        err.textContent='Неверный пароль';inp.value='';inp.focus();
+        setTimeout(()=>err.textContent='',2000);
+      }
     }
     btn.addEventListener('click',tryUnlock);
     inp.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
   }
-  if(sessionStorage.getItem('sf_auth')!=='1')document.addEventListener('DOMContentLoaded',showLock);
+  if(sessionStorage.getItem('sf_auth')!=='1'){
+    document.addEventListener('DOMContentLoaded',showLock);
+  }
 })();
 </script>
 <script>
