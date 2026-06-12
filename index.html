@@ -566,7 +566,7 @@ async function parsePDF(file) {
     pagesFlat.push(...flatPage);
     pagesCoord.push(words);
   }
-  return {flat: pagesFlat, pages: pagesCoord};
+  return {flatLines: pagesFlat, pages: pagesCoord};
 }
 
 async function loadPDFjs() {
@@ -938,9 +938,9 @@ async function processPDFFile(file) {
   toast('Читаем PDF...','info');
   try {
     const pdfData = await parsePDF(file);
-    const bank = detectPDFBank(pdfData.flat);
+    const bank = detectPDFBank(pdfData.flatLines);
     let txns = [];
-    if(bank === 'sber') txns = parseSberPDF(pdfData.flat);
+    if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines);
     else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
     else {
       toast('Банк не распознан. Пришли файл — добавим поддержку','err');
