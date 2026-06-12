@@ -2064,6 +2064,22 @@ document.addEventListener('click',e=>{
   if(e.target===document.getElementById('ghModal'))document.getElementById('ghModal').classList.remove('open');
 });
 
+
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  localStorage.setItem('theme',isDark?'light':'dark');
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=isDark?'☀️':'🌙';
+}
+function initTheme(){
+  const t=localStorage.getItem('theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
+}
+
 // ── Init ──
 loadLocal();
 ensureCashAccounts();
@@ -2377,20 +2393,6 @@ function updateBottomNav(page){
 })();
 
 
-function toggleTheme(){
-  const html=document.documentElement;
-  const isDark=html.getAttribute('data-theme')==='dark';
-  html.setAttribute('data-theme',isDark?'light':'dark');
-  localStorage.setItem('theme',isDark?'light':'dark');
-  const btn=document.getElementById('themeBtn');
-  if(btn)btn.textContent=isDark?'☀️':'🌙';
-}
-function initTheme(){
-  const t=localStorage.getItem('theme')||'light';
-  document.documentElement.setAttribute('data-theme',t);
-  const btn=document.getElementById('themeBtn');
-  if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
-}
 
 </script>
 </body>
