@@ -584,19 +584,18 @@ function detectPDFBank(lines) {
 // ── Sber PDF parser ──
 function parseSberPDF(lines) {
   const transactions = [];
-  // Find account number
+  // Find account number - Sber format: "40817 810 9 4700 8058607" or compact
   let accountNum = '';
-  for(const line of lines) {
-    const m = line.match(/^(408\d{17,20})$/);
-    if(m) { accountNum = m[1].replace(/\s/g,''); break; }
+  const allText = lines.join(' ');
+  // Try compact
+  let am = allText.match(/408\d{17}/);
+  if(am) { accountNum = am[0]; }
+  else {
+    // Try spaced: 40817 810 9 4700 8058607
+    am = allText.match(/40817[\s\d]{15,25}/);
+    if(am) accountNum = am[0].replace(/\s/g,'');
   }
-  if(!accountNum) {
-    // Try with spaces
-    for(const line of lines) {
-      const m = line.match(/40817[\s\d]{15,25}/);
-      if(m) { accountNum = m[0].replace(/\s/g,''); break; }
-    }
-  }
+  if(accountNum) registerAccount(accountNum, 'sber_pdf', 'Сбербанк');
 
   const dateRe = /^(\d{2}\.\d{2}\.\d{4})$/;
   const timeRe = /^(\d{2}:\d{2})$/;
@@ -629,15 +628,15 @@ function parseSberPDF(lines) {
     // Description (one or more lines until we hit an amount)
     while(i < lines.length) {
       const t = lines[i];
-      // Check if it's an amount
-      const am = t.replace(/\s/g,'').match(/^([+-]?)(\d+,\d{2})$/);
+      // Check if it's an amount like "1 280,00" or "+2 000,00"
+      const cleaned = t.replace(/\s/g,'');
+      const am = cleaned.match(/^([+]?)(\d[\d]*,\d{2})$/);
       if(am) {
         isCredit = am[1] === '+';
-        amount = parseFloat(am[2].replace(',','.').replace(/\s/g,''));
-        if(!isCredit && am[1]!=='+') isCredit = false;
+        amount = parseFloat(am[2].replace(',','.'));
         i++;
-        // Skip balance (next amount)
-        if(i < lines.length && lines[i].replace(/\s/g,'').match(/^\d+,\d{2}$/)) i++;
+        // Skip balance (next plain amount without +)
+        if(i < lines.length && lines[i].replace(/\s/g,'').match(/^\d[\d]*,\d{2}$/)) i++;
         break;
       }
       // Skip "Операция по счету" boilerplate or add to desc
@@ -693,10 +692,10 @@ function parseVTBPDF(lines) {
 
   // Find account number
   let accountNum = '';
-  for(const line of lines) {
-    const m = line.match(/408\d{16,18}/);
-    if(m) { accountNum = m[0]; break; }
-  }
+  const allTextVTB = lines.join(' ');
+  const amVTB = allTextVTB.match(/408\d{16,18}/);
+  if(amVTB) accountNum = amVTB[0].replace(/\s/g,'');
+  if(accountNum) registerAccount(accountNum, 'vtb_pdf', 'ВТБ');
 
   // VTB format tokens per row:
   // DD.MM.YYYY HH:MM:SS | DD.MM.YYYY | AMOUNT RUB | INCOME_AMT RUB | EXPENSE_AMT RUB | 0.00 | DESCRIPTION
