@@ -212,5 +212,15 @@
     "source": "cifra_pdf",
     "currentBalance": 0,
     "currency": "RUB"
+  },
+  "broker_cifra_1861037": {
+    "number": "broker_cifra_1861037",
+    "display": "***1037",
+    "bank": "Цифра Брокер",
+    "name": "Цифра Брокер ***1037",
+    "owner": "me",
+    "source": "cifra_broker_xlsx",
+    "currentBalance": null,
+    "currency": "RUB"
   }
 }
