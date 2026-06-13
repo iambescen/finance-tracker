@@ -2896,7 +2896,19 @@ function saveCatModal(applyToAll){
   if(applyToAll&&tx.counterpartyINN&&tx.counterpartyINN!==OWN_INN){
     const changed=addRule({type:'inn',value:tx.counterpartyINN,group:newGroup,sub:newSub,txType:newType});
     toast('Правило по ИНН создано · обновлено '+changed+' операций во всех месяцах','ok');
-  }else{saveLocal();toast('Категория сохранена','ok');}
+  }else{
+    saveLocal();
+    // Save to GitHub immediately
+    const{token}=ghCfg();
+    if(token){
+      const date=new Date().toLocaleDateString('ru-RU');
+      ghPut('data/'+currentPeriod+'.json',JSON.stringify(DB.periods[currentPeriod],null,2),'Edit category '+currentPeriod+' — '+date)
+        .then(()=>toast('Категория сохранена ✓','ok'))
+        .catch(()=>toast('Категория сохранена локально','ok'));
+    } else {
+      toast('Категория сохранена','ok');
+    }
+  }
   closeCatModal();filterTxns();
 }
 function closeCatModal(){document.getElementById('catModal').classList.remove('open');editTxId=null;}
