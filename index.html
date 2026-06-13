@@ -453,7 +453,7 @@ let DB={
   accounts:{},
   rules:[]
 };
-let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month';
+let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null;
 
 function uid(){return Math.random().toString(36).slice(2,10);}
 function parseAmt(s){if(!s) return 0;return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
@@ -1542,11 +1542,20 @@ function pageDash(){
   if(!allP.length) return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:12px;color:var(--muted)">'
     +'<div style="width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite"></div>'
     +'<div>Загрузка данных...</div></div>';
+  // Get available years from periods
+  const availYears=[...new Set(allP.map(p=>+p.split('-')[0]))].sort().reverse();
+  const curY=dashYear||+currentPeriod.split('-')[0];
+  const curQ=dashQuarter||Math.ceil(+currentPeriod.split('-')[1]/3);
   let selP=[currentPeriod];
-  if(range==='quarter'){const[y,m]=currentPeriod.split('-').map(Number),qs=m-((m-1)%3);selP=allP.filter(p=>{const[py,pm]=p.split('-').map(Number);return py===y&&pm>=qs&&pm<qs+3;});}
-  else if(range==='year'){const y=currentPeriod.split('-')[0];selP=allP.filter(p=>p.startsWith(y));}
-  else if(range==='all')selP=allP;
-  const label=range==='month'?fmtMonth(currentPeriod):range==='quarter'?'Q'+Math.ceil(+currentPeriod.split('-')[1]/3)+' '+currentPeriod.split('-')[0]:range==='year'?currentPeriod.split('-')[0]:'Всё время';
+  if(range==='quarter'){
+    const qStart=(curQ-1)*3+1;
+    selP=allP.filter(p=>{const[py,pm]=p.split('-').map(Number);return py===curY&&pm>=qStart&&pm<qStart+3;});
+  } else if(range==='year'){
+    selP=allP.filter(p=>p.startsWith(String(curY)));
+  } else if(range==='all'){
+    selP=allP;
+  }
+  const label=range==='month'?fmtMonth(currentPeriod):range==='quarter'?'Q'+curQ+' '+curY:range==='year'?String(curY):'Всё время';
   const ownerFilter=document.getElementById('ownerFilter')?.value||'all';
   const txns=selP.flatMap(p=>getTxns(p)).filter(t=>{
     if(t.type==='transfer')return false;
@@ -1582,7 +1591,15 @@ function pageDash(){
     +'<select id="dashRange" onchange="setDashRange(this.value)" style="'+selStyle+'">'
     +['month','quarter','year','all'].map(v=>'<option value="'+v+'"'+(v===range?' selected':'')+'>'+{month:'Месяц',quarter:'Квартал',year:'Год',all:'Всё время'}[v]+'</option>').join('')
     +'</select>'
-    +'<select onchange="selectPeriod(this.value)" style="'+selStyle+'">'+dashPeriodOpts+'</select>'
+    +(range==='quarter'?
+      '<select onchange="setDashYear(this.value)" style="'+selStyle+'">'+availYears.map(y=>'<option value="'+y+'"'+(y===curY?' selected':'')+'>'+y+'</option>').join('')+'</select>'
+      +'<select onchange="setDashQuarter(this.value)" style="'+selStyle+'">'+[1,2,3,4].map(q=>'<option value="'+q+'"'+(q===curQ?' selected':'')+'>Q'+q+'</option>').join('')+'</select>'
+    :range==='year'?
+      '<select onchange="setDashYear(this.value)" style="'+selStyle+'">'+availYears.map(y=>'<option value="'+y+'"'+(y===curY?' selected':'')+'>'+y+'</option>').join('')+'</select>'
+    :range==='month'?
+      '<select onchange="selectPeriod(this.value)" style="'+selStyle+'">'+dashPeriodOpts+'</select>'
+    :'')
+
     +'</div></div>'
     +'<div class="grid-4">'
     +'<div class="card-sm"><div class="metric-label">Доходы</div><div class="metric-value income">'+fmtMoney(income)+'</div>'+(dI!==null?'<div class="delta '+(+dI>=0?'up':'down')+'">'+(+dI>=0?'↑':'↓')+Math.abs(dI)+'% к пред.</div>':'')+'</div>'
@@ -2269,7 +2286,21 @@ function initPeriodList(){
 }
 
 
-function setDashRange(v){dashRange=v;renderPage();}
+function setDashRange(v){
+  dashRange=v;
+  // Set defaults for quarter/year based on currentPeriod
+  if(v==='quarter'&&!dashQuarter){
+    const[y,m]=currentPeriod.split('-').map(Number);
+    dashQuarter=Math.ceil(m/3);
+    dashYear=y;
+  }
+  if(v==='year'&&!dashYear){
+    dashYear=+currentPeriod.split('-')[0];
+  }
+  renderPage();
+}
+function setDashQuarter(v){dashQuarter=+v;renderPage();}
+function setDashYear(v){dashYear=+v;renderPage();}
 
 // ── Init ──
 loadLocal();
