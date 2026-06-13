@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "oplata proezda",
+    "group": "Транспорт",
+    "sub": "Такси/Общественный транспорт",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "ch46002",
     "group": "Питание",
     "sub": "Продукты/супермаркеты",
