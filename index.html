@@ -298,6 +298,33 @@ tr:hover td{background:var(--bg3)}
 </div>
 
 <!-- Assets modal -->
+<div class="modal-bg" id="manualTxModal">
+  <div class="modal" style="width:480px">
+    <h3>Добавить операцию вручную</h3>
+    <div class="field"><label>Дата</label><input type="date" id="mtDate"></div>
+    <div class="field"><label>Тип</label>
+      <select id="mtType" onchange="updateMtGroups()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <option value="expense">Расход</option>
+        <option value="income">Доход</option>
+      </select>
+    </div>
+    <div class="field"><label>Категория</label>
+      <select id="mtGroup" onchange="updateMtSubs()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
+    </div>
+    <div class="field"><label>Подкатегория</label>
+      <select id="mtSub" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
+    </div>
+    <div class="field"><label>Сумма (₽)</label><input type="number" id="mtAmt" placeholder="0" min="0" step="1"></div>
+    <div class="field"><label>Описание</label><input type="text" id="mtDesc" placeholder="Например: Детский сад — наличные"></div>
+    <div class="field"><label>Счёт</label>
+      <select id="mtAccount" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('manualTxModal').classList.remove('open')">Отмена</button>
+      <button class="btn primary" onclick="saveManualTx()">Добавить</button>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="assetsModal">
   <div class="modal" style="width:560px">
     <h3>Активы и обязательства</h3>
@@ -2463,7 +2490,7 @@ function pageTxns(){
   const txPeriods=Object.keys(DB.periods).sort().reverse();
   const txSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
   const txPeriodOpts=txPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
+  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select><button class="btn sm primary" onclick="openManualTx()">+ Добавить</button></div></div>'
     +'<div class="tbl-wrap"><div class="tbl-toolbar">'
     +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
     +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
@@ -2525,6 +2552,90 @@ function filterTxns(){
   const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
 }
 
+
+
+function openManualTx(){
+  // Set today's date
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('mtDate').value=today;
+  // Fill account options
+  const accSel=document.getElementById('mtAccount');
+  accSel.innerHTML=Object.values(DB.accounts).filter(a=>!a.virtual)
+    .map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('');
+  // Add cash accounts
+  accSel.innerHTML+='<option value="cash_me">Наличные Влад</option>'
+    +'<option value="cash_wife">Наличные Таня</option>';
+  updateMtGroups();
+  document.getElementById('manualTxModal').classList.add('open');
+}
+function updateMtGroups(){
+  const type=document.getElementById('mtType').value;
+  const groups=type==='income'
+    ?Object.keys(CAT_TREE.income.subs||{}).concat(['Доход'])
+    :Object.keys(CAT_TREE.expense.groups||{});
+  const sel=document.getElementById('mtGroup');
+  sel.innerHTML=groups.map(g=>'<option>'+g+'</option>').join('');
+  updateMtSubs();
+}
+function updateMtSubs(){
+  const type=document.getElementById('mtType').value;
+  const group=document.getElementById('mtGroup').value;
+  let subs=['Прочее'];
+  if(type==='income'){
+    subs=CAT_TREE.income.subs?.[group]||['Прочие доходы'];
+  } else {
+    subs=CAT_TREE.expense.groups?.[group]||['Прочие расходы'];
+  }
+  document.getElementById('mtSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
+}
+function saveManualTx(){
+  const date=document.getElementById('mtDate').value;
+  if(!date){toast('Укажите дату','err');return;}
+  const amt=parseFloat(document.getElementById('mtAmt').value)||0;
+  if(!amt){toast('Укажите сумму','err');return;}
+  const type=document.getElementById('mtType').value;
+  const group=document.getElementById('mtGroup').value;
+  const sub=document.getElementById('mtSub').value;
+  const desc=document.getElementById('mtDesc').value||group+' (вручную)';
+  const account=document.getElementById('mtAccount').value;
+  const parts=date.split('-');
+  const month=date.slice(0,7);
+  const dateDisplay=parts[2]+'.'+parts[1]+'.'+parts[0];
+  const amtRub=type==='expense'?-amt:amt;
+
+  const tx={
+    id:Math.random().toString(36).slice(2,10),
+    date,month,dateDisplay,
+    desc,
+    card:DB.accounts[account]?.name||'Наличные',
+    account,
+    bankCat:'Ручной ввод',
+    amtOp:amtRub,curOp:'RUB',amtRub,
+    status:'OK',source:'manual',
+    counterparty:'',counterpartyINN:'',counterpartyAcc:'',
+    manualCategory:true,linkedTo:null,linkedAccount:null,
+    type,group,sub
+  };
+
+  if(!DB.periods[month])DB.periods[month]={transactions:[]};
+  DB.periods[month].transactions.push(tx);
+  saveLocal();
+
+  // Save to GitHub
+  const{token}=ghCfg();
+  if(token){
+    ghPut('data/'+month+'.json',JSON.stringify(DB.periods[month],null,2),'Manual tx '+month)
+      .then(()=>toast('Операция добавлена ✓','ok'))
+      .catch(()=>toast('Операция добавлена (локально)','ok'));
+  } else {
+    toast('Операция добавлена','ok');
+  }
+
+  document.getElementById('manualTxModal').classList.remove('open');
+  // Switch to that period and refresh
+  currentPeriod=month;
+  refreshUI();
+}
 
 function markAsExpense(txId, period){
   const txns=getTxns(period);
