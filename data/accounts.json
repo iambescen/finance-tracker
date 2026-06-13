@@ -200,7 +200,7 @@
     "name": "ББ *7466",
     "owner": "me",
     "source": "bakay_xlsx",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "USD"
   },
   "40914810800007588136": {
