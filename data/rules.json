@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "ooo aksioma",
+    "group": "Здоровье",
+    "sub": "Визиты врача/платные услуги",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "pyaterochka",
     "group": "Питание",
     "sub": "Продукты/супермаркеты",
