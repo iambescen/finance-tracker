@@ -194,6 +194,11 @@ tr:hover td{background:var(--bg3)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 
+.nav-drawer{display:none;position:fixed;inset:0;z-index:200;}
+.nav-drawer.open{display:block}
+.nav-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,0.4)}
+.nav-drawer-panel{position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;padding:12px 0 32px;max-height:80vh;overflow-y:auto;}
+.nav-drawer-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
 @media(max-width:900px){
   .body{grid-template-columns:1fr}
   .sidebar{display:none}
@@ -226,9 +231,7 @@ tr:hover td{background:var(--bg3)}
     gap:3px;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:500;
   }
   /* Drawer overlay */
-}
-/* Nav drawer - always hidden by default, shown only on mobile when opened */
-.nav-drawer{display:none;position:fixed;inset:0;z-index:200;}
+
 .nav-drawer.open{display:block}
 .nav-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,0.4)}
 .nav-drawer-panel{
@@ -2279,7 +2282,7 @@ function pageDash(){
   const selStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
   const dashPeriods=Object.keys(DB.periods).sort().reverse();
   const dashPeriodOpts=dashPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Дашборд</div>'
+  return '<div class="page-header"><div class="page-title">Дашборд <span style="font-weight:400;color:var(--text-muted);font-size:14px">'+ label +'</span></div>'
     +'<div class="page-actions">'
     +'<select id="dashRange" onchange="setDashRange(this.value)" style="'+selStyle+'">'
     +['month','quarter','year','all'].map(v=>'<option value="'+v+'"'+(v===range?' selected':'')+'>'+{month:'Месяц',quarter:'Квартал',year:'Год',all:'Всё время'}[v]+'</option>').join('')
@@ -2478,6 +2481,17 @@ function bindTxnEvents(){
   document.getElementById('txBody').addEventListener('click',e=>{const btn=e.target.closest('[data-id]');if(btn)openCatModal(btn.dataset.id);});
 }
 
+function setTxPeriod(v){
+  if(v==='all'){txAllPeriods=true;}
+  else{txAllPeriods=false;currentPeriod=v;const s=document.getElementById('periodSelect');if(s)s.value=v;}
+  renderPage();
+}
+function saveTxFilters(){
+  txFilterSearch=(document.getElementById('txSearch')?.value||'');
+  txFilterGroup=document.getElementById('txGroup')?.value||'';
+  txFilterType=document.getElementById('txType')?.value||'';
+  txFilterAccount=document.getElementById('txAccount')?.value||'';
+}
 function filterTxns(){
   const search=(document.getElementById('txSearch')?.value||'').toLowerCase();
   const group=document.getElementById('txGroup')?.value||'';
@@ -2515,6 +2529,21 @@ function filterTxns(){
       +'</tr>';
   }).join('');
   const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
+}
+
+function markAsExpense(txId,period){
+  const p=period||currentPeriod;
+  const txns=getTxns(p);
+  const tx=txns.find(t=>t.id===txId);
+  if(!tx)return;
+  tx.type='expense';tx.group='Прочее';tx.sub='Переводы физлицам';tx.manualCategory=true;
+  DB.periods[p].transactions=txns;
+  saveLocal();
+  const{token}=ghCfg();
+  if(token){ghPut('data/'+p+'.json',JSON.stringify(DB.periods[p],null,2),'Mark expense '+p)
+    .then(()=>toast('Помечено как расход ✓','ok')).catch(()=>toast('Сохранено локально','ok'));}
+  else toast('Помечено как расход','ok');
+  filterTxns();
 }
 
 // ── Upload ──
