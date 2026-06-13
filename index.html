@@ -2564,8 +2564,11 @@ function pageAssets(){
 
 function pageInvestments(){
   const prices=DB.investPrices||{};
-  const allHoldings=Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0);
-  if(!allHoldings.length){
+  const selStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
+
+  // All accounts with investments
+  const accounts=Object.entries(DB.investments||{});
+  if(!accounts.length){
     return '<div class="page-header"><div class="page-title">Инвестиции</div></div>'
       +'<div class="card" style="text-align:center;padding:40px;color:var(--muted)">'
       +'<div style="font-size:32px;margin-bottom:12px">📊</div>'
@@ -2573,21 +2576,41 @@ function pageInvestments(){
       +'<div style="font-size:13px">Загрузите брокерский отчёт Тинькофф — данные появятся автоматически</div>'
       +'</div>';
   }
+
+  // Account filter options
+  const accOpts='<option value="all"'+(investFilter==='all'?' selected':'')+'>Все счета</option>'
+    +accounts.map(([accId,data])=>{
+      const name=DB.accounts[accId]?.name||data.holdings?.[0]?.brokerName||accId;
+      return '<option value="'+accId+'"'+(investFilter===accId?' selected':'')+'>'+name+'</option>';
+    }).join('');
+
+  // Filter holdings
+  const filteredAccounts=investFilter==='all'?accounts:accounts.filter(([id])=>id===investFilter);
+  const allHoldings=filteredAccounts.flatMap(([,a])=>a.holdings||[]).filter(h=>h.qty>0);
+
+  // Total across all accounts (for summary cards)
+  const totalAllValue=accounts.flatMap(([,a])=>a.holdings||[]).filter(h=>h.qty>0)
+    .reduce((s,h)=>s+(h.qty*(prices[h.isin||h.ticker]||0)),0);
+
   let totalValue=0;
-  const byBroker={};
-  for(const h of allHoldings){
-    const k=h.brokerName||'Брокер';
-    if(!byBroker[k])byBroker[k]=[];
-    byBroker[k].push(h);
-  }
   let rows='';
-  for(const[broker,holdings]of Object.entries(byBroker)){
-    rows+='<tr><td colspan="5" style="background:var(--bg3);font-weight:600;padding:10px 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">'+broker+'</td></tr>';
+
+  // Group by account
+  for(const[accId,data] of filteredAccounts){
+    const holdings=(data.holdings||[]).filter(h=>h.qty>0);
+    if(!holdings.length)continue;
+    const accName=DB.accounts[accId]?.name||holdings[0]?.brokerName||accId;
+    let accTotal=0;
+
+    // Account header row
+    rows+='<tr><td colspan="5" style="background:var(--bg3);font-weight:600;padding:10px 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">'+accName+'</td></tr>';
+
     for(const h of holdings){
       const priceKey=h.isin||h.ticker;
       const price=prices[priceKey]||0;
       const value=h.qty*price;
       totalValue+=value;
+      accTotal+=value;
       const type=h.name.includes('обб')||h.name.includes('обл')?'Облигация':h.name.includes('паи')||h.name.includes('БПИФ')?'Фонд':'Акция';
       rows+='<tr>'
         +'<td><div style="font-weight:500">'+h.name+'</div>'
@@ -2600,11 +2623,19 @@ function pageInvestments(){
         +'<td style="text-align:right;font-weight:500">'+(value>0?fmtMoney(value):'—')+'</td>'
         +'</tr>';
     }
+    // Account subtotal
+    if(accTotal>0)rows+='<tr style="border-top:2px solid var(--border)"><td colspan="4" style="padding:8px 12px;font-size:12px;color:var(--muted)">Итого '+accName+'</td>'
+      +'<td style="text-align:right;font-weight:600;padding:8px 12px">'+fmtMoney(accTotal)+'</td></tr>';
   }
+
   return '<div class="page-header"><div class="page-title">Инвестиции</div>'
-    +'<div class="page-actions"><button class="btn sm" onclick="fetchMOEXPrices()">↻ Цены MOEX</button></div></div>'
+    +'<div class="page-actions">'
+    +'<select onchange="investFilter=this.value;renderPage()" style="'+selStyle+'">'+accOpts+'</select>'
+    +'<button class="btn sm" onclick="fetchMOEXPrices()">↻ Цены MOEX</button>'
+    +'</div></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">'
-    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--income)">'+fmtMoney(totalValue)+'</div><div style="font-size:12px;color:var(--muted)">Стоимость портфеля</div></div>'
+    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--income)">'+fmtMoney(totalAllValue)+'</div><div style="font-size:12px;color:var(--muted)">Весь портфель</div></div>'
+    +(investFilter!=='all'?'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+fmtMoney(totalValue)+'</div><div style="font-size:12px;color:var(--muted)">Выбранный счёт</div></div>':'')
     +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+allHoldings.length+'</div><div style="font-size:12px;color:var(--muted)">Позиций</div></div>'
     +'</div>'
     +'<div class="card"><div class="tbl-wrap"><table>'
