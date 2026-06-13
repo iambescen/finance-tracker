@@ -584,6 +584,141 @@ function parseGeneric(rows){
   }).filter(Boolean);
 }
 
+
+// ── Bakay Bank (Kyrgyzstan) XLSX parser ──
+function parseBakayBank(rows) {
+  // rows come from XLSX.utils.sheet_to_json with header:1 (array of arrays)
+  // We need to find the header row and account info
+  return rows; // handled separately in processBakayRows
+}
+
+function processBakayRows(worksheet) {
+  // Parse raw worksheet data
+  const txns = [];
+  let accountNum = null;
+  let currency = 'KGS';
+  let headerRow = -1;
+
+  // Convert worksheet to array
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:G30');
+  const rows = [];
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const row = [];
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = worksheet[XLSX.utils.encode_cell({r, c})];
+      row.push(cell ? cell.v : null);
+    }
+    rows.push(row);
+  }
+
+  // Extract account info and find header
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row[0] === 'Номер счета:' && row[1]) {
+      const accInfo = String(row[1]);
+      accountNum = accInfo.split(',')[0].trim().replace(/\s/g,'');
+      if (accInfo.toLowerCase().includes('доллар') || accInfo.toLowerCase().includes('usd')) {
+        currency = 'USD';
+      } else if (accInfo.toLowerCase().includes('сом') || accInfo.toLowerCase().includes('kgs')) {
+        currency = 'KGS';
+      }
+    }
+    if (row[0] === '№ dok.' || row[0] === '№ doc.' || (row[1] === 'Дата' && row[3] === 'Дебет')) {
+      headerRow = i;
+      break;
+    }
+  }
+
+  if (headerRow < 0) return [];
+  if (!accountNum) accountNum = 'bakay_unknown';
+
+  // Register account
+  registerAccount(accountNum, 'bakay_xlsx', 'Бакай Банк', currency);
+
+  // Get exchange rate for KGS accounts (USD rate)
+  const KGS_TO_RUB = 1.08; // approximate, can be updated
+
+  // Parse transactions
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row[0] || row[0] === null) continue;
+    if (String(row[2] || '').includes('Итого') || String(row[2] || '').includes('Сальдо')) break;
+
+    const docNum = String(row[0]);
+    const dateRaw = row[1] ? String(row[1]) : '';
+    const correspondent = String(row[2] || '');
+    const debitRaw = row[3];
+    const creditRaw = row[4];
+    const desc = String(row[5] || '').trim();
+
+    // Parse date "09.06.2026 10:39:46" → "2026-06-09"
+    const dateParts = dateRaw.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+    if (!dateParts) continue;
+    const date = `${dateParts[3]}-${dateParts[2]}-${dateParts[1]}`;
+    const month = date.slice(0, 7);
+
+    // Parse amounts (may have spaces as thousands separator)
+    const debit = parseFloat(String(debitRaw || '0').replace(/\s/g, '')) || 0;
+    const credit = parseFloat(String(creditRaw || '0').replace(/\s/g, '')) || 0;
+    if (debit === 0 && credit === 0) continue;
+
+    // Determine amount and type
+    const isExpense = debit > 0;
+    const amtLocal = isExpense ? -debit : credit;
+
+    // Convert to RUB
+    let amtRub;
+    if (currency === 'USD') {
+      // Get USD/RUB rate from description or use current approximate
+      const rateMatch = desc.match(/курс[:\s]+([\d.]+)/i);
+      const usdRate = 90; // approximate USD/RUB
+      amtRub = amtLocal * usdRate;
+    } else {
+      // KGS to RUB
+      amtRub = amtLocal * KGS_TO_RUB;
+    }
+
+    // Detect if it's a conversion between own accounts
+    const isConversion = desc.toLowerCase().includes('конвертация');
+    const isTopup = desc.toLowerCase().includes('пополнение карты');
+
+    // Categorize
+    let type, group, sub;
+    if (isConversion || isTopup) {
+      type = 'transfer'; group = 'Перевод'; sub = isConversion ? 'Конвертация валюты' : 'Пополнение карты';
+    } else {
+      const c = applyCategForTx({desc, amtRub});
+      type = isExpense ? 'expense' : 'income';
+      group = c.g; sub = c.s;
+      if (!isExpense) { type = 'income'; group = c.t === 'income' ? c.g : 'Доходы'; sub = c.t === 'income' ? c.s : 'Прочие доходы'; }
+    }
+
+    txns.push({
+      id: Math.random().toString(36).slice(2,10),
+      date, month,
+      dateDisplay: `${dateParts[1]}.${dateParts[2]}.${dateParts[3]}`,
+      desc: desc.slice(0, 120),
+      card: currency === 'USD' ? 'Бакай USD' : 'Бакай KGS',
+      account: accountNum,
+      bankCat: isConversion ? 'Конвертация' : isTopup ? 'Пополнение' : (isExpense ? 'Расход' : 'Доход'),
+      amtOp: amtLocal,
+      curOp: currency,
+      amtRub: Math.round(amtRub * 100) / 100,
+      status: 'OK',
+      source: 'bakay_xlsx',
+      counterparty: correspondent,
+      counterpartyINN: '',
+      counterpartyAcc: '',
+      manualCategory: false,
+      linkedTo: null,
+      linkedAccount: null,
+      type, group, sub
+    });
+  }
+
+  return txns;
+}
+
 function detectBank(keys){
   const k=keys.join('|').toLowerCase();
   if(k.includes('тип операции')&&k.includes('дата проведения')&&k.includes('номер счёта'))return 'tinkoff_business';
@@ -1278,7 +1413,20 @@ function processFile(file){
   }
   if(['xlsx','xls'].includes(ext)){
     const fr=new FileReader();
-    fr.onload=e=>{const wb=XLSX.read(e.target.result,{type:'array'});ingest(processRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])));};
+    fr.onload=e=>{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      // Detect Bakay Bank by sheet content
+      const cell=ws['A4']||ws['B6']||{};
+      const isBakay=(ws['A4']&&ws['A4'].v==='Сводная выписка по счету')||(ws['B6']&&String(ws['B6'].v||'').includes('Безценных'));
+      if(isBakay){
+        const txns=processBakayRows(ws);
+        if(txns.length){ingest(txns);}
+        else{toast('Бакай Банк: не найдены операции','err');}
+      } else {
+        ingest(processRows(XLSX.utils.sheet_to_json(ws)));
+      }
+    };
     fr.readAsArrayBuffer(file);
   }else{
     const fr=new FileReader();
