@@ -592,47 +592,37 @@ function parseGeneric(rows){
 function parseCifraBankPDF(pages){
   const txns=[];
   let accountNum=null;
-  const allText=pages.map(p=>p.map(t=>t.str||'').join(' ')).join(' ');
-  console.log('[Cifra] pages:', pages.length, 'total items:', pages.reduce((s,p)=>s+p.length,0));
-  console.log('[Cifra] allText sample:', allText.slice(0,200));
-  // Log first page structure
-  if(pages[0]){
-    const sample=pages[0].filter(i=>i.transform&&i.transform.length>=6).slice(0,10);
-    console.log('[Cifra] first page sample:', JSON.stringify(sample.map(i=>({str:i.str,x:Math.round(i.transform[4]),y:Math.round(i.transform[5])}))));
-    // Log raw first item to see all fields
-    if(pages[0]&&pages[0][0])console.log('[Cifra] raw item 0:', JSON.stringify(pages[0][0]));
-    if(pages[0]&&pages[0][1])console.log('[Cifra] raw item 1:', JSON.stringify(pages[0][1]));
-    // Check flatLines
-    console.log('[Cifra] pages[0] type:', typeof pages[0], Array.isArray(pages[0]));
-    console.log('[Cifra] pages[0][0] keys:', pages[0]&&pages[0][0]?Object.keys(pages[0][0]):[]);
-  }
+
+  // Structure: each item has {text, x, top}
+  const allText=pages.map(p=>p.map(t=>t.text||'').join(' ')).join(' ').toLowerCase();
 
   // Extract account number
-  const accMatch=allText.match(/Лицевой счёт[^\d]*(\d{20})/);
+  const accMatch=allText.match(/лицевой счёт[^\d]*(\d{20})/);
   if(accMatch)accountNum=accMatch[1];
+  if(!accountNum){
+    const m2=(pages[0]||[]).find(i=>(i.text||'').match(/\d{20}/));
+    if(m2)accountNum=m2.text.match(/(\d{20})/)[1];
+  }
   if(!accountNum)accountNum='cifra_unknown';
 
   registerAccount(accountNum,'cifra_pdf','Цифра банк','RUB');
 
-  // Parse each page
+  // Group items into lines by top coordinate
   for(const page of pages){
-    const lines=[];
-    let curLine={y:null,items:[]};
-    // Group by Y coordinate
-    const sorted=[...page].filter(i=>i.transform&&i.transform.length>=6).sort((a,b)=>b.transform[5]-a.transform[5]);
-    for(const item of sorted){
-      const y=Math.round(item.transform[5]);
-      if(curLine.y===null)curLine.y=y;
-      if(Math.abs(y-curLine.y)>3){lines.push(curLine);curLine={y,items:[]};}
-      curLine.items.push({x:Math.round(item.transform[4]),str:(item.str||'').trim()});
+    const lineMap={};
+    for(const item of page){
+      if(!item.text||!item.text.trim())continue;
+      const top=Math.round(item.top);
+      if(!lineMap[top])lineMap[top]=[];
+      lineMap[top].push({x:item.x,str:item.text.trim()});
     }
-    if(curLine.items.length)lines.push(curLine);
+    const lineKeys=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
 
-    for(const line of lines){
-      const items=line.items.sort((a,b)=>a.x-b.x).filter(i=>i.str);
+    for(const top of lineKeys){
+      const items=lineMap[top].sort((a,b)=>a.x-b.x);
       const lineStr=items.map(i=>i.str).join(' ');
 
-      // Match date at start: DD.MM.YYYY
+      // Match date DD.MM.YYYY at start
       const dateMatch=lineStr.match(/^(\d{2}\.\d{2}\.\d{4})/);
       if(!dateMatch)continue;
 
@@ -641,37 +631,36 @@ function parseCifraBankPDF(pages){
       const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
       const month=date.slice(0,7);
 
-      // Find debit/credit amounts - numbers like 50,718.27 or 100,000.00
-      const amounts=lineStr.match(/[\d,]+\.\d{2}/g)||[];
-      if(!amounts.length)continue;
+      // Find amounts - format: 50,718.27 or 100,000.00
+      const amountRe=/\b(\d{1,3}(?:,\d{3})*\.\d{2})\b/g;
+      const amountItems=items.filter(i=>amountRe.test(i.str));
 
-      // Description is everything after BIK+corrAccount
-      const descMatch=lineStr.match(/044525900\s+\S+\s+(.+)$/);
-      const desc=descMatch?descMatch[1].trim():lineStr;
+      // Description: last item(s) after BIK area (x > 400)
+      const descItems=items.filter(i=>i.x>400&&!/^\d{9}$/.test(i.str)&&!/^\d{2}\.\d{2}\.\d{4}/.test(i.str));
+      const desc=descItems.map(i=>i.str).join(' ').trim();
+      if(!desc)continue;
 
-      // Determine debit vs credit from position
-      // Debit items appear before credit in the line
-      // Look for position of amounts relative to page center (~300px)
-      let debit=0,credit=0;
-      const debitItems=line.items.filter(i=>/[\d,]+\.\d{2}/.test(i.str)&&i.x<400);
-      const creditItems=line.items.filter(i=>/[\d,]+\.\d{2}/.test(i.str)&&i.x>=400&&i.x<550);
-
-      for(const di of debitItems)debit+=parseFloat(di.str.replace(/,/g,''))||0;
-      for(const ci of creditItems)credit+=parseFloat(ci.str.replace(/,/g,''))||0;
+      // Debit items: x around 220-310, Credit items: x around 320-400
+      let debit=0, credit=0;
+      for(const item of items){
+        const num=parseFloat(item.str.replace(/,/g,''));
+        if(!num||isNaN(num))continue;
+        if(item.x>200&&item.x<330)debit=num;
+        else if(item.x>=330&&item.x<430)credit=num;
+      }
 
       if(debit===0&&credit===0)continue;
 
+      const amtRub=credit>0?credit:-debit;
       const isExpense=debit>0;
-      const amtRub=isExpense?-debit:credit;
 
-      // Categorize
       const descLow=desc.toLowerCase();
       let type,group,sub;
 
-      const isToBroker=descLow.includes('пополнение брокерского') || descLow.includes('vo99083');
-      const isFromBroker=descLow.includes('withdrawal of money') || descLow.includes('vo58015') || descLow.includes('вывод по договору брокерского');
-      const isCommission=descLow.includes('комиссия банка') || descLow.includes('комиссия за смс');
-      const isSBP=descLow.includes('зачисление по системе сбп') || descLow.includes('перевод по номеру телефона');
+      const isToBroker=descLow.includes('пополнение брокерского')||descLow.includes('vo99083');
+      const isFromBroker=descLow.includes('withdrawal of money')||descLow.includes('vo58015')||descLow.includes('вывод по договору брокерского');
+      const isCommission=descLow.includes('комиссия банка')||descLow.includes('комиссия за смс');
+      const isSBP=descLow.includes('зачисление по системе сбп')||descLow.includes('перевод по номеру телефона');
 
       if(isToBroker||isFromBroker||isSBP){
         type='transfer';group='Перевод';
@@ -701,6 +690,7 @@ function parseCifraBankPDF(pages){
       });
     }
   }
+  console.log('[Cifra] parsed txns:', txns.length);
   return txns;
 }
 
