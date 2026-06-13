@@ -89,13 +89,13 @@
       "counterparty": "Оплата товаров и услуг. PYATEROCHKA",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "4dd3qrcl",
