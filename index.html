@@ -593,22 +593,23 @@ function parseCifraBankPDF(pages){
   const txns=[];
   let accountNum=null;
 
-  // Structure: each item has {text, x, top}
-  const allText=pages.map(p=>p.map(t=>t.text||'').join(' ')).join(' ').toLowerCase();
+  // Structure: {text, x, top} grouped by top coordinate
+  // Date rows: "DD.MM.YYYY docNum | type | BIK corrAcc | debit | description"
+  // Description is on lines ABOVE the date row
 
-  // Extract account number
-  const accMatch=allText.match(/лицевой счёт[^\d]*(\d{20})/);
-  if(accMatch)accountNum=accMatch[1];
-  if(!accountNum){
-    const m2=(pages[0]||[]).find(i=>(i.text||'').match(/\d{20}/));
-    if(m2)accountNum=m2.text.match(/(\d{20})/)[1];
+  // Extract account number from header
+  for(const page of pages){
+    for(const item of page){
+      const m=(item.text||'').match(/Лицевой счёт[^\d]*(\d{20})/);
+      if(m){accountNum=m[1];break;}
+    }
+    if(accountNum)break;
   }
   if(!accountNum)accountNum='cifra_unknown';
-
   registerAccount(accountNum,'cifra_pdf','Цифра банк','RUB');
 
-  // Group items into lines by top coordinate
   for(const page of pages){
+    // Build lines map
     const lineMap={};
     for(const item of page){
       if(!item.text||!item.text.trim())continue;
@@ -616,47 +617,59 @@ function parseCifraBankPDF(pages){
       if(!lineMap[top])lineMap[top]=[];
       lineMap[top].push({x:item.x,str:item.text.trim()});
     }
-    const lineKeys=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
+    const tops=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
 
-    for(const top of lineKeys){
+    // Find all rows with dates
+    const dateRows=[];
+    for(const top of tops){
       const items=lineMap[top].sort((a,b)=>a.x-b.x);
       const lineStr=items.map(i=>i.str).join(' ');
-
-      // Match date DD.MM.YYYY at start
       const dateMatch=lineStr.match(/^(\d{2}\.\d{2}\.\d{4})/);
-      if(!dateMatch)continue;
+      if(dateMatch){
+        dateRows.push({top, items, lineStr, date:dateMatch[1]});
+      }
+    }
 
-      const dateRaw=dateMatch[1];
-      const parts=dateRaw.split('.');
+    // For each date row, collect description from lines between prev date and this date
+    for(let di=0;di<dateRows.length;di++){
+      const row=dateRows[di];
+      const prevTop=di>0?dateRows[di-1].top:0;
+
+      // Collect description lines between previous date row and this one
+      const descLines=[];
+      for(const top of tops){
+        if(top>prevTop&&top<row.top){
+          const items=lineMap[top].sort((a,b)=>a.x-b.x);
+          const txt=items.map(i=>i.str).join(' ').trim();
+          if(txt&&!txt.match(/^(Дата|Номер|доку|мента|Тип|БИК|Корреспондирующий|ОБОРОТЫ|Дебет|Кредит|Назначение|Входящий|Исходящий|ИТОГО)/i)){
+            descLines.push(txt);
+          }
+        }
+      }
+      const desc=descLines.join(' ').trim();
+
+      // Parse date
+      const parts=row.date.split('.');
       const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
       const month=date.slice(0,7);
 
-      // Find amounts - format: 50,718.27 or 100,000.00
-      const amountRe=/\b(\d{1,3}(?:,\d{3})*\.\d{2})\b/g;
-      const amountItems=items.filter(i=>amountRe.test(i.str));
-
-      // Description: last item(s) after BIK area (x > 400)
-      const descItems=items.filter(i=>i.x>400&&!/^\d{9}$/.test(i.str)&&!/^\d{2}\.\d{2}\.\d{4}/.test(i.str));
-      const desc=descItems.map(i=>i.str).join(' ').trim();
-      if(!desc)continue;
-
-      // Debit items: x around 220-310, Credit items: x around 320-400
-      let debit=0, credit=0;
-      for(const item of items){
+      // Find amounts in the date row
+      // Debit: x around 200-310, Credit: x around 310-420
+      let debit=0,credit=0;
+      for(const item of row.items){
         const num=parseFloat(item.str.replace(/,/g,''));
-        if(!num||isNaN(num))continue;
-        if(item.x>200&&item.x<330)debit=num;
-        else if(item.x>=330&&item.x<430)credit=num;
+        if(!num||isNaN(num)||num<0.01)continue;
+        if(item.x>170&&item.x<330)debit=num;
+        else if(item.x>=330&&item.x<450)credit=num;
       }
 
       if(debit===0&&credit===0)continue;
+      if(!desc)continue;
 
       const amtRub=credit>0?credit:-debit;
-      const isExpense=debit>0;
-
       const descLow=desc.toLowerCase();
-      let type,group,sub;
 
+      let type,group,sub;
       const isToBroker=descLow.includes('пополнение брокерского')||descLow.includes('vo99083');
       const isFromBroker=descLow.includes('withdrawal of money')||descLow.includes('vo58015')||descLow.includes('вывод по договору брокерского');
       const isCommission=descLow.includes('комиссия банка')||descLow.includes('комиссия за смс');
@@ -669,17 +682,17 @@ function parseCifraBankPDF(pages){
         type='expense';group='Сервисы/Связь';sub='Банковские комиссии';
       } else {
         const c=applyCategForTx({desc,amtRub});
-        type=isExpense?'expense':'income';group=c.g;sub=c.s;
+        type=debit>0?'expense':'income';group=c.g;sub=c.s;
       }
 
       txns.push({
         id:Math.random().toString(36).slice(2,10),
         date,month,
         dateDisplay:`${parts[0]}.${parts[1]}.${parts[2]}`,
-        desc:desc.slice(0,120),
+        desc:desc.slice(0,150),
         card:'Цифра банк',
         account:accountNum,
-        bankCat:isToBroker?'Брокер':isFromBroker?'Брокер':isCommission?'Комиссия':'Перевод',
+        bankCat:isCommission?'Комиссия':isToBroker||isFromBroker?'Брокер':'Перевод',
         amtOp:amtRub,curOp:'RUB',amtRub,
         status:'OK',source:'cifra_pdf',
         counterparty:'Цифра банк',
@@ -689,24 +702,6 @@ function parseCifraBankPDF(pages){
         type,group,sub
       });
     }
-  }
-  // Debug: show first few lines with dates
-  for(const page of pages.slice(0,2)){
-    const lineMap={};
-    for(const item of page){
-      if(!item.text||!item.text.trim())continue;
-      const top=Math.round(item.top);
-      if(!lineMap[top])lineMap[top]=[];
-      lineMap[top].push({x:item.x,str:item.text.trim()});
-    }
-    const lineKeys=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
-    let shown=0;
-    for(const top of lineKeys){
-      const items=lineMap[top].sort((a,b)=>a.x-b.x);
-      const lineStr=items.map(i=>i.str).join(' | ');
-      if(shown<20){console.log('[Cifra] line top='+top+':', lineStr);shown++;}
-    }
-    break;
   }
   console.log('[Cifra] parsed txns:', txns.length);
   return txns;
