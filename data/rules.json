@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "type": "keyword",
+    "value": "pyaterochka",
+    "group": "Питание",
+    "sub": "Продукты/супермаркеты",
+    "txType": "expense"
+  }
+]
