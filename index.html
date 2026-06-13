@@ -2505,16 +2505,47 @@ function filterTxns(){
     }else if(isT&&t.counterpartyAcc){
       accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
     }
-    return '<tr>'
+    // Detect unlinked external transfer (not between own accounts)
+    const isExternalTransfer=isT&&!t.linkedTo&&!t.linkedAccount&&
+      !OWN_ACCOUNTS.includes(t.counterpartyAcc)&&t.amtRub<0;
+    const rowStyle=isExternalTransfer?'background:rgba(234,179,8,0.06)':'';
+    const quickBtn=isExternalTransfer
+      ?'<button onclick="markAsExpense(\''+t.id+'\',\''+currentPeriod+'\')" title="Отметить как расход" '+
+        'style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--expense);color:#fff;border:none;cursor:pointer;margin-left:4px;opacity:0.8">→ Расход</button>'
+      :'';
+    return '<tr style="'+rowStyle+'">'
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
       +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+t.counterparty+'</div>':'')+'</td>'
       +'<td style="min-width:120px">'+accCell+'</td>'
-      +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
+      +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span>'+quickBtn+'</td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
       +'<td style="text-align:right;white-space:nowrap" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
       +'</tr>';
   }).join('');
   const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
+}
+
+
+function markAsExpense(txId, period){
+  const txns=getTxns(period);
+  const tx=txns.find(t=>t.id===txId);
+  if(!tx)return;
+  tx.type='expense';
+  tx.group='Прочее';
+  tx.sub='Переводы физлицам';
+  tx.manualCategory=true;
+  DB.periods[period].transactions=txns;
+  saveLocal();
+  // Push to GitHub
+  const{token}=ghCfg();
+  if(token){
+    ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),'Mark as expense '+period)
+      .then(()=>toast('Помечено как расход ✓','ok'))
+      .catch(()=>toast('Помечено как расход (локально)','ok'));
+  } else {
+    toast('Помечено как расход','ok');
+  }
+  filterTxns();
 }
 
 // ── Upload ──
