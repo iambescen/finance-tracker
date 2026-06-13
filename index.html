@@ -3579,14 +3579,33 @@ function saveCustomCat(){
 }
 
 function openKeywordRuleModal(){
-  const groups=Object.keys(CAT_TREE.expense.groups);
-  document.getElementById('kwGroup').innerHTML=groups.map(g=>'<option>'+g+'</option>').join('');
-  updateKwSubs();
+  updateKwGroups();
   document.getElementById('keywordRuleModal').classList.add('open');
 }
+function updateKwGroups(){
+  const type=document.getElementById('kwType').value;
+  const kwGroup=document.getElementById('kwGroup');
+  if(type==='income'){
+    kwGroup.innerHTML=['Доход'].map(g=>'<option>'+g+'</option>').join('');
+  } else if(type==='transfer'){
+    kwGroup.innerHTML=['Перевод'].map(g=>'<option>'+g+'</option>').join('');
+  } else {
+    const groups=Object.keys(getExpenseGroups());
+    kwGroup.innerHTML=groups.map(g=>'<option>'+g+'</option>').join('');
+  }
+  updateKwSubs();
+}
 function updateKwSubs(){
+  const type=document.getElementById('kwType').value;
   const g=document.getElementById('kwGroup').value;
-  const subs=CAT_TREE.expense.groups[g]||['Прочие расходы'];
+  let subs;
+  if(type==='income'){
+    subs=CAT_TREE.income.subs||['Прочие доходы'];
+  } else if(type==='transfer'){
+    subs=['Внутренний перевод','Снятие наличных','Пополнение брокерского счёта'];
+  } else {
+    subs=getExpenseGroups()[g]||['Прочие расходы'];
+  }
   document.getElementById('kwSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
 }
 function saveKeywordRule(){
@@ -3993,7 +4012,7 @@ function updateBottomNav(page){
     <div class="field"><label>Подкатегория</label>
       <select id="kwSub" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select></div>
     <div class="field"><label>Тип</label>
-      <select id="kwType" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+      <select id="kwType" onchange="updateKwGroups()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
         <option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option>
       </select></div>
     <div class="modal-actions">
