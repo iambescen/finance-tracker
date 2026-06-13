@@ -226,18 +226,17 @@ tr:hover td{background:var(--bg3)}
     gap:3px;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:500;
   }
   /* Drawer overlay */
-  .nav-drawer{
-    display:none;position:fixed;inset:0;z-index:200;
-  }
-  .nav-drawer.open{display:block}
-  .nav-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,0.4)}
-  .nav-drawer-panel{
-    position:absolute;bottom:0;left:0;right:0;
-    background:var(--bg2);border-radius:16px 16px 0 0;
-    padding:12px 0 32px;max-height:80vh;overflow-y:auto;
-  }
-  .nav-drawer-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
 }
+/* Nav drawer - always hidden by default, shown only on mobile when opened */
+.nav-drawer{display:none;position:fixed;inset:0;z-index:200;}
+.nav-drawer.open{display:block}
+.nav-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,0.4)}
+.nav-drawer-panel{
+  position:absolute;bottom:0;left:0;right:0;
+  background:var(--bg2);border-radius:16px 16px 0 0;
+  padding:12px 0 32px;max-height:80vh;overflow-y:auto;
+}
+.nav-drawer-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
 </style>
 </head>
 <body>
