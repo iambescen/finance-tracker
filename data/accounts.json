@@ -1,0 +1,206 @@
+{
+  "4029": {
+    "number": "4029",
+    "display": "***4029",
+    "bank": "Тинькофф",
+    "name": "ТБ Счет дебетовый *7972 / Карта *4029",
+    "owner": "me",
+    "source": "tinkoff",
+    "currentBalance": 0,
+    "currency": "RUB"
+  },
+  "4129": {
+    "number": "4129",
+    "display": "***4129",
+    "bank": "Тинькофф",
+    "name": "ТБ Счет дебетовый *1363 / Карта *4129",
+    "owner": "wife",
+    "source": "tinkoff",
+    "currentBalance": 0,
+    "currency": "RUB"
+  },
+  "7513": {
+    "number": "7513",
+    "display": "***7513",
+    "bank": "Тинькофф",
+    "name": "ТБ Счет дебетовый *1363 / Карта *7513",
+    "owner": "me",
+    "source": "tinkoff",
+    "currentBalance": 300
+  },
+  "8555": {
+    "number": "8555",
+    "display": "***8555",
+    "bank": "Тинькофф Кредитная",
+    "name": "ТБ Счет кредитный *0004 / Карта *8555",
+    "owner": "wife",
+    "source": "tinkoff",
+    "currentBalance": 19571.18,
+    "currency": "RUB",
+    "isCredit": true
+  },
+  "40802810500004846488": {
+    "number": "40802810500004846488",
+    "display": "***6488",
+    "bank": "Тинькофф Бизнес",
+    "name": "ТБ Счет ИП Копилка *6488",
+    "owner": "me",
+    "source": "tinkoff_business",
+    "currentBalance": 48387.7
+  },
+  "40802810100000077444": {
+    "number": "40802810100000077444",
+    "display": "***7444",
+    "bank": "Тинькофф Бизнес",
+    "name": "ТБ Счет ИП *7444 / Карта *5900, *9967",
+    "owner": "me",
+    "source": "tinkoff_business",
+    "currentBalance": 10153
+  },
+  "cash_me": {
+    "number": "cash_me",
+    "display": "Наличные Влад",
+    "bank": "Наличные",
+    "name": "Наличные Влад",
+    "owner": "me",
+    "source": "manual",
+    "currentBalance": null,
+    "virtual": true
+  },
+  "cash_wife": {
+    "number": "cash_wife",
+    "display": "Наличные Таня",
+    "bank": "Наличные",
+    "name": "Наличные Таня",
+    "owner": "wife",
+    "source": "manual",
+    "currentBalance": null,
+    "virtual": true
+  },
+  "0829": {
+    "number": "0829",
+    "display": "***0829",
+    "bank": "Тинькофф",
+    "name": "ТБ Счет дебетовый *7972 / Карта *0829",
+    "owner": "wife",
+    "source": "tinkoff",
+    "currentBalance": 1,
+    "currency": "RUB"
+  },
+  "0993": {
+    "number": "0993",
+    "display": "***0993",
+    "bank": "Тинькофф",
+    "name": "ТБ Счет дебетовый *7972 / Карта *0993",
+    "owner": "wife",
+    "source": "tinkoff",
+    "currentBalance": 0,
+    "currency": "RUB"
+  },
+  "40817810947008058607": {
+    "number": "40817810947008058607",
+    "display": "***8607",
+    "bank": "Сбербанк",
+    "name": "СБ Счет дебетовый *8607 / Карта *0557",
+    "owner": "me",
+    "source": "sber_pdf",
+    "currentBalance": 0,
+    "currency": "RUB"
+  },
+  "40817810720414002560": {
+    "number": "40817810720414002560",
+    "display": "***2560",
+    "bank": "ВТБ",
+    "name": "ВТБ Счет дебетовый *2560 / Карта *4862",
+    "owner": "me",
+    "source": "vtb_pdf",
+    "currentBalance": 20387,
+    "currency": "RUB"
+  },
+  "40817810690179282810": {
+    "number": "40817810690179282810",
+    "display": "***2810",
+    "bank": "ВТБ",
+    "name": "ВТБ Счет дебетовый *2810 / Карта *0412",
+    "owner": "wife",
+    "source": "vtb_pdf",
+    "currentBalance": 195,
+    "currency": "RUB"
+  },
+  "40817810747005528369": {
+    "number": "40817810747005528369",
+    "display": "***8369",
+    "bank": "Сбербанк",
+    "name": "СБ Счет дебетовый *8369 / Карта *1424",
+    "owner": "wife",
+    "source": "sber_pdf",
+    "currentBalance": 1,
+    "currency": "RUB"
+  },
+  "40817810990189542073": {
+    "number": "40817810990189542073",
+    "display": "***2073",
+    "bank": "ВТБ Кредитная",
+    "name": "ВТБ Счет кредитный*2073 / Карта *5153, *0285",
+    "owner": "wife",
+    "source": "vtb_credit_pdf",
+    "currentBalance": 24699.43,
+    "currency": "RUB",
+    "isCredit": true
+  },
+  "0149": {
+    "number": "0149",
+    "display": "***0149",
+    "bank": "Тинькофф Кредитная",
+    "name": "ТБ Счет кредитный *0004 / Карта *0149",
+    "owner": "me",
+    "source": "tinkoff",
+    "currentBalance": 0,
+    "currency": "RUB",
+    "isCredit": true
+  },
+  "mortgage_vtb": {
+    "number": "mortgage_vtb",
+    "display": "Ипотека ВТБ",
+    "bank": "ВТБ Ипотека",
+    "name": "ВТБ Ипотека *3464",
+    "owner": "me",
+    "source": "vtb_mortgage_pdf",
+    "currentBalance": 1581007.97,
+    "currency": "RUB",
+    "isCredit": true,
+    "virtual": false
+  },
+  "sber_loan_120526437178532": {
+    "number": "sber_loan_120526437178532",
+    "display": "Сбер кредит",
+    "bank": "Сбербанк Кредит",
+    "name": "СБ Кредит *8532",
+    "owner": "wife",
+    "source": "sber_loan_pdf",
+    "currentBalance": 41114.29,
+    "currency": "RUB",
+    "isCredit": true,
+    "virtual": false
+  },
+  "1242080005060273": {
+    "number": "1242080005060273",
+    "display": "***0273",
+    "bank": "Бакай Банк",
+    "name": "Бакай Банк ***0273",
+    "owner": "me",
+    "source": "bakay_xlsx",
+    "currentBalance": null,
+    "currency": "KGS"
+  },
+  "1242080005127466": {
+    "number": "1242080005127466",
+    "display": "***7466",
+    "bank": "Бакай Банк",
+    "name": "Бакай Банк ***7466",
+    "owner": "me",
+    "source": "bakay_xlsx",
+    "currentBalance": null,
+    "currency": "USD"
+  }
+}
