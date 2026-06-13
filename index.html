@@ -4102,27 +4102,7 @@ function updateBottomNav(page){
       <button class="btn primary" onclick="saveKeywordRule()">Создать правило</button>
     </div>
   </div>
-</div>id="keywordRuleModal">
-  <div class="modal" style="width:440px">
-    <h3>Правило по ключевому слову</h3>
-    <div class="field"><label>Ключевое слово в описании</label><input type="text" id="kwWord" placeholder="Например: пятёрочка"></div>
-    <div class="field"><label>Категория</label>
-      <select id="kwGroup" onchange="updateKwSubs()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
-        ${Object.keys(CAT_TREE.expense.groups).map(g=>'<option>'+g+'</option>').join('')}
-      </select></div>
-    <div class="field"><label>Подкатегория</label>
-      <select id="kwSub" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select></div>
-    <div class="field"><label>Тип</label>
-      <select id="kwType" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
-        <option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option>
-      </select></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="document.getElementById('keywordRuleModal').classList.remove('open')">Отмена</button>
-      <button class="btn primary" onclick="saveKeywordRule()">Создать правило</button>
-    </div>
-  </div>
 </div>
-
 
 <div class="modal-bg" id="addCatModal">
   <div class="modal" style="width:440px">
