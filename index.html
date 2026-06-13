@@ -967,6 +967,23 @@ function parseTinkoffBrokerPDF(pages){
     }
   }
   console.log('[TinkoffBrokerPDF] parsed txns:',txns.length);
+  // Show all lines from all pages
+  for(let pi=0;pi<Math.min(pages.length,4);pi++){
+    const page=pages[pi];
+    const lineMap={};
+    for(const item of page){
+      if(!item.text||!item.text.trim())continue;
+      const top=Math.round(item.top);
+      if(!lineMap[top])lineMap[top]=[];
+      lineMap[top].push({x:item.x,str:item.text.trim()});
+    }
+    const tops=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
+    for(const top of tops){
+      const items=lineMap[top].sort((a,b)=>a.x-b.x);
+      const lineStr=items.map(i=>i.str).join(' ');
+      if(lineStr.length>3)console.log('[TBrokerPDF] p'+pi+' top='+top+':',lineStr.slice(0,80));
+    }
+  }
   if(!txns.length){
     // Debug: show lines found in section 2
     for(const page of pages){
