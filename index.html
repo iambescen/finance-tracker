@@ -852,6 +852,124 @@ function parseVTBBrokerXLSX(wb){
   return txns;
 }
 
+
+// ── Tinkoff Broker PDF parser ──
+function parseTinkoffBrokerPDF(pages){
+  const txns=[];
+  const allItems=pages.flatMap(p=>p);
+  const allText=allItems.map(i=>i.text||'').join(' ').toLowerCase();
+
+  // Extract account number and owner
+  let accNum='tinkoff_broker_pdf', owner='wife';
+  const accMatch=allText.match(/инвестор[^/]*\/\s*(\d{10,})/);
+  if(accMatch)accNum='tinkoff_broker_'+accMatch[1];
+  if(allText.includes('владислав'))owner='me';
+  else if(allText.includes('татьяна'))owner='wife';
+
+  registerAccount(accNum,'tinkoff_broker_pdf','Тинькофф Брокер','RUB');
+  if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
+
+  // Group items by top coordinate per page
+  for(const page of pages){
+    const lineMap={};
+    for(const item of page){
+      if(!item.text||!item.text.trim())continue;
+      const top=Math.round(item.top);
+      if(!lineMap[top])lineMap[top]=[];
+      lineMap[top].push({x:item.x,str:item.text.trim()});
+    }
+    const tops=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
+
+    // Find section 2 start
+    let inSection2=false;
+    for(const top of tops){
+      const items=lineMap[top].sort((a,b)=>a.x-b.x);
+      const lineStr=items.map(i=>i.str).join(' ');
+      const lineLow=lineStr.toLowerCase();
+
+      if(lineLow.includes('2. операции с денежными средствами')||lineLow.includes('операции с денежными')){
+        inSection2=true;continue;
+      }
+      if(inSection2&&(lineLow.startsWith('3.')||lineLow.includes('движение по ценным'))){
+        inSection2=false;break;
+      }
+      if(!inSection2)continue;
+
+      // Parse date lines - format DD.MM.YYYY
+      const dateMatch=lineStr.match(/^(\d{2}\.\d{2}\.\d{4})/);
+      if(!dateMatch)continue;
+
+      const dateRaw=dateMatch[1];
+      const parts=dateRaw.split('.');
+      const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
+      const month=date.slice(0,7);
+
+      // Find operation type and amount in same line
+      const rest=lineStr.slice(10).trim();
+      // Amount: digits with comma/dot
+      const amounts=rest.match(/[\d\s]+[,.][\d]{2}/g)||[];
+      if(!amounts.length)continue;
+
+      // Parse amount - take first significant number
+      let credit=0, debit=0;
+      const numStrs=rest.match(/[\d ]+[.,]\d{2}/g)||[];
+      const nums=numStrs.map(s=>parseFloat(s.replace(/\s/g,'').replace(',','.'))||0).filter(n=>n>0);
+      if(!nums.length)continue;
+
+      // Determine operation type from line text
+      const opLow=rest.toLowerCase();
+      let opType='';
+      if(opLow.includes('пополнение счета')||opLow.includes('пополнение счёта'))opType='пополнение';
+      else if(opLow.includes('вывод средств'))opType='вывод';
+      else if(opLow.includes('налог'))opType='налог';
+      else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд'))opType='доход';
+      else if(opLow.includes('dfp')||opLow.includes('rfp'))opType='сделка';
+      else if(opLow.includes('комиссия'))opType='комиссия';
+      else continue;
+
+      const amt=nums[0];
+
+      let type,group,sub,desc,amtRub;
+      if(opType==='пополнение'){
+        type='transfer';group='Перевод';sub='Пополнение брокерского счёта';
+        desc='Пополнение брокерского счёта';amtRub=amt;
+      } else if(opType==='вывод'){
+        type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
+        desc='Вывод с брокерского счёта';amtRub=-amt;
+      } else if(opType==='налог'){
+        type='expense';group='Инвестиции';sub='Налоги с инвестиций';
+        desc='НДФЛ брокерский';amtRub=-amt;
+      } else if(opType==='доход'){
+        type='income';group='Инвестиции';sub='Купоны и дивиденды';
+        desc='Купон/дивиденд';amtRub=amt;
+      } else if(opType==='сделка'){
+        type='transfer';group='Перевод';sub='Сделка на бирже';
+        desc='Расчёты по сделкам';amtRub=0;
+      } else if(opType==='комиссия'){
+        type='expense';group='Инвестиции';sub='Комиссии брокера';
+        desc='Комиссия брокера';amtRub=-amt;
+      } else continue;
+
+      if(amtRub===0)continue;
+
+      txns.push({
+        id:Math.random().toString(36).slice(2,10),
+        date,month,dateDisplay:dateRaw,
+        desc:desc.slice(0,120),
+        card:'Тинькофф Брокер',account:accNum,
+        bankCat:opType,
+        amtOp:amtRub,curOp:'RUB',amtRub,
+        status:'OK',source:'tinkoff_broker_pdf',
+        counterparty:'АО ТБанк',counterpartyINN:'7710140679',counterpartyAcc:'',
+        manualCategory:false,linkedTo:null,linkedAccount:null,
+        type,group,sub
+      });
+    }
+  }
+  console.log('[TinkoffBrokerPDF] parsed txns:',txns.length);
+  return txns;
+}
+
 // ── Tinkoff Broker XLSX parser ──
 function parseTinkoffBrokerXLSX(wb){
   const txns=[];
@@ -1354,6 +1472,7 @@ function detectPDFBank(lines) {
   if(text.includes('справка об уплаченных процентах') || text.includes('погашение основного долга') && text.includes('сбербанк')) return 'sber_loan';
   if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
   if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный'))) return 'vtb_credit';
+  if(text.includes('7710140679')&&text.includes('отчет о сделках')) return 'tinkoff_broker';
   if(text.includes('цифра банк') || text.includes('6506000327')) return 'cifra';
   if(text.includes('выдача кредита по договору') || (text.includes('погашение кредита по договору') && text.includes('погашение процентов по договору'))) return 'vtb_mortgage';
   if(text.includes('банк втб') || text.includes('втб (пао)') || (text.includes('втб') && text.includes('филиал'))) return 'vtb';
@@ -1925,6 +2044,7 @@ async function processPDFFile(file) {
     let txns = [];
     if(bank === 'sber_loan') txns = parseSberLoanPDF(pdfData.flatLines, pdfData.pages);
     else if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines);
+    else if(bank === 'tinkoff_broker') txns = parseTinkoffBrokerPDF(pdfData.pages);
     else if(bank === 'cifra') txns = parseCifraBankPDF(pdfData.pages);
     else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
     else if(bank === 'vtb_credit') txns = parseVTBCreditPDF(pdfData.pages);
