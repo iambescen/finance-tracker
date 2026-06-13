@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "kso",
+    "group": "Питание",
+    "sub": "Продукты/супермаркеты",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "azs",
     "group": "Транспорт",
     "sub": "Топливо",
