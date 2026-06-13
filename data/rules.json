@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "medicins kij centr",
+    "group": "Здоровье",
+    "sub": "Визиты врача/платные услуги",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "такси",
     "group": "Транспорт",
     "sub": "Такси/Общественный транспорт",
