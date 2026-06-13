@@ -1586,7 +1586,7 @@ function pageDash(){
   const selStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
   const dashPeriods=Object.keys(DB.periods).sort().reverse();
   const dashPeriodOpts=dashPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Дашборд <span style="font-weight:400;color:var(--text-muted);font-size:14px">'+ label +'</span></div>'
+  return '<div class="page-header"><div class="page-title">Дашборд</div>'
     +'<div class="page-actions">'
     +'<select id="dashRange" onchange="setDashRange(this.value)" style="'+selStyle+'">'
     +['month','quarter','year','all'].map(v=>'<option value="'+v+'"'+(v===range?' selected':'')+'>'+{month:'Месяц',quarter:'Квартал',year:'Год',all:'Всё время'}[v]+'</option>').join('')
@@ -1651,6 +1651,7 @@ function pagePL(){
   const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
   const expense=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
   const profit=income-expense;
+  const savingsRate=income>0?Math.round(profit/income*100):0;
   const allP=Object.keys(DB.periods).sort().reverse();
   const prevP=allP[allP.indexOf(currentPeriod)+1];
   const prevTxns=prevP?getTxns(prevP).filter(t=>t.type!=='transfer'):[];
