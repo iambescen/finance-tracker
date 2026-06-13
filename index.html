@@ -753,7 +753,15 @@ function parseTinkoffBrokerXLSX(wb){
     const cell=String(r[0]||'').trim();
     if(cell==='Дата'){dataStart=i+1;break;}
   }
-  if(dataStart<0){console.log('[TinkoffBroker] data header not found');return txns;}
+  if(dataStart<0){
+    console.log('[TinkoffBroker] data header not found, cashStart=',cashStart);
+    for(let i=cashStart;i<Math.min(cashStart+30,rows.length);i++){
+      const r=rows[i]||[];
+      const v=r.filter(x=>x!=null);
+      if(v.length)console.log('[TinkoffBroker] row'+i+':',JSON.stringify(v.slice(0,3)));
+    }
+    return txns;
+  }
   console.log('[TinkoffBroker] cashStart:',cashStart,'dataStart:',dataStart);
 
   // Parse cash operations until next section
