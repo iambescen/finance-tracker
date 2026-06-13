@@ -163,7 +163,7 @@
     "number": "mortgage_vtb",
     "display": "Ипотека ВТБ",
     "bank": "ВТБ Ипотека",
-    "name": "ВТБ Ипотека *3464",
+    "name": "ВТБ Счет ипотечный *3464",
     "owner": "me",
     "source": "vtb_mortgage_pdf",
     "currentBalance": 1581007.97,
