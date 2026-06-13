@@ -267,9 +267,9 @@ tr:hover td{background:var(--bg3)}
     <div class="nav-divider"></div>
     <div class="nav-label" onclick="togglePeriodList()" id="periodListHeader" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
       <span>Периоды</span>
-      <span id="periodListArrow" style="font-size:10px;transition:transform 0.2s">▼</span>
+      <span id="periodListArrow" style="font-size:10px;transition:transform 0.2s;transform:rotate(-90deg)">▼</span>
     </div>
-    <div class="period-list" id="periodList" style="max-height:160px;overflow-y:auto;transition:max-height 0.25s ease"></div>
+    <div class="period-list" id="periodList" style="max-height:0px;overflow:hidden;transition:max-height 0.25s ease"></div>
   </div>
   <div class="content" id="mainContent"></div>
 </div>
@@ -2256,9 +2256,13 @@ function togglePeriodList(){
 }
 function initPeriodList(){
   const stored=localStorage.getItem('periodsOpen');
-  if(stored==='0'){
-    const list=document.getElementById('periodList');
-    const arrow=document.getElementById('periodListArrow');
+  // Default: closed. Open only if explicitly opened before.
+  const list=document.getElementById('periodList');
+  const arrow=document.getElementById('periodListArrow');
+  if(stored==='1'){
+    if(list){list.style.maxHeight='160px';list.style.overflow='auto';}
+    if(arrow)arrow.style.transform='rotate(0deg)';
+  } else {
     if(list){list.style.maxHeight='0px';list.style.overflow='hidden';}
     if(arrow)arrow.style.transform='rotate(-90deg)';
   }
