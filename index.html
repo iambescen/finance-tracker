@@ -690,6 +690,24 @@ function parseCifraBankPDF(pages){
       });
     }
   }
+  // Debug: show first few lines with dates
+  for(const page of pages.slice(0,2)){
+    const lineMap={};
+    for(const item of page){
+      if(!item.text||!item.text.trim())continue;
+      const top=Math.round(item.top);
+      if(!lineMap[top])lineMap[top]=[];
+      lineMap[top].push({x:item.x,str:item.text.trim()});
+    }
+    const lineKeys=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
+    let shown=0;
+    for(const top of lineKeys){
+      const items=lineMap[top].sort((a,b)=>a.x-b.x);
+      const lineStr=items.map(i=>i.str).join(' | ');
+      if(shown<20){console.log('[Cifra] line top='+top+':', lineStr);shown++;}
+    }
+    break;
+  }
   console.log('[Cifra] parsed txns:', txns.length);
   return txns;
 }
