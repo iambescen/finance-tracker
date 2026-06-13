@@ -763,6 +763,12 @@ function parseTinkoffBrokerXLSX(wb){
     return txns;
   }
   console.log('[TinkoffBroker] cashStart:',cashStart,'dataStart:',dataStart);
+  // Log first 5 data rows
+  for(let i=dataStart;i<Math.min(dataStart+8,rows.length);i++){
+    const r=rows[i]||[];
+    const v=r.filter(x=>x!=null);
+    console.log('[TinkoffBroker] datarow'+i+':',JSON.stringify(v.slice(0,6)));
+  }
 
   // Parse cash operations until next section
   for(let i=dataStart;i<rows.length;i++){
