@@ -967,6 +967,29 @@ function parseTinkoffBrokerPDF(pages){
     }
   }
   console.log('[TinkoffBrokerPDF] parsed txns:',txns.length);
+  if(!txns.length){
+    // Debug: show lines found in section 2
+    for(const page of pages){
+      const lineMap={};
+      for(const item of page){
+        if(!item.text||!item.text.trim())continue;
+        const top=Math.round(item.top);
+        if(!lineMap[top])lineMap[top]=[];
+        lineMap[top].push({x:item.x,str:item.text.trim()});
+      }
+      const tops=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
+      let inS2=false,shown=0;
+      for(const top of tops){
+        const items=lineMap[top].sort((a,b)=>a.x-b.x);
+        const lineStr=items.map(i=>i.str).join(' ');
+        const ll=lineStr.toLowerCase();
+        if(ll.includes('2. операции')||ll.includes('операции с денежными'))inS2=true;
+        if(inS2&&ll.startsWith('3.'))break;
+        if(inS2&&shown<15){console.log('[TinkoffBrokerPDF] s2line:',lineStr);shown++;}
+      }
+      if(shown>0)break;
+    }
+  }
   return txns;
 }
 
