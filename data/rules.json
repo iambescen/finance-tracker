@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "fixprice",
+    "group": "Питание",
+    "sub": "Продукты/супермаркеты",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "dostavk perekre stka",
     "group": "Питание",
     "sub": "Продукты/супермаркеты",
