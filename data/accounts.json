@@ -272,5 +272,15 @@
     "source": "tinkoff_broker_xlsx",
     "currentBalance": null,
     "currency": "RUB"
+  },
+  "tinkoff_broker_2005562919": {
+    "number": "tinkoff_broker_2005562919",
+    "display": "***2919",
+    "bank": "Тинькофф Брокер",
+    "name": "ТБ Счет брокерский *2919 / Заблокированные 1 БС",
+    "owner": "me",
+    "source": "tinkoff_broker_xlsx",
+    "currentBalance": null,
+    "currency": "RUB"
   }
 }
