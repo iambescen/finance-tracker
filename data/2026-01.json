@@ -5310,6 +5310,30 @@
       "type": "expense",
       "group": "Прочее",
       "sub": "Прочие расходы"
+    },
+    {
+      "id": "wz7kn8qq",
+      "date": "2026-01-01",
+      "month": "2026-01",
+      "dateDisplay": "01.01.2026",
+      "desc": "ООО \"Цифра банк\" 123112, вн. тер. г. муниципальный округ Пресненский, г. Москва, 1-й Красногвардейский проезд, д.15, помещение 1/17 Лицевой счёт № 409",
+      "card": "Цифра банк",
+      "account": "40914810800007588136",
+      "bankCat": "Комиссия",
+      "amtOp": -0.63,
+      "curOp": "RUB",
+      "amtRub": -0.63,
+      "status": "OK",
+      "source": "cifra_pdf",
+      "counterparty": "Цифра банк",
+      "counterpartyINN": "6506000327",
+      "counterpartyAcc": "",
+      "manualCategory": false,
+      "linkedTo": null,
+      "linkedAccount": null,
+      "type": "expense",
+      "group": "Сервисы/Связь",
+      "sub": "Банковские комиссии"
     }
   ]
 }
