@@ -5801,7 +5801,7 @@
       "sub": "Сделка на бирже"
     },
     {
-      "id": "xbyneurd",
+      "id": "vbniik3c",
       "date": "2026-04-02",
       "month": "2026-04",
       "dateDisplay": "02.04.2026",
@@ -6172,7 +6172,7 @@
       "counterpartyINN": "",
       "counterpartyAcc": "",
       "manualCategory": false,
-      "linkedTo": "vebsmg5b",
+      "linkedTo": "nirmhpnk",
       "linkedAccount": "tinkoff_broker_2006039107",
       "group": "Перевод",
       "sub": "Внутренний перевод",
@@ -6954,7 +6954,7 @@
       "sub": "Пополнение брокерского счёта"
     },
     {
-      "id": "vebsmg5b",
+      "id": "nirmhpnk",
       "date": "2026-04-01",
       "month": "2026-04",
       "dateDisplay": "01.04.2026",
