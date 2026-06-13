@@ -41,12 +41,12 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Перевод",
-      "sub": "Внутренний перевод",
-      "type": "transfer"
+      "group": "Прочее",
+      "sub": "Прочие расходы",
+      "type": "expense"
     },
     {
       "id": "xqlng35q",
@@ -65,12 +65,12 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Перевод",
-      "sub": "Внутренний перевод",
-      "type": "transfer"
+      "group": "Прочее",
+      "sub": "Прочие расходы",
+      "type": "expense"
     },
     {
       "id": "0wfny6xf",
