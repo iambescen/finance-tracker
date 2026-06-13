@@ -606,7 +606,7 @@ function parseCifraBankPDF(pages){
     const lines=[];
     let curLine={y:null,items:[]};
     // Group by Y coordinate
-    const sorted=[...page].sort((a,b)=>b.transform[5]-a.transform[5]);
+    const sorted=[...page].filter(i=>i.transform&&i.transform.length>=6).sort((a,b)=>b.transform[5]-a.transform[5]);
     for(const item of sorted){
       const y=Math.round(item.transform[5]);
       if(curLine.y===null)curLine.y=y;
