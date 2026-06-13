@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "cvety",
+    "group": "Прочее",
+    "sub": "Подарки",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "oplata proezda",
     "group": "Транспорт",
     "sub": "Такси/Общественный транспорт",
