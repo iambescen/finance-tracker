@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "magnit",
+    "group": "Питание",
+    "sub": "Продукты/супермаркеты",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "pyaterochka",
     "group": "Питание",
     "sub": "Продукты/супермаркеты",
