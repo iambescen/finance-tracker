@@ -265,8 +265,11 @@ tr:hover td{background:var(--bg3)}
     <div class="nav-item" id="nav-loans" onclick="showPage('loans')">⊘ Кредиты</div>
     <div class="nav-item" id="nav-rules" onclick="showPage('rules')">⊞ Правила</div>
     <div class="nav-divider"></div>
-    <div class="nav-label">Периоды</div>
-    <div class="period-list" id="periodList"></div>
+    <div class="nav-label" onclick="togglePeriodList()" id="periodListHeader" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
+      <span>Периоды</span>
+      <span id="periodListArrow" style="font-size:10px;transition:transform 0.2s">▼</span>
+    </div>
+    <div class="period-list" id="periodList" style="max-height:160px;overflow-y:auto;transition:max-height 0.25s ease"></div>
   </div>
   <div class="content" id="mainContent"></div>
 </div>
@@ -2241,6 +2244,26 @@ function initTheme(){
   if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
 }
 
+
+function togglePeriodList(){
+  const list=document.getElementById('periodList');
+  const arrow=document.getElementById('periodListArrow');
+  const isOpen=list.style.maxHeight!=='0px';
+  list.style.maxHeight=isOpen?'0px':'160px';
+  list.style.overflow=isOpen?'hidden':'auto';
+  if(arrow)arrow.style.transform=isOpen?'rotate(-90deg)':'rotate(0deg)';
+  localStorage.setItem('periodsOpen', isOpen?'0':'1');
+}
+function initPeriodList(){
+  const stored=localStorage.getItem('periodsOpen');
+  if(stored==='0'){
+    const list=document.getElementById('periodList');
+    const arrow=document.getElementById('periodListArrow');
+    if(list){list.style.maxHeight='0px';list.style.overflow='hidden';}
+    if(arrow)arrow.style.transform='rotate(-90deg)';
+  }
+}
+
 // ── Init ──
 loadLocal();
 ensureCashAccounts();
@@ -2248,6 +2271,7 @@ initTheme();
 const initP=Object.keys(DB.periods).sort().reverse();
 if(initP.length)currentPeriod=initP[0];
 refreshUI();
+initPeriodList();
 loadFromGithub();
 
 </script>
