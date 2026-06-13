@@ -599,6 +599,12 @@ function parseCifraBankPDF(pages){
   if(pages[0]){
     const sample=pages[0].filter(i=>i.transform&&i.transform.length>=6).slice(0,10);
     console.log('[Cifra] first page sample:', JSON.stringify(sample.map(i=>({str:i.str,x:Math.round(i.transform[4]),y:Math.round(i.transform[5])}))));
+    // Log raw first item to see all fields
+    if(pages[0]&&pages[0][0])console.log('[Cifra] raw item 0:', JSON.stringify(pages[0][0]));
+    if(pages[0]&&pages[0][1])console.log('[Cifra] raw item 1:', JSON.stringify(pages[0][1]));
+    // Check flatLines
+    console.log('[Cifra] pages[0] type:', typeof pages[0], Array.isArray(pages[0]));
+    console.log('[Cifra] pages[0][0] keys:', pages[0]&&pages[0][0]?Object.keys(pages[0][0]):[]);
   }
 
   // Extract account number
