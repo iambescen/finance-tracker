@@ -739,7 +739,12 @@ function parseTinkoffBrokerXLSX(wb){
       cashStart=i;break;
     }
   }
-  if(cashStart<0){console.log('[TinkoffBroker] Section 2 not found');return txns;}
+  console.log('[TinkoffBroker] rows total:', rows.length, 'cashStart:', cashStart);
+  if(cashStart<0){console.log('[TinkoffBroker] Section 2 not found');
+    // Log first 10 non-empty rows
+    for(let i=0;i<Math.min(rows.length,15);i++){const r=rows[i]||[];const v=r.filter(x=>x!=null);if(v.length)console.log('[TinkoffBroker] row'+i+':',JSON.stringify(v.slice(0,4)));}
+    return txns;
+  }
 
   // Find the data header row (Дата, Время совершения...)
   let dataStart=-1;
