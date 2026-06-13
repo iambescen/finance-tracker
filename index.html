@@ -708,6 +708,143 @@ function parseCifraBankPDF(pages){
 }
 
 
+
+// ── Tinkoff Broker XLSX parser ──
+function parseTinkoffBrokerXLSX(wb){
+  const txns=[];
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+
+  // Extract investor/account info
+  let accNum='tinkoff_broker', owner='wife';
+  for(let i=0;i<10;i++){
+    const r=rows[i]||[];
+    const txt=String(r[0]||'');
+    if(txt.includes('Инвестор:')){
+      // e.g. "Инвестор: БЕЗЦЕННЫХ ТАТЬЯНА ВЛАДИМИРОВНА / 2074432923 от 15.09.2023"
+      const m=txt.match(/\/\s*(\d+)\s+от/);
+      if(m)accNum='tinkoff_broker_'+m[1];
+      if(txt.toLowerCase().includes('владислав')||txt.toLowerCase().includes('влад'))owner='me';
+      else if(txt.toLowerCase().includes('татьяна')||txt.toLowerCase().includes('таня'))owner='wife';
+    }
+  }
+  registerAccount(accNum,'tinkoff_broker_xlsx','Тинькофф Брокер','RUB');
+  if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
+
+  // Find section 2 header row
+  let cashStart=-1;
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i]||[];
+    if(String(r[0]||'').trim().startsWith('2. Операции с денежными средствами')){
+      cashStart=i;break;
+    }
+  }
+  if(cashStart<0){console.log('[TinkoffBroker] Section 2 not found');return txns;}
+
+  // Find the data header row (Дата, Время совершения...)
+  let dataStart=-1;
+  for(let i=cashStart;i<cashStart+20;i++){
+    const r=rows[i]||[];
+    if(String(r[0]||'').trim()==='Дата'&&String(r[3]||'').includes('Операция')){
+      dataStart=i+1;break;
+    }
+  }
+  if(dataStart<0){console.log('[TinkoffBroker] data header not found');return txns;}
+
+  // Parse cash operations until next section
+  for(let i=dataStart;i<rows.length;i++){
+    const r=rows[i]||[];
+    const cell0=String(r[0]||'').trim();
+    // Stop at next section
+    if(cell0.match(/^3\./))break;
+    // Skip page markers like "8 из 22"
+    if(cell0.match(/^\d+ из /))continue;
+    // Skip balance rows (Валюта, RUB, USD headers)
+    if(cell0==='RUB'||cell0==='USD'||cell0==='EUR'||cell0==='Валюта')continue;
+
+    // Date in col 0: DD.MM.YYYY
+    const dateMatch=cell0.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if(!dateMatch)continue;
+
+    const date=`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+    const month=date.slice(0,7);
+    const dateDisplay=cell0;
+
+    // Determine row type - may have time in col1 or operation type directly
+    let opType='', credit=0, debit=0, note='';
+    const col1=String(r[1]||'').trim();
+    const col3=String(r[3]||'').trim();
+
+    if(col1.match(/^\d{2}:\d{2}/)){
+      // Full row: date, time, exec_date, operation, credit, debit, note
+      opType=col3||String(r[2]||'').trim();
+      credit=parseFloat(r[4])||0;
+      debit=parseFloat(r[5])||0;
+      note=String(r[6]||'').trim();
+    } else {
+      // Condensed row: date, operation, credit, debit
+      opType=col1;
+      credit=parseFloat(r[2])||0;
+      debit=parseFloat(r[3])||0;
+    }
+
+    if(!opType)continue;
+    const net=credit-debit;
+    if(net===0&&credit===0&&debit===0)continue;
+
+    // Categorize
+    let type,group,sub,desc;
+    const opLow=opType.toLowerCase();
+
+    if(opLow.includes('пополнение счета')||opLow.includes('пополнение счёта')){
+      type='transfer';group='Перевод';sub='Пополнение брокерского счёта';
+      desc='Пополнение брокерского счёта';
+    } else if(opLow.includes('вывод')&&opLow.includes('средств')){
+      type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
+      desc='Вывод с брокерского счёта';
+    } else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд')){
+      type='income';group='Инвестиции';sub='Купоны и дивиденды';
+      // Extract asset name from note
+      const assetM=note.match(/Наименование:\s*([^,]+)/);
+      desc='Купон/дивиденд'+(assetM?' '+assetM[1].trim():'');
+    } else if(opLow.includes('покупка/продажа')||opLow.includes('покупка')||opLow.includes('продажа')){
+      type='transfer';group='Перевод';sub='Сделка на бирже';
+      desc='Покупка/продажа бумаг';
+    } else if(opLow.includes('комиссия')){
+      type='expense';group='Инвестиции';sub='Комиссии брокера';
+      desc='Комиссия: '+opType;
+    } else if(opLow.includes('репо')){
+      type='transfer';group='Перевод';sub='РЕПО';
+      desc='РЕПО операция';
+    } else if(opLow.includes('налог')){
+      type='expense';group='Инвестиции';sub='Налоги с инвестиций';
+      desc='Налог: '+opType;
+    } else {
+      type=net>0?'income':'expense';
+      const c=applyCategForTx({desc:opType,amtRub:net});
+      group=c.g;sub=c.s;
+      desc=opType;
+    }
+
+    const amtRub=net;
+    txns.push({
+      id:Math.random().toString(36).slice(2,10),
+      date,month,dateDisplay,
+      desc:(desc+(note?': '+note.slice(0,60):'')).slice(0,150),
+      card:'Тинькофф Брокер',account:accNum,
+      bankCat:opType.slice(0,30),
+      amtOp:amtRub,curOp:'RUB',amtRub,
+      status:'OK',source:'tinkoff_broker_xlsx',
+      counterparty:'АО ТБанк',counterpartyINN:'7710140679',counterpartyAcc:'',
+      manualCategory:false,linkedTo:null,linkedAccount:null,
+      type,group,sub
+    });
+  }
+
+  console.log('[TinkoffBroker] parsed txns:', txns.length);
+  return txns;
+}
+
 // ── Cifra Broker (VTB Digital / IMEX) XLSX parser ──
 function parseCifraBrokerXLSX(wb){
   const txns=[];
@@ -1672,8 +1809,13 @@ function processFile(file){
       const cell=ws['A4']||ws['B6']||{};
       const isBakay=(ws['A4']&&ws['A4'].v==='Сводная выписка по счету')||(ws['B6']&&String(ws['B6'].v||'').includes('Безценных'));
       // Detect Cifra Broker by sheet names
+      const isTinkoffBroker=wb.SheetNames.some(n=>n==='broker_rep');
       const isCifraBroker=wb.SheetNames.some(n=>n.startsWith('Cash In Out')||n.startsWith('Trades 2'));
-      if(isCifraBroker){
+      if(isTinkoffBroker){
+        const txns=parseTinkoffBrokerXLSX(wb);
+        if(txns.length){ingest(txns);}
+        else{toast('Тинькофф Брокер: не найдены операции','err');}
+      } else if(isCifraBroker){
         const txns=parseCifraBrokerXLSX(wb);
         if(txns.length){ingest(txns);}
         else{toast('Цифра Брокер: не найдены операции','err');}
