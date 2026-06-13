@@ -2179,12 +2179,19 @@ async function loadFromGithub(){
 // ── Periods ──
 function refreshUI(){
   const periods=Object.keys(DB.periods).sort().reverse();
+  // Update period dropdown if it exists (may be removed from topbar)
   const sel=document.getElementById('periodSelect');
-  const prev=sel.value;
-  sel.innerHTML=periods.map(p=>'<option value="'+p+'">'+fmtMonth(p)+'</option>').join('');
-  if(prev&&periods.includes(prev))sel.value=prev;
-  else if(periods.length){sel.value=periods[0];currentPeriod=periods[0];}
-  document.getElementById('periodList').innerHTML=periods.map(p=>'<div class="period-item '+(p===currentPeriod?'active':'')+'" onclick="selectPeriod(\''+p+'\')">'+fmtMonth(p)+'<span class="badge">'+getTxns(p).length+'</span></div>').join('');
+  if(sel){
+    const prev=sel.value;
+    sel.innerHTML=periods.map(p=>'<option value="'+p+'">'+fmtMonth(p)+'</option>').join('');
+    if(prev&&periods.includes(prev)){sel.value=prev;}
+    else if(periods.length){sel.value=periods[0];currentPeriod=periods[0];}
+  } else if(!currentPeriod&&periods.length){
+    currentPeriod=periods[0];
+  }
+  // Update period list in sidebar if exists
+  const pl=document.getElementById('periodList');
+  if(pl)pl.innerHTML=periods.map(p=>'<div class="period-item '+(p===currentPeriod?'active':'')+'" onclick="selectPeriod(\''+p+'\')">'+fmtMonth(p)+'<span class="badge">'+getTxns(p).length+'</span></div>').join('');
   renderPage();
 }
 function onPeriodChange(){const s=document.getElementById('periodSelect');if(s)currentPeriod=s.value;refreshUI();}
