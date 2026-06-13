@@ -746,15 +746,15 @@ function parseTinkoffBrokerXLSX(wb){
     return txns;
   }
 
-  // Find the data header row (Дата, Время совершения...)
+  // Find the data header row - just find 'Дата' after section 2
   let dataStart=-1;
-  for(let i=cashStart;i<cashStart+20;i++){
+  for(let i=cashStart;i<cashStart+30;i++){
     const r=rows[i]||[];
-    if(String(r[0]||'').trim()==='Дата'&&String(r[3]||'').includes('Операция')){
-      dataStart=i+1;break;
-    }
+    const cell=String(r[0]||'').trim();
+    if(cell==='Дата'){dataStart=i+1;break;}
   }
   if(dataStart<0){console.log('[TinkoffBroker] data header not found');return txns;}
+  console.log('[TinkoffBroker] cashStart:',cashStart,'dataStart:',dataStart);
 
   // Parse cash operations until next section
   for(let i=dataStart;i<rows.length;i++){
