@@ -1,149 +1,152 @@
-[
-  {
-    "type": "keyword",
-    "value": "выплата купона",
-    "group": "Доход",
-    "sub": "Дивиденды/купоны/курсовая разница",
-    "txType": "income"
-  },
-  {
-    "type": "keyword",
-    "value": "купон",
-    "group": "Доход",
-    "sub": "Дивиденды/купоны/курсовая разница",
-    "txType": "income"
-  },
-  {
-    "type": "keyword",
-    "value": "kso",
-    "group": "Питание",
-    "sub": "Продукты/супермаркеты",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "azs",
-    "group": "Транспорт",
-    "sub": "Топливо",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "fixprice",
-    "group": "Питание",
-    "sub": "Продукты/супермаркеты",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "dostavk perekre stka",
-    "group": "Питание",
-    "sub": "Продукты/супермаркеты",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "cvety",
-    "group": "Прочее",
-    "sub": "Подарки",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "oplata proezda",
-    "group": "Транспорт",
-    "sub": "Такси/Общественный транспорт",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "ch46002",
-    "group": "Питание",
-    "sub": "Продукты/супермаркеты",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "квант- телеком",
-    "group": "Жильё",
-    "sub": "Коммунальные/Интернет",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "домово",
-    "group": "Жильё",
-    "sub": "Коммунальные/Интернет",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "жку",
-    "group": "Жильё",
-    "sub": "Коммунальные/Интернет",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "саб по уборке",
-    "group": "Жильё",
-    "sub": "Коммунальные/Интернет",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "фонд капитально го ремонта",
-    "group": "Жильё",
-    "sub": "Коммунальные/Интернет",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "жкх",
-    "group": "Жильё",
-    "sub": "Коммунальные/Интернет",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "ooo aksioma",
-    "group": "Здоровье",
-    "sub": "Визиты врача/платные услуги",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "pyaterochka",
-    "group": "Питание",
-    "sub": "Продукты/супермаркеты",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "medicins kij centr",
-    "group": "Здоровье",
-    "sub": "Визиты врача/платные услуги",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "такси",
-    "group": "Транспорт",
-    "sub": "Такси/Общественный транспорт",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "medcent",
-    "group": "Здоровье",
-    "sub": "Визиты врача/платные услуги",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "magnit",
-    "group": "Питание",
-    "sub": "Продукты/супермаркеты",
-    "txType": "expense"
-  }
-]
+{
+  "rules": [
+    {
+      "type": "keyword",
+      "value": "выплата купона",
+      "group": "Доход",
+      "sub": "Дивиденды/купоны/курсовая разница",
+      "txType": "income"
+    },
+    {
+      "type": "keyword",
+      "value": "купон",
+      "group": "Доход",
+      "sub": "Дивиденды/купоны/курсовая разница",
+      "txType": "income"
+    },
+    {
+      "type": "keyword",
+      "value": "kso",
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "azs",
+      "group": "Транспорт",
+      "sub": "Топливо",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "fixprice",
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "dostavk perekre stka",
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "cvety",
+      "group": "Прочее",
+      "sub": "Подарки",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "oplata proezda",
+      "group": "Транспорт",
+      "sub": "Такси/Общественный транспорт",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "ch46002",
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "квант- телеком",
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "домово",
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "жку",
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "саб по уборке",
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "фонд капитально го ремонта",
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "жкх",
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "ooo aksioma",
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "pyaterochka",
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "medicins kij centr",
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "такси",
+      "group": "Транспорт",
+      "sub": "Такси/Общественный транспорт",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "medcent",
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
+      "value": "magnit",
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты",
+      "txType": "expense"
+    }
+  ],
+  "customGroups": {}
+}
