@@ -2514,7 +2514,6 @@ function filterTxns(){
   body.innerHTML=txns.map(t=>{
     const _sep=t.dateDisplay!==_lastDate?'<tr class="date-sep"><td colspan="7" style="padding:4px 12px 2px;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg3);letter-spacing:0.3px;border-top:1px solid var(--border)">'+t.dateDisplay+'</td></tr>':'';
     _lastDate=t.dateDisplay;
-    return _sep+(
     const isI=t.type==='income',isT=t.type==='transfer';
     const cls=isT?'amt-transfer':isI?'amt-income':'amt-expense';
     const sign=isI?'+':'';
@@ -2528,7 +2527,7 @@ function filterTxns(){
     }else if(isT&&t.counterpartyAcc){
       accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
     }
-    return '<tr>'
+    return _sep+'<tr>'
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
       +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+t.counterparty+'</div>':'')+'</td>'
       +'<td style="min-width:120px">'+accCell+'</td>'
