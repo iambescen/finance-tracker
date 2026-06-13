@@ -4477,7 +4477,7 @@
       "counterpartyINN": "",
       "counterpartyAcc": "",
       "manualCategory": false,
-      "linkedTo": "j9fggnj9",
+      "linkedTo": "xbrdjnki",
       "linkedAccount": "40914810800007588136",
       "group": "Перевод",
       "sub": "Внутренний перевод",
@@ -4751,7 +4751,7 @@
       "type": "transfer"
     },
     {
-      "id": "i8g5tyhd",
+      "id": "02zmzq9e",
       "date": "2026-05-13",
       "month": "2026-05",
       "dateDisplay": "13.05.2026",
@@ -4775,7 +4775,7 @@
       "sub": "Пополнение брокерского счёта"
     },
     {
-      "id": "bski6diu",
+      "id": "3jr0j44l",
       "date": "2026-05-13",
       "month": "2026-05",
       "dateDisplay": "13.05.2026",
@@ -4799,7 +4799,7 @@
       "sub": "Пополнение брокерского счёта"
     },
     {
-      "id": "j9fggnj9",
+      "id": "xbrdjnki",
       "date": "2026-05-13",
       "month": "2026-05",
       "dateDisplay": "13.05.2026",
