@@ -298,33 +298,6 @@ tr:hover td{background:var(--bg3)}
 </div>
 
 <!-- Assets modal -->
-<div class="modal-bg" id="manualTxModal">
-  <div class="modal" style="width:480px">
-    <h3>Добавить операцию вручную</h3>
-    <div class="field"><label>Дата</label><input type="date" id="mtDate"></div>
-    <div class="field"><label>Тип</label>
-      <select id="mtType" onchange="updateMtGroups()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
-        <option value="expense">Расход</option>
-        <option value="income">Доход</option>
-      </select>
-    </div>
-    <div class="field"><label>Категория</label>
-      <select id="mtGroup" onchange="updateMtSubs()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
-    </div>
-    <div class="field"><label>Подкатегория</label>
-      <select id="mtSub" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
-    </div>
-    <div class="field"><label>Сумма (₽)</label><input type="number" id="mtAmt" placeholder="0" min="0" step="1"></div>
-    <div class="field"><label>Описание</label><input type="text" id="mtDesc" placeholder="Например: Детский сад — наличные"></div>
-    <div class="field"><label>Счёт</label>
-      <select id="mtAccount" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="document.getElementById('manualTxModal').classList.remove('open')">Отмена</button>
-      <button class="btn primary" onclick="saveManualTx()">Добавить</button>
-    </div>
-  </div>
-</div>
 <div class="modal-bg" id="assetsModal">
   <div class="modal" style="width:560px">
     <h3>Активы и обязательства</h3>
@@ -2490,7 +2463,7 @@ function pageTxns(){
   const txPeriods=Object.keys(DB.periods).sort().reverse();
   const txSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
   const txPeriodOpts=txPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select><button class="btn sm primary" onclick="openManualTx()">+ Добавить</button></div></div>'
+  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
     +'<div class="tbl-wrap"><div class="tbl-toolbar">'
     +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
     +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
@@ -2532,131 +2505,16 @@ function filterTxns(){
     }else if(isT&&t.counterpartyAcc){
       accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
     }
-    // Detect unlinked external transfer (not between own accounts)
-    const isExternalTransfer=isT&&!t.linkedTo&&!t.linkedAccount&&
-      !OWN_ACCOUNTS.includes(t.counterpartyAcc)&&t.amtRub<0;
-    const rowStyle=isExternalTransfer?'background:rgba(234,179,8,0.06)':'';
-    const quickBtn=isExternalTransfer
-      ?'<button onclick="markAsExpense(\''+t.id+'\',\''+currentPeriod+'\')" title="Отметить как расход" '+
-        'style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--expense);color:#fff;border:none;cursor:pointer;margin-left:4px;opacity:0.8">→ Расход</button>'
-      :'';
-    return '<tr style="'+rowStyle+'">'
+    return '<tr>'
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
       +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+t.counterparty+'</div>':'')+'</td>'
       +'<td style="min-width:120px">'+accCell+'</td>'
-      +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span>'+quickBtn+'</td>'
+      +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
       +'<td style="text-align:right;white-space:nowrap" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
       +'</tr>';
   }).join('');
   const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
-}
-
-
-
-function openManualTx(){
-  // Set today's date
-  const today=new Date().toISOString().slice(0,10);
-  document.getElementById('mtDate').value=today;
-  // Fill account options
-  const accSel=document.getElementById('mtAccount');
-  accSel.innerHTML=Object.values(DB.accounts).filter(a=>!a.virtual)
-    .map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('');
-  // Add cash accounts
-  accSel.innerHTML+='<option value="cash_me">Наличные Влад</option>'
-    +'<option value="cash_wife">Наличные Таня</option>';
-  updateMtGroups();
-  document.getElementById('manualTxModal').classList.add('open');
-}
-function updateMtGroups(){
-  const type=document.getElementById('mtType').value;
-  const groups=type==='income'
-    ?Object.keys(CAT_TREE.income.subs||{}).concat(['Доход'])
-    :Object.keys(CAT_TREE.expense.groups||{});
-  const sel=document.getElementById('mtGroup');
-  sel.innerHTML=groups.map(g=>'<option>'+g+'</option>').join('');
-  updateMtSubs();
-}
-function updateMtSubs(){
-  const type=document.getElementById('mtType').value;
-  const group=document.getElementById('mtGroup').value;
-  let subs=['Прочее'];
-  if(type==='income'){
-    subs=CAT_TREE.income.subs?.[group]||['Прочие доходы'];
-  } else {
-    subs=CAT_TREE.expense.groups?.[group]||['Прочие расходы'];
-  }
-  document.getElementById('mtSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
-}
-function saveManualTx(){
-  const date=document.getElementById('mtDate').value;
-  if(!date){toast('Укажите дату','err');return;}
-  const amt=parseFloat(document.getElementById('mtAmt').value)||0;
-  if(!amt){toast('Укажите сумму','err');return;}
-  const type=document.getElementById('mtType').value;
-  const group=document.getElementById('mtGroup').value;
-  const sub=document.getElementById('mtSub').value;
-  const desc=document.getElementById('mtDesc').value||group+' (вручную)';
-  const account=document.getElementById('mtAccount').value;
-  const parts=date.split('-');
-  const month=date.slice(0,7);
-  const dateDisplay=parts[2]+'.'+parts[1]+'.'+parts[0];
-  const amtRub=type==='expense'?-amt:amt;
-
-  const tx={
-    id:Math.random().toString(36).slice(2,10),
-    date,month,dateDisplay,
-    desc,
-    card:DB.accounts[account]?.name||'Наличные',
-    account,
-    bankCat:'Ручной ввод',
-    amtOp:amtRub,curOp:'RUB',amtRub,
-    status:'OK',source:'manual',
-    counterparty:'',counterpartyINN:'',counterpartyAcc:'',
-    manualCategory:true,linkedTo:null,linkedAccount:null,
-    type,group,sub
-  };
-
-  if(!DB.periods[month])DB.periods[month]={transactions:[]};
-  DB.periods[month].transactions.push(tx);
-  saveLocal();
-
-  // Save to GitHub
-  const{token}=ghCfg();
-  if(token){
-    ghPut('data/'+month+'.json',JSON.stringify(DB.periods[month],null,2),'Manual tx '+month)
-      .then(()=>toast('Операция добавлена ✓','ok'))
-      .catch(()=>toast('Операция добавлена (локально)','ok'));
-  } else {
-    toast('Операция добавлена','ok');
-  }
-
-  document.getElementById('manualTxModal').classList.remove('open');
-  // Switch to that period and refresh
-  currentPeriod=month;
-  refreshUI();
-}
-
-function markAsExpense(txId, period){
-  const txns=getTxns(period);
-  const tx=txns.find(t=>t.id===txId);
-  if(!tx)return;
-  tx.type='expense';
-  tx.group='Прочее';
-  tx.sub='Переводы физлицам';
-  tx.manualCategory=true;
-  DB.periods[period].transactions=txns;
-  saveLocal();
-  // Push to GitHub
-  const{token}=ghCfg();
-  if(token){
-    ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),'Mark as expense '+period)
-      .then(()=>toast('Помечено как расход ✓','ok'))
-      .catch(()=>toast('Помечено как расход (локально)','ok'));
-  } else {
-    toast('Помечено как расход','ok');
-  }
-  filterTxns();
 }
 
 // ── Upload ──
@@ -2680,7 +2538,7 @@ function pageAccounts(){
   const inputStyle='background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;padding:6px 10px;font-family:var(--font)';
   const CURRENCIES=['RUB','USD','EUR','KGS'];
   const curSymbol={'RUB':'₽','USD':'$','EUR':'€','KGS':'с'};
-  return '<div class="page-header"><div class="page-title">Счета</div>'
+  return '<div class="page-header"><div class="page-title">Счета</div><div class="page-actions"><button class="btn sm primary" onclick="openAddAccountModal()">+ Добавить счёт</button></div>'
     +'<div style="font-size:13px;color:var(--muted2)">Введите текущий остаток — система посчитает историю балансов</div></div>'
     +'<div class="card"><div class="card-title">Список счетов</div>'
     +(accs.length?accs.map(acc=>{
@@ -3300,6 +3158,80 @@ refreshUI();
 initPeriodList();
 loadFromGithub();
 
+
+
+function openAddAccountModal(){
+  document.getElementById('aaName').value='';
+  document.getElementById('aaNumber').value='manual_'+Date.now();
+  document.getElementById('aaBank').value='';
+  document.getElementById('aaBalance').value='';
+  document.getElementById('addAccountModal').classList.add('open');
+}
+function saveAddAccount(){
+  const name=document.getElementById('aaName').value.trim();
+  if(!name){toast('Укажите название','err');return;}
+  let number=document.getElementById('aaNumber').value.trim()||'manual_'+Date.now();
+  if(DB.accounts[number])number=number+'_'+Date.now();
+  const bank=document.getElementById('aaBank').value.trim()||'Вручную';
+  const owner=document.getElementById('aaOwner').value;
+  const currency=document.getElementById('aaCurrency').value;
+  const balance=document.getElementById('aaBalance').value!==''?parseFloat(document.getElementById('aaBalance').value):null;
+  DB.accounts[number]={number,display:'***'+number.slice(-4),bank,name,owner,source:'manual',currentBalance:balance,currency,virtual:false,manual:true};
+  saveLocal();saveAccountsToGithub();
+  document.getElementById('addAccountModal').classList.remove('open');
+  toast('Счёт добавлен ✓','ok');renderPage();
+}
+function openManualTx(){
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('mtDate').value=today;
+  const accSel=document.getElementById('mtAccount');
+  accSel.innerHTML=Object.values(DB.accounts).filter(a=>!a.virtual)
+    .map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('');
+  accSel.innerHTML+='<option value="cash_me">Наличные Влад</option><option value="cash_wife">Наличные Таня</option>';
+  updateMtGroups();
+  document.getElementById('manualTxModal').classList.add('open');
+}
+function updateMtGroups(){
+  const type=document.getElementById('mtType').value;
+  const groups=type==='income'?['Зарплата','Фриланс','Инвестиции','Прочие доходы']:Object.keys(CAT_TREE.expense.groups||{'Прочее':[]});
+  document.getElementById('mtGroup').innerHTML=groups.map(g=>'<option>'+g+'</option>').join('');
+  updateMtSubs();
+}
+function updateMtSubs(){
+  const type=document.getElementById('mtType').value;
+  const group=document.getElementById('mtGroup').value;
+  const subs=type==='income'?['Прочие доходы']:(CAT_TREE.expense.groups?.[group]||['Прочие расходы']);
+  document.getElementById('mtSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
+}
+function saveManualTx(){
+  const date=document.getElementById('mtDate').value;
+  if(!date){toast('Укажите дату','err');return;}
+  const amt=parseFloat(document.getElementById('mtAmt').value)||0;
+  if(!amt){toast('Укажите сумму','err');return;}
+  const type=document.getElementById('mtType').value;
+  const group=document.getElementById('mtGroup').value;
+  const sub=document.getElementById('mtSub').value;
+  const desc=document.getElementById('mtDesc').value||(group+' (вручную)');
+  const account=document.getElementById('mtAccount').value;
+  const parts=date.split('-');
+  const month=date.slice(0,7);
+  const amtRub=type==='expense'?-amt:amt;
+  const tx={id:Math.random().toString(36).slice(2,10),date,month,
+    dateDisplay:parts[2]+'.'+parts[1]+'.'+parts[0],desc,
+    card:DB.accounts[account]?.name||'Наличные',account,
+    bankCat:'Ручной ввод',amtOp:amtRub,curOp:'RUB',amtRub,
+    status:'OK',source:'manual',counterparty:'',counterpartyINN:'',counterpartyAcc:'',
+    manualCategory:true,linkedTo:null,linkedAccount:null,type,group,sub};
+  if(!DB.periods[month])DB.periods[month]={transactions:[]};
+  DB.periods[month].transactions.push(tx);
+  saveLocal();
+  const{token}=ghCfg();
+  if(token){ghPut('data/'+month+'.json',JSON.stringify(DB.periods[month],null,2),'Manual tx '+month)
+    .then(()=>toast('Операция добавлена ✓','ok')).catch(()=>toast('Добавлено локально','ok'));}
+  else toast('Операция добавлена','ok');
+  document.getElementById('manualTxModal').classList.remove('open');
+  currentPeriod=month;refreshUI();
+}
 </script>
 
 <script>
@@ -3606,5 +3538,51 @@ function updateBottomNav(page){
 
 
 </script>
+
+<div class="modal-bg" id="addAccountModal">
+  <div class="modal" style="width:440px">
+    <h3>Добавить счёт вручную</h3>
+    <div class="field"><label>Название</label><input type="text" id="aaName" placeholder="Тинькофф Брокер накопительный"></div>
+    <div class="field"><label>ID / Номер</label><input type="text" id="aaNumber" placeholder="Уникальный (можно любой)"></div>
+    <div class="field"><label>Банк</label><input type="text" id="aaBank" placeholder="Тинькофф"></div>
+    <div class="field"><label>Владелец</label>
+      <select id="aaOwner" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <option value="me">Влад</option><option value="wife">Таня</option><option value="joint">Общий</option>
+      </select></div>
+    <div class="field"><label>Валюта</label>
+      <select id="aaCurrency" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <option value="RUB">RUB ₽</option><option value="USD">USD $</option><option value="EUR">EUR €</option><option value="KGS">KGS с</option>
+      </select></div>
+    <div class="field"><label>Текущий остаток</label><input type="number" id="aaBalance" placeholder="0" step="0.01"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('addAccountModal').classList.remove('open')">Отмена</button>
+      <button class="btn primary" onclick="saveAddAccount()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="manualTxModal">
+  <div class="modal" style="width:480px">
+    <h3>Добавить операцию вручную</h3>
+    <div class="field"><label>Дата</label><input type="date" id="mtDate"></div>
+    <div class="field"><label>Тип</label>
+      <select id="mtType" onchange="updateMtGroups()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <option value="expense">Расход</option><option value="income">Доход</option>
+      </select></div>
+    <div class="field"><label>Категория</label>
+      <select id="mtGroup" onchange="updateMtSubs()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select></div>
+    <div class="field"><label>Подкатегория</label>
+      <select id="mtSub" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select></div>
+    <div class="field"><label>Сумма (₽)</label><input type="number" id="mtAmt" placeholder="0" min="0" step="1"></div>
+    <div class="field"><label>Описание</label><input type="text" id="mtDesc" placeholder="Детский сад — наличные"></div>
+    <div class="field"><label>Счёт</label>
+      <select id="mtAccount" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('manualTxModal').classList.remove('open')">Отмена</button>
+      <button class="btn primary" onclick="saveManualTx()">Добавить</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
