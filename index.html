@@ -587,6 +587,110 @@ function parseGeneric(rows){
 }
 
 
+
+// ── Cifra Bank PDF parser ──
+function parseCifraBankPDF(pages){
+  const txns=[];
+  let accountNum=null;
+  const allText=pages.map(p=>p.map(t=>t.str||'').join(' ')).join(' ');
+
+  // Extract account number
+  const accMatch=allText.match(/Лицевой счёт[^\d]*(\d{20})/);
+  if(accMatch)accountNum=accMatch[1];
+  if(!accountNum)accountNum='cifra_unknown';
+
+  registerAccount(accountNum,'cifra_pdf','Цифра банк','RUB');
+
+  // Parse each page
+  for(const page of pages){
+    const lines=[];
+    let curLine={y:null,items:[]};
+    // Group by Y coordinate
+    const sorted=[...page].sort((a,b)=>b.transform[5]-a.transform[5]);
+    for(const item of sorted){
+      const y=Math.round(item.transform[5]);
+      if(curLine.y===null)curLine.y=y;
+      if(Math.abs(y-curLine.y)>3){lines.push(curLine);curLine={y,items:[]};}
+      curLine.items.push({x:Math.round(item.transform[4]),str:(item.str||'').trim()});
+    }
+    if(curLine.items.length)lines.push(curLine);
+
+    for(const line of lines){
+      const items=line.items.sort((a,b)=>a.x-b.x).filter(i=>i.str);
+      const lineStr=items.map(i=>i.str).join(' ');
+
+      // Match date at start: DD.MM.YYYY
+      const dateMatch=lineStr.match(/^(\d{2}\.\d{2}\.\d{4})/);
+      if(!dateMatch)continue;
+
+      const dateRaw=dateMatch[1];
+      const parts=dateRaw.split('.');
+      const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
+      const month=date.slice(0,7);
+
+      // Find debit/credit amounts - numbers like 50,718.27 or 100,000.00
+      const amounts=lineStr.match(/[\d,]+\.\d{2}/g)||[];
+      if(!amounts.length)continue;
+
+      // Description is everything after BIK+corrAccount
+      const descMatch=lineStr.match(/044525900\s+\S+\s+(.+)$/);
+      const desc=descMatch?descMatch[1].trim():lineStr;
+
+      // Determine debit vs credit from position
+      // Debit items appear before credit in the line
+      // Look for position of amounts relative to page center (~300px)
+      let debit=0,credit=0;
+      const debitItems=line.items.filter(i=>/[\d,]+\.\d{2}/.test(i.str)&&i.x<400);
+      const creditItems=line.items.filter(i=>/[\d,]+\.\d{2}/.test(i.str)&&i.x>=400&&i.x<550);
+
+      for(const di of debitItems)debit+=parseFloat(di.str.replace(/,/g,''))||0;
+      for(const ci of creditItems)credit+=parseFloat(ci.str.replace(/,/g,''))||0;
+
+      if(debit===0&&credit===0)continue;
+
+      const isExpense=debit>0;
+      const amtRub=isExpense?-debit:credit;
+
+      // Categorize
+      const descLow=desc.toLowerCase();
+      let type,group,sub;
+
+      const isToBroker=descLow.includes('пополнение брокерского') || descLow.includes('vo99083');
+      const isFromBroker=descLow.includes('withdrawal of money') || descLow.includes('vo58015') || descLow.includes('вывод по договору брокерского');
+      const isCommission=descLow.includes('комиссия банка') || descLow.includes('комиссия за смс');
+      const isSBP=descLow.includes('зачисление по системе сбп') || descLow.includes('перевод по номеру телефона');
+
+      if(isToBroker||isFromBroker||isSBP){
+        type='transfer';group='Перевод';
+        sub=isToBroker?'Пополнение брокерского счёта':isFromBroker?'Вывод с брокерского счёта':'Перевод СБП';
+      } else if(isCommission){
+        type='expense';group='Сервисы/Связь';sub='Банковские комиссии';
+      } else {
+        const c=applyCategForTx({desc,amtRub});
+        type=isExpense?'expense':'income';group=c.g;sub=c.s;
+      }
+
+      txns.push({
+        id:Math.random().toString(36).slice(2,10),
+        date,month,
+        dateDisplay:`${parts[0]}.${parts[1]}.${parts[2]}`,
+        desc:desc.slice(0,120),
+        card:'Цифра банк',
+        account:accountNum,
+        bankCat:isToBroker?'Брокер':isFromBroker?'Брокер':isCommission?'Комиссия':'Перевод',
+        amtOp:amtRub,curOp:'RUB',amtRub,
+        status:'OK',source:'cifra_pdf',
+        counterparty:'Цифра банк',
+        counterpartyINN:'6506000327',
+        counterpartyAcc:'',
+        manualCategory:false,linkedTo:null,linkedAccount:null,
+        type,group,sub
+      });
+    }
+  }
+  return txns;
+}
+
 // ── Bakay Bank (Kyrgyzstan) XLSX parser ──
 function parseBakayBank(rows) {
   // rows come from XLSX.utils.sheet_to_json with header:1 (array of arrays)
@@ -819,6 +923,7 @@ function detectPDFBank(lines) {
   if(text.includes('справка об уплаченных процентах') || text.includes('погашение основного долга') && text.includes('сбербанк')) return 'sber_loan';
   if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
   if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный'))) return 'vtb_credit';
+  if(text.includes('цифра банк') || text.includes('6506000327')) return 'cifra';
   if(text.includes('выдача кредита по договору') || (text.includes('погашение кредита по договору') && text.includes('погашение процентов по договору'))) return 'vtb_mortgage';
   if(text.includes('банк втб') || text.includes('втб (пао)') || (text.includes('втб') && text.includes('филиал'))) return 'vtb';
   if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff')) return 'tinkoff_pdf';
@@ -1389,6 +1494,7 @@ async function processPDFFile(file) {
     let txns = [];
     if(bank === 'sber_loan') txns = parseSberLoanPDF(pdfData.flatLines, pdfData.pages);
     else if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines);
+    else if(bank === 'cifra') txns = parseCifraBankPDF(pdfData.pages);
     else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
     else if(bank === 'vtb_credit') txns = parseVTBCreditPDF(pdfData.pages);
     else if(bank === 'vtb_mortgage') txns = parseVTBMortgagePDF(pdfData.pages);
@@ -1878,7 +1984,17 @@ function updateAcc(el){
   const acc=el.dataset.acc,field=el.dataset.field;
   if(DB.accounts[acc]){
     DB.accounts[acc][field]=field==='currentBalance'?(el.value!==''?parseFloat(el.value):null):el.value;
-    saveLocal();toast('Сохранено','ok');
+    saveLocal();
+    // Push accounts to GitHub so changes persist across devices
+    const{token}=ghCfg();
+    if(token){
+      const date=new Date().toLocaleDateString('ru-RU');
+      ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Update account — '+date)
+        .then(()=>toast('Сохранено ✓','ok'))
+        .catch(()=>toast('Сохранено локально','ok'));
+    } else {
+      toast('Сохранено','ok');
+    }
     if(currentPage==='balance')renderPage();
   }
 }
@@ -1890,7 +2006,16 @@ function updateAccCheck(el){
     if(el.checked && DB.accounts[acc].bank && !DB.accounts[acc].bank.includes('Кредит')){
       DB.accounts[acc].bank = DB.accounts[acc].bank + ' Кредитная';
     }
-    saveLocal();toast('Сохранено','ok');
+    saveLocal();
+    const{token}=ghCfg();
+    if(token){
+      const date=new Date().toLocaleDateString('ru-RU');
+      ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Update account — '+date)
+        .then(()=>toast('Сохранено ✓','ok'))
+        .catch(()=>toast('Сохранено локально','ok'));
+    } else {
+      toast('Сохранено','ok');
+    }
     if(currentPage==='balance')renderPage();
   }
 }
