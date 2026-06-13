@@ -64,8 +64,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .logo{font-size:15px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
 .logo em{color:var(--accent);font-style:normal;font-weight:400}
 .topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
-.body{display:grid;grid-template-columns:204px 1fr;overflow:hidden}
-.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto}
+.body{display:grid;grid-template-columns:204px 1fr;overflow:hidden;height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto;height:100vh;position:sticky;top:0;display:flex;flex-direction:column}
 .content{overflow-y:auto;padding:24px;background:var(--bg)}
 
 /* ── Sidebar ── */
@@ -74,7 +74,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .nav-item:hover{background:var(--bg3);color:var(--text)}
 .nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:500}
 .nav-divider{height:1px;background:var(--border);margin:8px 10px}
-.period-list{padding:0 6px}
+.period-list{padding:0 6px;flex:1;overflow-y:auto;min-height:0}
 .period-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--muted2);transition:all 0.12s;margin-bottom:1px}
 .period-item:hover{background:var(--bg3);color:var(--text)}
 .period-item.active{background:var(--accent-soft);color:var(--accent);font-weight:500}
