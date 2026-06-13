@@ -453,7 +453,7 @@ let DB={
   accounts:{},
   rules:[]
 };
-let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=false;
+let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null;
 
 function uid(){return Math.random().toString(36).slice(2,10);}
 function parseAmt(s){if(!s) return 0;return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
@@ -1886,22 +1886,18 @@ function pageBalance(){
 
 // ── Transactions ──
 function pageTxns(){
-  const allP=Object.keys(DB.periods).sort().reverse();
-  // Get all txns for groups/accounts dropdown (across all periods)
-  const allTxns=allP.flatMap(p=>getTxns(p));
-  if(!allTxns.length)return pageEmpty();
-  const groups=[...new Set(allTxns.map(t=>t.group))].sort();
-  const accOpts=Object.values(DB.accounts).map(a=>'<option value="'+a.number+'"'+(txFilterAccount===a.number?' selected':'')+'>'+a.name+'</option>').join('');
+  const txns=getTxns(currentPeriod);if(!txns.length)return pageEmpty();
+  const groups=[...new Set(txns.map(t=>t.group))].sort();
+  const accOpts=Object.values(DB.accounts).map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('');
+  const txPeriods=Object.keys(DB.periods).sort().reverse();
   const txSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  const txPeriodOpts='<option value="all"'+(txAllPeriods?' selected':'')+'>Все периоды</option>'
-    +allP.map(p=>'<option value="'+p+'"'+(!txAllPeriods&&p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Операции</div>'
-    +'<div class="page-actions"><select onchange="setTxPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
+  const txPeriodOpts=txPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
+  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
     +'<div class="tbl-wrap"><div class="tbl-toolbar">'
-    +'<input type="text" id="txSearch" placeholder="Поиск..." value="'+txFilterSearch+'" oninput="saveTxFilters();filterTxns()">'
-    +'<select id="txGroup" onchange="saveTxFilters();filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option'+(txFilterGroup===g?' selected':'')+'>'+g+'</option>').join('')+'</select>'
-    +'<select id="txType" onchange="saveTxFilters();filterTxns()"><option value="">Все типы</option><option value="income"'+(txFilterType==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(txFilterType==='expense'?' selected':'')+'>Расходы</option><option value="transfer"'+(txFilterType==='transfer'?' selected':'')+'>Переводы</option></select>'
-    +'<select id="txAccount" onchange="saveTxFilters();filterTxns()"><option value="">Все счета</option>'+accOpts+'</select>'
+    +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
+    +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
+    +'<select id="txType" onchange="filterTxns()"><option value="">Все типы</option><option value="income">Доходы</option><option value="expense">Расходы</option><option value="transfer">Переводы</option></select>'
+    +'<select id="txAccount" onchange="filterTxns()"><option value="">Все счета</option>'+accOpts+'</select>'
     +'<span class="tbl-count" id="txCount"></span></div>'
     +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма</th></tr></thead><tbody id="txBody"></tbody></table></div>';
 }
@@ -1911,25 +1907,12 @@ function bindTxnEvents(){
   document.getElementById('txBody').addEventListener('click',e=>{const btn=e.target.closest('[data-id]');if(btn)openCatModal(btn.dataset.id);});
 }
 
-function saveTxFilters(){
-  txFilterSearch=(document.getElementById('txSearch')?.value||'');
-  txFilterGroup=document.getElementById('txGroup')?.value||'';
-  txFilterType=document.getElementById('txType')?.value||'';
-  txFilterAccount=document.getElementById('txAccount')?.value||'';
-}
-function setTxPeriod(v){
-  if(v==='all'){txAllPeriods=true;}
-  else{txAllPeriods=false;currentPeriod=v;const s=document.getElementById('periodSelect');if(s)s.value=v;}
-  renderPage();
-}
 function filterTxns(){
-  const search=(document.getElementById('txSearch')?.value||txFilterSearch).toLowerCase();
-  const group=document.getElementById('txGroup')?.value||txFilterGroup;
-  const type=document.getElementById('txType')?.value||txFilterType;
-  const account=document.getElementById('txAccount')?.value||txFilterAccount;
-  const allP=Object.keys(DB.periods).sort().reverse();
-  const rawTxns=txAllPeriods?allP.flatMap(p=>getTxns(p)):getTxns(currentPeriod);
-  const txns=rawTxns.filter(t=>{
+  const search=(document.getElementById('txSearch')?.value||'').toLowerCase();
+  const group=document.getElementById('txGroup')?.value||'';
+  const type=document.getElementById('txType')?.value||'';
+  const account=document.getElementById('txAccount')?.value||'';
+  const txns=getTxns(currentPeriod).filter(t=>{
     if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search))return false;
     if(group&&t.group!==group)return false;
     if(type&&t.type!==type)return false;
@@ -2013,42 +1996,37 @@ function pageAccounts(){
       :'<div style="color:var(--muted);padding:20px 0;text-align:center">Счета появятся после загрузки выписок</div>')
     +'</div>';
 }
+let _accSaveTimer=null;
+function saveAccountsToGithub(){
+  clearTimeout(_accSaveTimer);
+  _accSaveTimer=setTimeout(async()=>{
+    const{token}=ghCfg();
+    if(!token)return;
+    try{
+      const date=new Date().toLocaleDateString('ru-RU');
+      await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Update accounts — '+date);
+      toast('Сохранено ✓','ok');
+    }catch(e){toast('Сохранено локально','ok');}
+  },800);
+}
 function updateAcc(el){
   const acc=el.dataset.acc,field=el.dataset.field;
   if(DB.accounts[acc]){
     DB.accounts[acc][field]=field==='currentBalance'?(el.value!==''?parseFloat(el.value):null):el.value;
     saveLocal();
-    // Push accounts to GitHub so changes persist across devices
-    const{token}=ghCfg();
-    if(token){
-      const date=new Date().toLocaleDateString('ru-RU');
-      ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Update account — '+date)
-        .then(()=>toast('Сохранено ✓','ok'))
-        .catch(()=>toast('Сохранено локально','ok'));
-    } else {
-      toast('Сохранено','ok');
-    }
+    saveAccountsToGithub();
     if(currentPage==='balance')renderPage();
   }
 }
-
 function updateAccCheck(el){
   const acc=el.dataset.acc,field=el.dataset.field;
   if(DB.accounts[acc]){
     DB.accounts[acc][field]=el.checked;
-    if(el.checked && DB.accounts[acc].bank && !DB.accounts[acc].bank.includes('Кредит')){
-      DB.accounts[acc].bank = DB.accounts[acc].bank + ' Кредитная';
+    if(el.checked&&DB.accounts[acc].bank&&!DB.accounts[acc].bank.includes('Кредит')){
+      DB.accounts[acc].bank=DB.accounts[acc].bank+' Кредитная';
     }
     saveLocal();
-    const{token}=ghCfg();
-    if(token){
-      const date=new Date().toLocaleDateString('ru-RU');
-      ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Update account — '+date)
-        .then(()=>toast('Сохранено ✓','ok'))
-        .catch(()=>toast('Сохранено локально','ok'));
-    } else {
-      toast('Сохранено','ok');
-    }
+    saveAccountsToGithub();
     if(currentPage==='balance')renderPage();
   }
 }
