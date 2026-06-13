@@ -242,5 +242,15 @@
     "source": "tinkoff_broker_xlsx",
     "currentBalance": null,
     "currency": "RUB"
+  },
+  "tinkoff_broker_2006039107": {
+    "number": "tinkoff_broker_2006039107",
+    "display": "***9107",
+    "bank": "Тинькофф Брокер",
+    "name": "Тинькофф Брокер ***9107",
+    "owner": "wife",
+    "source": "tinkoff_broker_xlsx",
+    "currentBalance": null,
+    "currency": "RUB"
   }
 }
