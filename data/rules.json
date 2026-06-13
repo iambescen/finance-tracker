@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "medcent",
+    "group": "Здоровье",
+    "sub": "Визиты врача/платные услуги",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "magnit",
     "group": "Питание",
     "sub": "Продукты/супермаркеты",
