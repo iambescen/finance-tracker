@@ -3000,23 +3000,143 @@ async function fetchMOEXPrices(){
 }
 
 function pageRules(){
-  return '<div class="page-header"><div class="page-title">Правила категоризации</div>'
+  // Build all groups (base + custom)
+  const allGroups=Object.entries(getExpenseGroups());
+
+  // Category editor
+  let catRows='';
+  for(const[group,subs]of allGroups){
+    const isCustomGroup=!!(DB.customGroups||{})[group];
+    catRows+='<div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">';
+    catRows+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3)">';
+    catRows+='<span style="font-weight:600;font-size:13px">'+group+'</span>';
+    catRows+='<div style="display:flex;gap:6px">';
+    catRows+='<button onclick="renameCat(\''+group+'\',null)" title="Переименовать группу" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 6px">✎</button>';
+    if(isCustomGroup)catRows+='<button onclick="deleteCatGroup(\''+group+'\')" title="Удалить группу" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:12px;padding:2px 6px">✕</button>';
+    catRows+='</div></div>';
+    catRows+='<div style="padding:8px 12px">';
+    for(const sub of subs){
+      const isCustomSub=isCustomGroup||(CAT_TREE.expense.groups[group]||[]).indexOf(sub)<0;
+      catRows+='<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">';
+      catRows+='<span style="font-size:13px;color:var(--text-muted)">'+sub+'</span>';
+      catRows+='<div style="display:flex;gap:4px">';
+      catRows+='<button onclick="renameCat(\''+group+'\',\''+sub+'\')" title="Переименовать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;padding:2px 5px">✎</button>';
+      catRows+='<button onclick="deleteCatSub(\''+group+'\',\''+sub+'\')" title="Удалить" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:11px;padding:2px 5px;opacity:0.6">✕</button>';
+      catRows+='</div></div>';
+    }
+    catRows+='<button onclick="addSubToCat(\''+group+'\')" style="margin-top:8px;font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 0">+ подкатегория</button>';
+    catRows+='</div></div>';
+  }
+
+  return '<div class="page-header"><div class="page-title">Правила и категории</div>'
     +'<div class="page-actions">'
-    +'<button class="btn sm" onclick="openAddCatModal()">+ Категория</button>'
-    +'<button class="btn sm" onclick="openKeywordRuleModal()">+ По ключевому слову</button>'
-    +'<button class="btn primary" onclick="forceReapply()">↺ Пересчитать все</button>'
+    +'<button class="btn sm" onclick="openAddCatModal()">+ Группа</button>'
+    +'<button class="btn sm" onclick="openKeywordRuleModal()">+ По слову</button>'
+    +'<button class="btn primary" onclick="forceReapply()">↺ Пересчитать</button>'
     +'</div></div>'
-    +(Object.keys(DB.customGroups||{}).length?'<div class="card" style="margin-bottom:12px"><div class="card-title">Пользовательские категории</div>'+Object.entries(DB.customGroups||{}).map(([g,subs])=>'<div style="padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-weight:500">'+g+'</span><span style="color:var(--muted);font-size:12px;margin-left:8px">'+subs.join(', ')+'</span></div>').join('')+'</div>':'')
-    +'<div class="card"><div class="card-title">Применяются ко всем периодам автоматически</div>'
-    +(DB.rules.length?DB.rules.map((r,i)=>'<div style="display:grid;grid-template-columns:70px 1fr 1fr 80px 36px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
-      +'<span style="font-size:11px;background:var(--bg4);padding:2px 8px;border-radius:4px;color:var(--muted2)">'+(r.type==='inn'?'ИНН':'Слово')+'</span>'
-      +'<span style="font-size:13px">'+r.value+'</span>'
-      +'<span style="font-size:13px;color:var(--muted2)">→ '+r.group+' / '+r.sub+'</span>'
-      +'<span class="type-tag '+(r.txType)+'">'+(r.txType==='income'?'Доход':r.txType==='transfer'?'Перевод':'Расход')+'</span>'
+    +'<div class="grid-2">'
+    // Left: category editor
+    +'<div>'
+    +'<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Категории расходов</div>'
+    +catRows
+    +'</div>'
+    // Right: rules
+    +'<div>'
+    +'<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Правила автокатегоризации</div>'
+    +'<div class="card">'
+    +(DB.rules.length?DB.rules.map((r,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="font-size:11px;background:var(--bg3);padding:2px 8px;border-radius:10px;color:var(--muted);white-space:nowrap">'+(r.type==='inn'?'ИНН':'Слово')+'</span>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.value+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+r.group+' / '+r.sub+'</div></div>'
+      +'<span class="type-tag '+(r.txType)+'" style="font-size:10px">'+(r.txType==='income'?'Доход':r.txType==='transfer'?'Перевод':'Расход')+'</span>'
       +'<button class="btn sm danger" onclick="deleteRule('+i+')">✕</button>'
       +'</div>').join('')
-      :'<div style="color:var(--muted);padding:20px 0;text-align:center">Правила появятся когда вы измените категорию и нажмёте «Применить ко всем»</div>')
+      :'<div style="color:var(--muted);padding:20px 0;text-align:center;font-size:13px">Пока нет правил.<br>Создайте через «+ По слову»<br>или редактируя операции.</div>')
+    +'</div>'
+    +'</div>'
     +'</div>';
+}
+
+
+function renameCat(group, sub){
+  const oldName=sub||group;
+  const newName=prompt(sub?'Переименовать подкатегорию "'+sub+'"':'Переименовать группу "'+group+'"', oldName);
+  if(!newName||newName===oldName)return;
+  if(!DB.customGroups)DB.customGroups={};
+  if(sub){
+    // Rename sub in custom or add override
+    if(DB.customGroups[group]){
+      const idx=DB.customGroups[group].indexOf(sub);
+      if(idx>=0)DB.customGroups[group][idx]=newName;
+      else DB.customGroups[group].push(newName);
+    } else {
+      // Copy from base and rename
+      DB.customGroups[group]=[...(CAT_TREE.expense.groups[group]||[])];
+      const idx=DB.customGroups[group].indexOf(sub);
+      if(idx>=0)DB.customGroups[group][idx]=newName;
+    }
+    // Update all txns with old sub
+    let changed=0;
+    for(const p of Object.keys(DB.periods)){
+      for(const t of getTxns(p)){
+        if(t.group===group&&t.sub===sub&&!t.manualCategory){t.sub=newName;changed++;}
+      }
+    }
+    toast('Переименовано, обновлено '+changed+' операций','ok');
+  } else {
+    // Rename group
+    if(DB.customGroups[group]){
+      DB.customGroups[newName]=DB.customGroups[group];
+      delete DB.customGroups[group];
+    } else {
+      DB.customGroups[newName]=[...(CAT_TREE.expense.groups[group]||[])];
+    }
+    let changed=0;
+    for(const p of Object.keys(DB.periods)){
+      for(const t of getTxns(p)){
+        if(t.group===group&&!t.manualCategory){t.group=newName;changed++;}
+      }
+    }
+    toast('Группа переименована, обновлено '+changed+' операций','ok');
+  }
+  saveLocal();
+  const{token}=ghCfg();
+  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Rename category');
+  renderPage();
+}
+
+function deleteCatGroup(group){
+  if(!confirm('Удалить группу "'+group+'" и все её подкатегории?'))return;
+  if(DB.customGroups)delete DB.customGroups[group];
+  saveLocal();
+  const{token}=ghCfg();
+  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Delete cat group');
+  toast('Группа удалена','ok');renderPage();
+}
+
+function deleteCatSub(group, sub){
+  if(!confirm('Удалить подкатегорию "'+sub+'"?'))return;
+  if(!DB.customGroups)DB.customGroups={};
+  if(!DB.customGroups[group])DB.customGroups[group]=[...(CAT_TREE.expense.groups[group]||[])];
+  DB.customGroups[group]=DB.customGroups[group].filter(s=>s!==sub);
+  saveLocal();
+  const{token}=ghCfg();
+  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Delete cat sub');
+  toast('Подкатегория удалена','ok');renderPage();
+}
+
+function addSubToCat(group){
+  const sub=prompt('Новая подкатегория в "'+group+'":');
+  if(!sub)return;
+  if(!DB.customGroups)DB.customGroups={};
+  if(!DB.customGroups[group])DB.customGroups[group]=[...(CAT_TREE.expense.groups[group]||[])];
+  if(!DB.customGroups[group].includes(sub)){
+    DB.customGroups[group].push(sub);
+    saveLocal();
+    const{token}=ghCfg();
+    if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Add cat sub');
+    toast('Добавлено: '+sub,'ok');renderPage();
+  }
 }
 
 function forceReapply(){
