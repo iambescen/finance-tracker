@@ -869,8 +869,12 @@ function parseTinkoffBrokerPDF(pages){
   registerAccount(accNum,'tinkoff_broker_pdf','Тинькофф Брокер','RUB');
   if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
 
-  // Group items by top coordinate per page
+  // PDF is rotated - top coordinates go from high to low (585 = bottom, -213 = top)
+  // Find the page with section 2 data
+  // Key insight: all section 2 data is in one big line per row grouped by X position
+
   for(const page of pages){
+    // Group by top (Y) coordinate
     const lineMap={};
     for(const item of page){
       if(!item.text||!item.text.trim())continue;
@@ -878,86 +882,94 @@ function parseTinkoffBrokerPDF(pages){
       if(!lineMap[top])lineMap[top]=[];
       lineMap[top].push({x:item.x,str:item.text.trim()});
     }
-    const tops=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
+    const tops=Object.keys(lineMap).map(Number).sort((a,b)=>b-a); // descending = top to bottom
 
-    // Find section 2 start
-    let inSection2=false;
+    // Find row with operation types (Пополнение счета, Вывод средств, etc)
+    let opRow=null, dateRow=null, amtRow=null;
     for(const top of tops){
       const items=lineMap[top].sort((a,b)=>a.x-b.x);
       const lineStr=items.map(i=>i.str).join(' ');
-      const lineLow=lineStr.toLowerCase();
-
-      if(lineLow.includes('2. операции с денежными средствами')||lineLow.includes('операции с денежными')){
-        inSection2=true;continue;
+      if(!opRow&&(lineStr.includes('Пополнение счета')||lineStr.includes('Вывод средств')||lineStr.includes('Налог'))){
+        opRow={top,items,lineStr};
       }
-      if(inSection2&&(lineLow.startsWith('3.')||lineLow.includes('движение по ценным'))){
-        inSection2=false;break;
+    }
+    if(!opRow)continue;
+
+    // Find dates row - contains DD.MM.YYYY dates, usually close to opRow
+    for(const top of tops){
+      const lineStr=lineMap[top].map(i=>i.str).join(' ');
+      if(lineStr.match(/\d{2}\.\d{2}\.\d{4}/)&&Math.abs(top-opRow.top)<200&&top!==opRow.top){
+        dateRow={top,items:lineMap[top].sort((a,b)=>a.x-b.x),lineStr};
+        break;
       }
-      if(!inSection2)continue;
+    }
 
-      // Parse date lines - format DD.MM.YYYY
-      const dateMatch=lineStr.match(/^(\d{2}\.\d{2}\.\d{4})/);
-      if(!dateMatch)continue;
+    // Find amounts row - contains numbers like 5,539.28 or 267,087.11
+    for(const top of tops){
+      const lineStr=lineMap[top].map(i=>i.str).join(' ');
+      if(lineStr.match(/\d{1,3},\d{3}/)&&Math.abs(top-opRow.top)<200&&top!==opRow.top&&(!dateRow||top!==dateRow.top)){
+        amtRow={top,items:lineMap[top].sort((a,b)=>a.x-b.x),lineStr};
+        break;
+      }
+    }
 
-      const dateRaw=dateMatch[1];
+    if(!dateRow)continue;
+
+    // Parse operations - split by X position
+    // Each operation has an X range; match dates and amounts by closest X
+    const ops=[];
+    // Split opRow into individual operations by looking at X gaps
+    let opText='',lastX=0;
+    const opItems=opRow.items;
+    for(let i=0;i<opItems.length;i++){
+      const item=opItems[i];
+      if(i>0&&item.x-lastX>30&&opText.trim()){
+        ops.push({op:opText.trim(),x:lastX});
+        opText='';
+      }
+      opText+=item.str+' ';
+      lastX=item.x+30;
+    }
+    if(opText.trim())ops.push({op:opText.trim(),x:lastX});
+
+    // Extract dates
+    const dateMatches=[...dateRow.lineStr.matchAll(/(\d{2}\.\d{2}\.\d{4})/g)];
+    // Extract amounts
+    const amtMatches=amtRow?[...amtRow.lineStr.matchAll(/[\d,]+\.\d{2}/g)]:[];
+
+    // Match dates to operations by position
+    for(let i=0;i<dateMatches.length&&i<ops.length;i++){
+      const dateRaw=dateMatches[i][1];
       const parts=dateRaw.split('.');
       const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
       const month=date.slice(0,7);
+      const opStr=ops[i]?.op||'';
+      const opLow=opStr.toLowerCase();
 
-      // Find operation type and amount in same line
-      const rest=lineStr.slice(10).trim();
-      // Amount: digits with comma/dot
-      const amounts=rest.match(/[\d\s]+[,.][\d]{2}/g)||[];
-      if(!amounts.length)continue;
+      // Skip non-cash ops
+      if(opLow.includes('dfp')||opLow.includes('rfp'))continue;
 
-      // Parse amount - take first significant number
-      let credit=0, debit=0;
-      const numStrs=rest.match(/[\d ]+[.,]\d{2}/g)||[];
-      const nums=numStrs.map(s=>parseFloat(s.replace(/\s/g,'').replace(',','.'))||0).filter(n=>n>0);
-      if(!nums.length)continue;
-
-      // Determine operation type from line text
-      const opLow=rest.toLowerCase();
-      let opType='';
-      if(opLow.includes('пополнение счета')||opLow.includes('пополнение счёта'))opType='пополнение';
-      else if(opLow.includes('вывод средств'))opType='вывод';
-      else if(opLow.includes('налог'))opType='налог';
-      else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд'))opType='доход';
-      else if(opLow.includes('dfp')||opLow.includes('rfp'))opType='сделка';
-      else if(opLow.includes('комиссия'))opType='комиссия';
-      else continue;
-
-      const amt=nums[0];
+      // Find amount
+      const amt=amtMatches[i]?parseFloat(amtMatches[i][0].replace(/,/g,''))||0:0;
+      if(!amt&&!opLow.includes('налог'))continue;
 
       let type,group,sub,desc,amtRub;
-      if(opType==='пополнение'){
-        type='transfer';group='Перевод';sub='Пополнение брокерского счёта';
-        desc='Пополнение брокерского счёта';amtRub=amt;
-      } else if(opType==='вывод'){
-        type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
-        desc='Вывод с брокерского счёта';amtRub=-amt;
-      } else if(opType==='налог'){
-        type='expense';group='Инвестиции';sub='Налоги с инвестиций';
-        desc='НДФЛ брокерский';amtRub=-amt;
-      } else if(opType==='доход'){
-        type='income';group='Инвестиции';sub='Купоны и дивиденды';
-        desc='Купон/дивиденд';amtRub=amt;
-      } else if(opType==='сделка'){
-        type='transfer';group='Перевод';sub='Сделка на бирже';
-        desc='Расчёты по сделкам';amtRub=0;
-      } else if(opType==='комиссия'){
-        type='expense';group='Инвестиции';sub='Комиссии брокера';
-        desc='Комиссия брокера';amtRub=-amt;
+      if(opLow.includes('пополнение счета')||opLow.includes('пополнение счёта')){
+        type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';amtRub=amt;
+      } else if(opLow.includes('вывод средств')){
+        type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';amtRub=-amt;
+      } else if(opLow.includes('налог')){
+        type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='НДФЛ брокерский';amtRub=-Math.abs(amt)||0;
+      } else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд')){
+        type='income';group='Инвестиции';sub='Купоны и дивиденды';desc='Купон/дивиденд';amtRub=amt;
       } else continue;
-
-      if(amtRub===0)continue;
 
       txns.push({
         id:Math.random().toString(36).slice(2,10),
         date,month,dateDisplay:dateRaw,
-        desc:desc.slice(0,120),
+        desc,
         card:'Тинькофф Брокер',account:accNum,
-        bankCat:opType,
+        bankCat:opStr.slice(0,30),
         amtOp:amtRub,curOp:'RUB',amtRub,
         status:'OK',source:'tinkoff_broker_pdf',
         counterparty:'АО ТБанк',counterpartyINN:'7710140679',counterpartyAcc:'',
@@ -967,49 +979,6 @@ function parseTinkoffBrokerPDF(pages){
     }
   }
   console.log('[TinkoffBrokerPDF] parsed txns:',txns.length);
-  console.log('[TBrokerPDF] pages count:',pages.length);
-  if(pages[0])console.log('[TBrokerPDF] page0 items:',pages[0].length,'first:',JSON.stringify(pages[0][0]));
-  if(pages[1])console.log('[TBrokerPDF] page1 items:',pages[1].length,'first:',JSON.stringify(pages[1][0]));
-  // Show all lines from all pages
-  for(let pi=0;pi<Math.min(pages.length,4);pi++){
-    const page=pages[pi];
-    const lineMap={};
-    for(const item of page){
-      if(!item.text||!item.text.trim())continue;
-      const top=Math.round(item.top);
-      if(!lineMap[top])lineMap[top]=[];
-      lineMap[top].push({x:item.x,str:item.text.trim()});
-    }
-    const tops=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
-    for(const top of tops){
-      const items=lineMap[top].sort((a,b)=>a.x-b.x);
-      const lineStr=items.map(i=>i.str).join(' ');
-      if(lineStr.length>3)console.log('[TBrokerPDF] p'+pi+' top='+top+':',lineStr.slice(0,80));
-    }
-  }
-  if(!txns.length){
-    // Debug: show lines found in section 2
-    for(const page of pages){
-      const lineMap={};
-      for(const item of page){
-        if(!item.text||!item.text.trim())continue;
-        const top=Math.round(item.top);
-        if(!lineMap[top])lineMap[top]=[];
-        lineMap[top].push({x:item.x,str:item.text.trim()});
-      }
-      const tops=Object.keys(lineMap).map(Number).sort((a,b)=>a-b);
-      let inS2=false,shown=0;
-      for(const top of tops){
-        const items=lineMap[top].sort((a,b)=>a.x-b.x);
-        const lineStr=items.map(i=>i.str).join(' ');
-        const ll=lineStr.toLowerCase();
-        if(ll.includes('2. операции')||ll.includes('операции с денежными'))inS2=true;
-        if(inS2&&ll.startsWith('3.'))break;
-        if(inS2&&shown<15){console.log('[TinkoffBrokerPDF] s2line:',lineStr);shown++;}
-      }
-      if(shown>0)break;
-    }
-  }
   return txns;
 }
 
