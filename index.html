@@ -2369,7 +2369,7 @@ function pagePL(){
   const allPeriodsPL=Object.keys(DB.periods).sort().reverse();
   const selStylePL='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
   const periodOptsPL=allPeriodsPL.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">P&amp;L</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+selStylePL+'">'+periodOptsPL+'</select></div></div>'
+  return '<div class="page-header"><div class="page-title">P&amp;L</div><div class="page-actions"><button class="btn sm" onclick="openYearPL()">Итог года</button><select onchange="selectPeriod(this.value)" style="'+selStylePL+'">'+periodOptsPL+'</select></div></div>'
     +'<div class="card"><div class="pl-header"><div>Статья</div><div style="text-align:right">'+fmtMonth(currentPeriod)+'</div><div style="text-align:right">'+(prevP?fmtMonth(prevP):'Пред. период')+'</div><div style="text-align:right">Δ%</div></div>'
     +'<div class="pl-row group" style="color:var(--income)"><div>Доходы</div><div class="pl-val income">+'+income.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?fmtMoney(pI):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?(((income-pI)/pI*100)>0?'+':'')+(((income-pI)/pI*100)).toFixed(0)+'%':'—')+'</div></div>'
     +incRows+'<div style="height:10px"></div>'
@@ -2475,7 +2475,7 @@ function pageTxns(){
     +'<select id="txType" onchange="filterTxns()"><option value="">Все типы</option><option value="income">Доходы</option><option value="expense">Расходы</option><option value="transfer">Переводы</option></select>'
     +'<select id="txAccount" onchange="filterTxns()"><option value="">Все счета</option>'+accOpts+'</select>'
     +'<span class="tbl-count" id="txCount"></span></div>'
-    +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма</th></tr></thead><tbody id="txBody"></tbody></table></div>';
+    +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>';
 }
 
 function bindTxnEvents(){
@@ -2529,6 +2529,7 @@ function filterTxns(){
       +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
       +'<td style="text-align:right;white-space:nowrap" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
+      +'<td style="white-space:nowrap;text-align:right">'+'<button onclick="openEditTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>'+'<button onclick="deleteTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Удалить" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:12px;padding:2px 5px;opacity:0.5">✕</button>'+'</td>'
       +'</tr>';
   }).join('');
   const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
@@ -2547,6 +2548,133 @@ function markAsExpense(txId,period){
     .then(()=>toast('Помечено как расход ✓','ok')).catch(()=>toast('Сохранено локально','ok'));}
   else toast('Помечено как расход','ok');
   filterTxns();
+}
+
+// ── Delete transaction ──
+function deleteTx(txId, period){
+  if(!confirm('Удалить операцию?'))return;
+  const p=period||currentPeriod;
+  if(!DB.periods[p])return;
+  DB.periods[p].transactions=(DB.periods[p].transactions||[]).filter(t=>t.id!==txId);
+  saveLocal();
+  const{token}=ghCfg();
+  if(token){ghPut('data/'+p+'.json',JSON.stringify(DB.periods[p],null,2),'Delete tx '+p)
+    .then(()=>toast('Операция удалена ✓','ok')).catch(()=>toast('Удалено локально','ok'));}
+  else toast('Операция удалена','ok');
+  filterTxns();refreshUI();
+}
+
+// ── Edit transaction modal ──
+function openEditTx(txId, period){
+  const p=period||currentPeriod;
+  const tx=(DB.periods[p]?.transactions||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  document.getElementById('etTxId').value=txId;
+  document.getElementById('etPeriod').value=p;
+  document.getElementById('etDesc').value=tx.desc||'';
+  document.getElementById('etAmt').value=Math.abs(tx.amtRub)||'';
+  document.getElementById('etDate').value=tx.date||'';
+  document.getElementById('editTxModal').classList.add('open');
+}
+function saveEditTx(){
+  const txId=document.getElementById('etTxId').value;
+  const p=document.getElementById('etPeriod').value;
+  const tx=(DB.periods[p]?.transactions||[]).find(t=>t.id===txId);
+  if(!tx)return;
+  const newDesc=document.getElementById('etDesc').value.trim();
+  const newAmt=parseFloat(document.getElementById('etAmt').value)||Math.abs(tx.amtRub);
+  const newDate=document.getElementById('etDate').value;
+  if(newDesc)tx.desc=newDesc;
+  if(newDate){tx.date=newDate;const parts=newDate.split('-');tx.dateDisplay=parts[2]+'.'+parts[1]+'.'+parts[0];}
+  tx.amtRub=tx.amtRub<0?-newAmt:newAmt;
+  tx.amtOp=tx.amtRub;
+  tx.manualCategory=true;
+  saveLocal();
+  const{token}=ghCfg();
+  if(token){ghPut('data/'+p+'.json',JSON.stringify(DB.periods[p],null,2),'Edit tx '+p)
+    .then(()=>toast('Сохранено ✓','ok')).catch(()=>toast('Сохранено локально','ok'));}
+  else toast('Сохранено','ok');
+  document.getElementById('editTxModal').classList.remove('open');
+  filterTxns();
+}
+
+// ── Export to Excel ──
+function exportToExcel(){
+  const allP=txAllPeriods?Object.keys(DB.periods).sort():([currentPeriod]);
+  const rows=[['Дата','Описание','Счёт','Тип','Категория','Подкатегория','Сумма ₽','Источник']];
+  for(const p of allP){
+    for(const t of getTxns(p)){
+      rows.push([t.dateDisplay,t.desc,accLabel(t.account),t.type==='income'?'Доход':t.type==='transfer'?'Перевод':'Расход',t.group,t.sub,t.amtRub,t.source||'']);
+    }
+  }
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Операции',ws);
+  XLSX.writeFile(wb,'operations_'+(txAllPeriods?'all':currentPeriod)+'.xlsx');
+  toast('Excel выгружен ✓','ok');
+}
+
+// ── P&L за год ──
+function openYearPL(){
+  const years=[...new Set(Object.keys(DB.periods).map(p=>p.slice(0,4)))].sort().reverse();
+  if(!years.length){toast('Нет данных','err');return;}
+  const year=years[0]; // текущий год
+  showPLForYear(year);
+}
+function showPLForYear(year){
+  const months=Object.keys(DB.periods).filter(p=>p.startsWith(year)).sort();
+  if(!months.length){toast('Нет данных за '+year,'err');return;}
+  let income=0,expense=0;
+  const byMonth=[];
+  for(const m of months){
+    const txns=getTxns(m).filter(t=>t.type!=='transfer');
+    const mInc=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
+    const mExp=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+    income+=mInc;expense+=mExp;
+    byMonth.push({m,inc:mInc,exp:mExp});
+  }
+  const profit=income-expense;
+  const rate=income>0?Math.round(profit/income*100):0;
+  let html='<div style="padding:20px"><h3>P&L за '+year+' год</h3>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">';
+  html+='<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--income)">'+fmtMoney(income)+'</div><div style="font-size:12px;color:var(--muted)">Доходы за год</div></div>';
+  html+='<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--expense)">'+fmtMoney(expense)+'</div><div style="font-size:12px;color:var(--muted)">Расходы за год</div></div>';
+  html+='<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:'+(profit>=0?'var(--income)':'var(--expense)')+'">'+fmtMoney(profit,true)+'</div><div style="font-size:12px;color:var(--muted)">Результат ('+rate+'% сбер.)</div></div>';
+  html+='</div>';
+  html+='<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px;border-bottom:2px solid var(--border)">Месяц</th><th style="text-align:right;padding:8px;border-bottom:2px solid var(--border)">Доход</th><th style="text-align:right;padding:8px;border-bottom:2px solid var(--border)">Расход</th><th style="text-align:right;padding:8px;border-bottom:2px solid var(--border)">Результат</th></tr></thead><tbody>';
+  for(const row of byMonth){
+    const p=row.inc-row.exp;
+    html+='<tr><td style="padding:6px 8px;border-bottom:1px solid var(--border)">'+fmtMonth(row.m)+'</td>';
+    html+='<td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--income)">'+fmtMoney(row.inc)+'</td>';
+    html+='<td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--expense)">'+fmtMoney(row.exp)+'</td>';
+    html+='<td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;color:'+(p>=0?'var(--income)':'var(--expense)')+'">'+fmtMoney(p,true)+'</td></tr>';
+  }
+  html+='</tbody></table></div>';
+  document.getElementById('yearPLContent').innerHTML=html;
+  document.getElementById('yearPLModal').classList.add('open');
+}
+
+// ── Capital history chart ──
+function renderCapitalChart(){
+  const allP=Object.keys(DB.periods).sort();
+  if(allP.length<2)return;
+  const canvas=document.getElementById('capitalChart');
+  if(!canvas)return;
+  const labels=allP.map(fmtMonth);
+  const data=allP.map(p=>{
+    const txns=getTxns(p);
+    return Math.round(txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0)-
+      Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0)));
+  });
+  // Cumulative
+  let cum=0;
+  const cumData=data.map(v=>{cum+=v;return cum;});
+  if(charts.capital)charts.capital.destroy();
+  charts.capital=new Chart(canvas,{
+    type:'line',
+    data:{labels,datasets:[{label:'Накопленный результат',data:cumData,borderColor:'var(--accent)',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:0.3,pointRadius:3}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v.toLocaleString('ru-RU')+'₽'}}}}
+  });
 }
 
 // ── Upload ──
@@ -2657,7 +2785,22 @@ function pageAssets(){
   // Vehicles — use market cost for assets
   const vehiclesTotal=a.vehicles.reduce((s,v)=>s+(v.marketCost||0),0);
 
-  const other=(a.broker||0)+(a.trading||0)+(a.cash||0);
+  // Auto-calculate cash from account balances
+  let autoCash=0,hasCashAccounts=false;
+  for(const acc of Object.values(DB.accounts)){
+    if(acc.virtual||acc.source==='vtb_mortgage_pdf'||acc.source==='sber_loan_pdf')continue;
+    if(acc.currentBalance==null)continue;
+    hasCashAccounts=true;
+    if(!acc.isCredit&&!acc.isCreditCard){
+      autoCash+=parseFloat(acc.currentBalance)||0;
+    }
+  }
+  const cashVal=hasCashAccounts?autoCash:(a.cash||0);
+  // Add broker account value from investments
+  const investTotal=Object.values(DB.investPrices||{}).length>0
+    ?Object.values(DB.investments||{}).flatMap(x=>x.holdings||[]).filter(h=>h.qty>0)
+      .reduce((s,h)=>s+(h.qty*(DB.investPrices[h.isin||h.ticker]||0)),0):0;
+  const other=(a.broker||0)+(a.trading||0)+cashVal+investTotal;
   const tA=realtyBase+vehiclesTotal+other;
   const tAmin=realtyMin+vehiclesTotal+other;
   const tAmax=realtyMax+vehiclesTotal+other;
@@ -3264,6 +3407,33 @@ function saveManualTx(){
   document.getElementById('manualTxModal').classList.remove('open');
   currentPeriod=month;refreshUI();
 }
+
+function openKeywordRuleModal(){
+  const groups=Object.keys(CAT_TREE.expense.groups);
+  document.getElementById('kwGroup').innerHTML=groups.map(g=>'<option>'+g+'</option>').join('');
+  updateKwSubs();
+  document.getElementById('keywordRuleModal').classList.add('open');
+}
+function updateKwSubs(){
+  const g=document.getElementById('kwGroup').value;
+  const subs=CAT_TREE.expense.groups[g]||['Прочие расходы'];
+  document.getElementById('kwSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
+}
+function saveKeywordRule(){
+  const word=document.getElementById('kwWord').value.trim().toLowerCase();
+  if(!word){toast('Укажите ключевое слово','err');return;}
+  const group=document.getElementById('kwGroup').value;
+  const sub=document.getElementById('kwSub').value;
+  const txType=document.getElementById('kwType').value;
+  const changed=addRule({type:'keyword',value:word,group,sub,txType});
+  saveLocal();
+  const{token}=ghCfg();
+  if(token)ghPut('data/rules.json',JSON.stringify(DB.rules,null,2),'Add keyword rule');
+  document.getElementById('keywordRuleModal').classList.remove('open');
+  toast('Правило создано · обновлено '+changed+' операций','ok');
+  if(currentPage==='rules')renderPage();
+}
+
 </script>
 
 <script>
@@ -3612,6 +3782,53 @@ function updateBottomNav(page){
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('manualTxModal').classList.remove('open')">Отмена</button>
       <button class="btn primary" onclick="saveManualTx()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-bg" id="editTxModal">
+  <div class="modal" style="width:440px">
+    <h3>Редактировать операцию</h3>
+    <input type="hidden" id="etTxId">
+    <input type="hidden" id="etPeriod">
+    <div class="field"><label>Дата</label><input type="date" id="etDate"></div>
+    <div class="field"><label>Описание</label><input type="text" id="etDesc" placeholder="Описание операции"></div>
+    <div class="field"><label>Сумма (₽, всегда положительная)</label><input type="number" id="etAmt" placeholder="0" min="0" step="0.01"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('editTxModal').classList.remove('open')">Отмена</button>
+      <button class="btn primary" onclick="saveEditTx()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="yearPLModal">
+  <div class="modal" style="width:600px;max-height:80vh;overflow-y:auto">
+    <div id="yearPLContent"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('yearPLModal').classList.remove('open')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-bg" id="keywordRuleModal">
+  <div class="modal" style="width:440px">
+    <h3>Правило по ключевому слову</h3>
+    <div class="field"><label>Ключевое слово в описании</label><input type="text" id="kwWord" placeholder="Например: пятёрочка"></div>
+    <div class="field"><label>Категория</label>
+      <select id="kwGroup" onchange="updateKwSubs()" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        ${Object.keys(CAT_TREE.expense.groups).map(g=>'<option>'+g+'</option>').join('')}
+      </select></div>
+    <div class="field"><label>Подкатегория</label>
+      <select id="kwSub" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select></div>
+    <div class="field"><label>Тип</label>
+      <select id="kwType" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option>
+      </select></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('keywordRuleModal').classList.remove('open')">Отмена</button>
+      <button class="btn primary" onclick="saveKeywordRule()">Создать правило</button>
     </div>
   </div>
 </div>
