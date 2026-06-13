@@ -750,22 +750,20 @@ function parseTinkoffBrokerXLSX(wb){
     const v=String(cellVal(0,r)||'').trim();
     if(v.startsWith('2. Операции с денежными средствами')){cashStart=r;break;}
   }
-  if(cashStart<0){console.log('[TinkoffBroker] Section 2 not found');return txns;}
+  if(cashStart<0){return txns;}
 
   // Find data header row ('Дата' in col A)
   let dataStart=-1;
   for(let r=cashStart;r<cashStart+30;r++){
     if(String(cellVal(C_DATE,r)||'').trim()==='Дата'){dataStart=r+1;break;}
   }
-  if(dataStart<0){console.log('[TinkoffBroker] header not found');return txns;}
+  if(dataStart<0){return txns;}
 
   // Find section 3
   let dataEnd=maxRow+1;
   for(let r=dataStart;r<=maxRow;r++){
     if(String(cellVal(0,r)||'').trim().startsWith('3.')){dataEnd=r;break;}
   }
-
-  console.log('[TinkoffBroker] dataStart:',dataStart,'dataEnd:',dataEnd);
 
   for(let r=dataStart;r<dataEnd;r++){
     const opStr=String(cellVal(C_OP,r)||'').trim();
@@ -829,7 +827,6 @@ function parseTinkoffBrokerXLSX(wb){
       type,group,sub
     });
   }
-  console.log('[TinkoffBroker] parsed txns:',txns.length);
   return txns;
 }
 
