@@ -1,0 +1,27 @@
+{
+  "flat": 0,
+  "car": 0,
+  "broker": 0,
+  "trading": 0,
+  "cash": 0,
+  "mortgage": 0,
+  "eduLoan": 0,
+  "updatedAt": "2026-06-12T20:12:46.399Z",
+  "realty": [
+    {
+      "name": "Квартира: Курск, пр. Плевицкой, 21",
+      "sqm": 54.5,
+      "ppmMin": 190000,
+      "ppm": 200000,
+      "ppmMax": 210000,
+      "matkapital": 483881.83
+    }
+  ],
+  "vehicles": [
+    {
+      "name": "Hyundai Palisade",
+      "balanceCost": 4044000,
+      "marketCost": 4823185
+    }
+  ]
+}
