@@ -434,27 +434,6 @@ const BASE_RULES=[
   {m:['wildberries','ozon','lamoda'], g:'Покупки', s:'Одежда/обувь', t:'expense'},
   {m:['пакет x5','сравни'], g:'Сервисы/Связь', s:'Банковские комиссии', t:'expense'},
   {m:['снятие в банкомате','снятие наличных','выдача наличных','cash withdrawal','атм'], g:'Перевод', s:'Снятие наличных', t:'transfer'},
-  // Питание
-  {m:['pyaterochka','пятёрочка','пятерочка'], g:'Питание', s:'Продукты/супермаркеты', t:'expense'},
-  {m:['magnit','магнит'], g:'Питание', s:'Продукты/супермаркеты', t:'expense'},
-  {m:['ch46002'], g:'Питание', s:'Продукты/супермаркеты', t:'expense'},
-  {m:['dostavka perekre','dostavk perekre','перекрёсток','перекресток'], g:'Питание', s:'Продукты/супермаркеты', t:'expense'},
-  {m:['fixprice','fix price'], g:'Питание', s:'Продукты/супермаркеты', t:'expense'},
-  {m:['kso '], g:'Питание', s:'Продукты/супермаркеты', t:'expense'},
-  // Здоровье
-  {m:['medicins','meditsin','medcent','mdt','акsioma','aksioma','аксиома'], g:'Здоровье', s:'Визиты врача/платные услуги', t:'expense'},
-  {m:['medcent r mdt'], g:'Здоровье', s:'Визиты врача/платные услуги', t:'expense'},
-  // Транспорт
-  {m:['oplata proezda','оплата проезда'], g:'Транспорт', s:'Такси/Общественный транспорт', t:'expense'},
-  {m:['azs','азс'], g:'Транспорт', s:'Топливо', t:'expense'},
-  // Жильё
-  {m:['жкх','жку','капитального ремонта','фонд кр','фкр'], g:'Жильё', s:'Коммунальные/Интернет', t:'expense'},
-  {m:['саб по уборке','сab','уборк'], g:'Жильё', s:'Коммунальные/Интернет', t:'expense'},
-  {m:['курскводок','водок анал','водоканал'], g:'Жильё', s:'Коммунальные/Интернет', t:'expense'},
-  {m:['домово'], g:'Жильё', s:'Коммунальные/Интернет', t:'expense'},
-  {m:['квант-телеком','kvant','телеком'], g:'Жильё', s:'Коммунальные/Интернет', t:'expense'},
-  // Подарки
-  {m:['cvety','цветы','цвет'], g:'Прочее', s:'Подарки', t:'expense'},
 ];
 const BANK_CAT={
   'супермаркеты':{g:'Питание',s:'Продукты/супермаркеты',t:'expense'},
@@ -3019,7 +2998,10 @@ async function fetchMOEXPrices(){
 
 function pageRules(){
   return '<div class="page-header"><div class="page-title">Правила категоризации</div>'
-    +'<div class="page-actions"><button class="btn primary" onclick="forceReapply()">↺ Пересчитать все операции</button></div></div>'
+    +'<div class="page-actions">'
+    +'<button class="btn sm" onclick="openKeywordRuleModal()">+ По ключевому слову</button>'
+    +'<button class="btn primary" onclick="forceReapply()">↺ Пересчитать все</button>'
+    +'</div></div>'
     +'<div class="card"><div class="card-title">Применяются ко всем периодам автоматически</div>'
     +(DB.rules.length?DB.rules.map((r,i)=>'<div style="display:grid;grid-template-columns:70px 1fr 1fr 80px 36px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
       +'<span style="font-size:11px;background:var(--bg4);padding:2px 8px;border-radius:4px;color:var(--muted2)">'+(r.type==='inn'?'ИНН':'Слово')+'</span>'
