@@ -411,6 +411,9 @@ const CAT_TREE={
     'Прочее':['Подарки','Благотворительность','Прочие расходы'],
   }}
 };
+// Allow custom categories from DB
+function getExpenseGroups(){return Object.assign({},CAT_TREE.expense.groups,DB.customGroups||{});}
+function getAllGroups(){return['Доход',...Object.keys(getExpenseGroups()),'Перевод'];}
 const ALL_GROUPS=['Доход',...Object.keys(CAT_TREE.expense.groups),'Перевод'];
 
 const BASE_RULES=[
@@ -2999,9 +3002,11 @@ async function fetchMOEXPrices(){
 function pageRules(){
   return '<div class="page-header"><div class="page-title">Правила категоризации</div>'
     +'<div class="page-actions">'
+    +'<button class="btn sm" onclick="openAddCatModal()">+ Категория</button>'
     +'<button class="btn sm" onclick="openKeywordRuleModal()">+ По ключевому слову</button>'
     +'<button class="btn primary" onclick="forceReapply()">↺ Пересчитать все</button>'
     +'</div></div>'
+    +(Object.keys(DB.customGroups||{}).length?'<div class="card" style="margin-bottom:12px"><div class="card-title">Пользовательские категории</div>'+Object.entries(DB.customGroups||{}).map(([g,subs])=>'<div style="padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-weight:500">'+g+'</span><span style="color:var(--muted);font-size:12px;margin-left:8px">'+subs.join(', ')+'</span></div>').join('')+'</div>':'')
     +'<div class="card"><div class="card-title">Применяются ко всем периодам автоматически</div>'
     +(DB.rules.length?DB.rules.map((r,i)=>'<div style="display:grid;grid-template-columns:70px 1fr 1fr 80px 36px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
       +'<span style="font-size:11px;background:var(--bg4);padding:2px 8px;border-radius:4px;color:var(--muted2)">'+(r.type==='inn'?'ИНН':'Слово')+'</span>'
@@ -3210,7 +3215,7 @@ async function loadFromGithub(){
   try{
     const load=async(path)=>{const r=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/'+path+'?t='+Date.now());return r.ok?r.json():null;};
     const[assets,accounts,rules]=await Promise.all([load('data/assets.json'),load('data/accounts.json'),load('data/rules.json')]);
-    if(assets)DB.assets=assets;if(accounts)DB.accounts=accounts;if(rules)DB.rules=rules;
+    if(assets)DB.assets=assets;if(accounts)DB.accounts=accounts;if(rules){if(rules.rules)DB.rules=rules.rules;else if(Array.isArray(rules))DB.rules=rules;if(rules.customGroups)DB.customGroups=rules.customGroups;}
     const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',{headers:{Authorization:'token '+token}});
     if(lr.ok){
       const files=await lr.json();
@@ -3414,6 +3419,43 @@ function saveManualTx(){
   else toast('Операция добавлена','ok');
   document.getElementById('manualTxModal').classList.remove('open');
   currentPeriod=month;refreshUI();
+}
+
+
+function openAddCatModal(){
+  const groups=Object.keys(getExpenseGroups());
+  document.getElementById('acGroup').innerHTML='<option value="">-- выбрать --</option>'+groups.map(g=>'<option>'+g+'</option>').join('');
+  document.getElementById('acNewGroup').value='';
+  document.getElementById('acSub').value='';
+  document.getElementById('addCatModal').classList.add('open');
+}
+function updateAcSubs(){
+  // just for info - could show existing subs
+}
+function getExpenseGroups(){
+  const custom=DB.customGroups||{};
+  return Object.assign({},CAT_TREE.expense.groups,custom);
+}
+function saveCustomCat(){
+  const newGroupInput=document.getElementById('acNewGroup').value.trim();
+  const selGroup=document.getElementById('acGroup').value;
+  const group=newGroupInput||selGroup;
+  const sub=document.getElementById('acSub').value.trim();
+  if(!group){toast('Укажите категорию','err');return;}
+  if(!sub){toast('Укажите подкатегорию','err');return;}
+  if(!DB.customGroups)DB.customGroups={};
+  if(!DB.customGroups[group])DB.customGroups[group]=[];
+  if(!DB.customGroups[group].includes(sub)){
+    DB.customGroups[group].push(sub);
+    saveLocal();
+    const{token}=ghCfg();
+    if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Add custom category');
+    toast('Категория добавлена: '+group+' / '+sub,'ok');
+  } else {
+    toast('Такая подкатегория уже есть','info');
+  }
+  document.getElementById('addCatModal').classList.remove('open');
+  if(currentPage==='rules')renderPage();
 }
 
 function openKeywordRuleModal(){
@@ -3837,6 +3879,27 @@ function updateBottomNav(page){
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('keywordRuleModal').classList.remove('open')">Отмена</button>
       <button class="btn primary" onclick="saveKeywordRule()">Создать правило</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-bg" id="addCatModal">
+  <div class="modal" style="width:440px">
+    <h3>Добавить категорию / подкатегорию</h3>
+    <div class="field"><label>Категория (группа)</label>
+      <div style="display:flex;gap:8px">
+        <select id="acGroup" onchange="updateAcSubs()" style="flex:1;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)"></select>
+        <input type="text" id="acNewGroup" placeholder="Новая категория" style="flex:1;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Выбери существующую или введи новую</div>
+    </div>
+    <div class="field"><label>Подкатегория</label>
+      <input type="text" id="acSub" placeholder="Например: Детский сад" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('addCatModal').classList.remove('open')">Отмена</button>
+      <button class="btn primary" onclick="saveCustomCat()">Добавить</button>
     </div>
   </div>
 </div>
