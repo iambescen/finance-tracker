@@ -7364,7 +7364,7 @@
       "sub": "Сделка на бирже"
     },
     {
-      "id": "uph948h4",
+      "id": "v3hv5ig8",
       "date": "2026-05-05",
       "month": "2026-05",
       "dateDisplay": "05.05.2026",
@@ -7912,7 +7912,7 @@
       "counterpartyINN": "",
       "counterpartyAcc": "",
       "manualCategory": false,
-      "linkedTo": "h04505na",
+      "linkedTo": "7zl3dcg5",
       "linkedAccount": "tinkoff_broker_2006039107",
       "group": "Перевод",
       "sub": "Внутренний перевод",
@@ -8665,7 +8665,7 @@
       "sub": "Пополнение брокерского счёта"
     },
     {
-      "id": "h04505na",
+      "id": "7zl3dcg5",
       "date": "2026-05-02",
       "month": "2026-05",
       "dateDisplay": "02.05.2026",
