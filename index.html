@@ -451,6 +451,8 @@ const BANK_CAT={
 
 let DB={
   periods:{},
+  investments:{},
+  investPrices:{},
   assets:{
     realty:[{name:'Квартира, пр. Плевицкой 21',sqm:54.5,ppmMin:190000,ppm:200000,ppmMax:210000,matkapital:483881.83}],
     vehicles:[{name:'Hyundai Palisade',balanceCost:4044000,marketCost:4823185}],
@@ -2466,7 +2468,7 @@ function pageTxns(){
   const txPeriods=Object.keys(DB.periods).sort().reverse();
   const txSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
   const txPeriodOpts=txPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
+  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="setTxPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
     +'<div class="tbl-wrap"><div class="tbl-toolbar">'
     +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
     +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
@@ -2497,7 +2499,8 @@ function filterTxns(){
   const group=document.getElementById('txGroup')?.value||'';
   const type=document.getElementById('txType')?.value||'';
   const account=document.getElementById('txAccount')?.value||'';
-  const txns=getTxns(currentPeriod).filter(t=>{
+  const allPArr=Object.keys(DB.periods).sort().reverse();
+  const txns=(txAllPeriods?allPArr.flatMap(p=>getTxns(p)):getTxns(currentPeriod)).filter(t=>{
     if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search))return false;
     if(group&&t.group!==group)return false;
     if(type&&t.type!==type)return false;
