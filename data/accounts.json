@@ -292,5 +292,15 @@
     "source": "tinkoff_broker_xlsx",
     "currentBalance": null,
     "currency": "RUB"
+  },
+  "vtb_broker_№ субсчета:": {
+    "number": "vtb_broker_№ субсчета:",
+    "display": "***ета:",
+    "bank": "ВТБ Брокер",
+    "name": "ВТБ Брокер ***ета:",
+    "owner": "wife",
+    "source": "vtb_broker_xlsx",
+    "currentBalance": null,
+    "currency": "RUB"
   }
 }
