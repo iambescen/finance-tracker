@@ -2595,7 +2595,7 @@ function pageInvestments(){
         +'<td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--muted)">'+type+'</span></td>'
         +'<td style="text-align:right">'+h.qty.toLocaleString('ru-RU')+'</td>'
         +'<td style="text-align:right"><input type="number" value="'+(price||'')+'" placeholder="Цена ₽" '
-        +'oninput="setInvestPrice(''+priceKey+'',this.value)" '
+        +'oninput="setInvestPrice(this.dataset.key,this.value)" data-key="'+priceKey+'" '
         +'style="width:100px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);text-align:right"></td>'
         +'<td style="text-align:right;font-weight:500">'+(value>0?fmtMoney(value):'—')+'</td>'
         +'</tr>';
