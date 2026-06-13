@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "azs",
+    "group": "Транспорт",
+    "sub": "Топливо",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "fixprice",
     "group": "Питание",
     "sub": "Продукты/супермаркеты",
