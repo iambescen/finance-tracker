@@ -187,30 +187,30 @@
     "number": "1242080005060273",
     "display": "***0273",
     "bank": "Бакай Банк",
-    "name": "ББ *0273",
+    "name": "Бакай Банк ***0273",
     "owner": "me",
     "source": "bakay_xlsx",
-    "currentBalance": 1.77,
+    "currentBalance": null,
     "currency": "KGS"
   },
   "1242080005127466": {
     "number": "1242080005127466",
     "display": "***7466",
     "bank": "Бакай Банк",
-    "name": "ББ *7466",
+    "name": "Бакай Банк ***7466",
     "owner": "me",
     "source": "bakay_xlsx",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "USD"
   },
   "40914810800007588136": {
     "number": "40914810800007588136",
     "display": "***8136",
     "bank": "Цифра банк",
-    "name": "ЦБ *8136",
+    "name": "Цифра банк ***8136",
     "owner": "me",
     "source": "cifra_pdf",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "RUB"
   }
 }
