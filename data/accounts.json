@@ -222,5 +222,15 @@
     "source": "cifra_broker_xlsx",
     "currentBalance": 2.05,
     "currency": "RUB"
+  },
+  "tinkoff_broker_2074432923": {
+    "number": "tinkoff_broker_2074432923",
+    "display": "***2923",
+    "bank": "Тинькофф Брокер",
+    "name": "Тинькофф Брокер ***2923",
+    "owner": "wife",
+    "source": "tinkoff_broker_xlsx",
+    "currentBalance": null,
+    "currency": "RUB"
   }
 }
