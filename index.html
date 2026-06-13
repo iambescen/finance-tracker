@@ -967,6 +967,9 @@ function parseTinkoffBrokerPDF(pages){
     }
   }
   console.log('[TinkoffBrokerPDF] parsed txns:',txns.length);
+  console.log('[TBrokerPDF] pages count:',pages.length);
+  if(pages[0])console.log('[TBrokerPDF] page0 items:',pages[0].length,'first:',JSON.stringify(pages[0][0]));
+  if(pages[1])console.log('[TBrokerPDF] page1 items:',pages[1].length,'first:',JSON.stringify(pages[1][0]));
   // Show all lines from all pages
   for(let pi=0;pi<Math.min(pages.length,4);pi++){
     const page=pages[pi];
