@@ -237,7 +237,7 @@
     "number": "tinkoff_broker_2007721129",
     "display": "***1129",
     "bank": "Тинькофф Брокер",
-    "name": "ТБ Счет брокерский *1129 / ",
+    "name": "ТБ Счет брокерский *1129 / Подушка БС",
     "owner": "wife",
     "source": "tinkoff_broker_xlsx",
     "currentBalance": null,
