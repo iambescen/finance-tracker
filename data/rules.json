@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "жкх",
+    "group": "Жильё",
+    "sub": "Коммунальные/Интернет",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "ooo aksioma",
     "group": "Здоровье",
     "sub": "Визиты врача/платные услуги",
