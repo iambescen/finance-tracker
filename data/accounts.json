@@ -282,5 +282,15 @@
     "source": "tinkoff_broker_xlsx",
     "currentBalance": null,
     "currency": "RUB"
+  },
+  "tinkoff_broker_2060369444": {
+    "number": "tinkoff_broker_2060369444",
+    "display": "***9444",
+    "bank": "Тинькофф Брокер",
+    "name": "ТБ Счет брокерский *9444 / Заблокированные 2 БС",
+    "owner": "me",
+    "source": "tinkoff_broker_xlsx",
+    "currentBalance": null,
+    "currency": "RUB"
   }
 }
