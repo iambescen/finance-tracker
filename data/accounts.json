@@ -220,7 +220,7 @@
     "name": "ЦБ Счет брокерский *1037",
     "owner": "me",
     "source": "cifra_broker_xlsx",
-    "currentBalance": null,
+    "currentBalance": 2.05,
     "currency": "RUB"
   }
 }
