@@ -733,7 +733,7 @@ function parseVTBBrokerXLSX(wb){
       else owner='wife';
     }
     // Субсчет
-    const v0=String(cellVal(0,r)||'');
+    const v0=String(cellVal(0,r)||'')+String(cellVal(1,r)||'');
     if(v0.includes('субсчета')){
       const sub=String(cellVal(1,r)||'').trim();
       if(sub)accNum='vtb_broker_'+sub;
@@ -742,31 +742,33 @@ function parseVTBBrokerXLSX(wb){
   registerAccount(accNum,'vtb_broker_xlsx','ВТБ Брокер','RUB');
   if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
 
+  // VTB broker: data in col 1 (not col 0)
+  // Columns: date=1, sum=2, currency=6, opType=9, comment=15
+  const C_DATE=1,C_AMT=2,C_CUR=6,C_OP=9,C_CMT=15;
+
   // Find "Движение денежных средств" section
   let cashStart=-1;
   for(let r=0;r<=maxRow;r++){
-    if(String(cellVal(0,r)||'').trim()==='Движение денежных средств'){cashStart=r;break;}
+    if(String(cellVal(C_DATE,r)||'').trim()==='Движение денежных средств'){cashStart=r;break;}
   }
   if(cashStart<0){console.log('[VTBBroker] cash section not found');return txns;}
 
-  // Find header row (Дата, Сумма, Валюта, Тип операции)
+  // Find header row
   let dataStart=-1;
   for(let r=cashStart;r<cashStart+10;r++){
-    if(String(cellVal(0,r)||'').trim()==='Дата'){dataStart=r+1;break;}
+    if(String(cellVal(C_DATE,r)||'').trim()==='Дата'){dataStart=r+1;break;}
   }
   if(dataStart<0){console.log('[VTBBroker] header not found');return txns;}
 
   // Find end section
   let dataEnd=maxRow+1;
   for(let r=dataStart;r<=maxRow;r++){
-    const v=String(cellVal(0,r)||'').trim();
-    if(v.startsWith('Отчёт об остатках') || v.startsWith('Итог') || v.startsWith('Подтвержден')){
-      dataEnd=r;break;
-    }
+    const v=String(cellVal(C_DATE,r)||'').trim();
+    if(v.startsWith('Отчёт об остатках')||v.startsWith('Подтвержден')){dataEnd=r;break;}
   }
 
   for(let r=dataStart;r<dataEnd;r++){
-    const dateRaw=cellVal(0,r);
+    const dateRaw=cellVal(C_DATE,r);
     if(!dateRaw)continue;
 
     // Date can be Date object or string
@@ -789,10 +791,10 @@ function parseVTBBrokerXLSX(wb){
     const parts=date.split('-');
     const dateDisplay=`${parts[2]}.${parts[1]}.${parts[0]}`;
 
-    const amt=parseFloat(cellVal(1,r))||0;
-    const currency=String(cellVal(2,r)||'RUR').trim();
-    const opType=String(cellVal(3,r)||'').trim();
-    const comment=String(cellVal(4,r)||'').trim();
+    const amt=parseFloat(cellVal(C_AMT,r))||0;
+    const currency=String(cellVal(C_CUR,r)||'RUR').trim();
+    const opType=String(cellVal(C_OP,r)||'').trim();
+    const comment=String(cellVal(C_CMT,r)||'').trim();
 
     if(!opType||amt===0)continue;
     // Skip header rows
