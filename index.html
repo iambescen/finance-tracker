@@ -709,6 +709,145 @@ function parseCifraBankPDF(pages){
 
 
 
+
+// ── VTB Broker XLSX parser ──
+function parseVTBBrokerXLSX(wb){
+  const txns=[];
+  const ws=wb.Sheets[wb.SheetNames[0]];
+
+  function cellVal(col,row){
+    const cell=ws[XLSX.utils.encode_cell({r:row,c:col})];
+    return cell?cell.v:'';
+  }
+
+  const ref=ws['!ref']||'A1:A1';
+  const range=XLSX.utils.decode_range(ref);
+  const maxRow=range.e.r;
+
+  // Extract client info
+  let accNum='vtb_broker',owner='wife';
+  for(let r=0;r<15;r++){
+    const v=String(cellVal(1,r)||'');
+    if(v.includes('Безценных')){
+      if(v.toLowerCase().includes('владислав')||v.toLowerCase().includes('влад'))owner='me';
+      else owner='wife';
+    }
+    // Субсчет
+    const v0=String(cellVal(0,r)||'');
+    if(v0.includes('субсчета')){
+      const sub=String(cellVal(1,r)||'').trim();
+      if(sub)accNum='vtb_broker_'+sub;
+    }
+  }
+  registerAccount(accNum,'vtb_broker_xlsx','ВТБ Брокер','RUB');
+  if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
+
+  // Find "Движение денежных средств" section
+  let cashStart=-1;
+  for(let r=0;r<=maxRow;r++){
+    if(String(cellVal(0,r)||'').trim()==='Движение денежных средств'){cashStart=r;break;}
+  }
+  if(cashStart<0){console.log('[VTBBroker] cash section not found');return txns;}
+
+  // Find header row (Дата, Сумма, Валюта, Тип операции)
+  let dataStart=-1;
+  for(let r=cashStart;r<cashStart+10;r++){
+    if(String(cellVal(0,r)||'').trim()==='Дата'){dataStart=r+1;break;}
+  }
+  if(dataStart<0){console.log('[VTBBroker] header not found');return txns;}
+
+  // Find end section
+  let dataEnd=maxRow+1;
+  for(let r=dataStart;r<=maxRow;r++){
+    const v=String(cellVal(0,r)||'').trim();
+    if(v.startsWith('Отчёт об остатках') || v.startsWith('Итог') || v.startsWith('Подтвержден')){
+      dataEnd=r;break;
+    }
+  }
+
+  for(let r=dataStart;r<dataEnd;r++){
+    const dateRaw=cellVal(0,r);
+    if(!dateRaw)continue;
+
+    // Date can be Date object or string
+    let date='';
+    if(dateRaw instanceof Date||typeof dateRaw==='object'){
+      const d=new Date(dateRaw);
+      if(isNaN(d.getTime()))continue;
+      date=d.toISOString().slice(0,10);
+    } else if(typeof dateRaw==='number'){
+      // Excel serial date
+      const d=new Date(Math.round((dateRaw-25569)*86400*1000));
+      date=d.toISOString().slice(0,10);
+    } else {
+      const s=String(dateRaw).trim();
+      if(!s.match(/^\d{4}-\d{2}-\d{2}$/)&&!s.match(/^\d{2}\.\d{2}\.\d{4}$/))continue;
+      date=s.includes('.')?s.split('.').reverse().join('-'):s;
+    }
+
+    const month=date.slice(0,7);
+    const parts=date.split('-');
+    const dateDisplay=`${parts[2]}.${parts[1]}.${parts[0]}`;
+
+    const amt=parseFloat(cellVal(1,r))||0;
+    const currency=String(cellVal(2,r)||'RUR').trim();
+    const opType=String(cellVal(3,r)||'').trim();
+    const comment=String(cellVal(4,r)||'').trim();
+
+    if(!opType||amt===0)continue;
+    // Skip header rows
+    if(opType==='Тип операции'||opType==='Основной рынок')continue;
+
+    const opLow=opType.toLowerCase();
+    const amtRub=currency==='USD'?amt*90:amt;
+
+    let type,group,sub,desc;
+
+    if(opLow.includes('зачисление денежных средств')){
+      type='transfer';group='Перевод';sub='Пополнение брокерского счёта';
+      desc='Пополнение брокерского счёта ВТБ';
+    } else if(opLow.includes('списание денежных средств')||opLow.includes('вывод дс')||opLow.includes('вывод денежных средств')){
+      type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
+      desc='Вывод с брокерского счёта ВТБ';
+    } else if(opLow.includes('сальдо расчетов')){
+      type='transfer';group='Перевод';sub='Сделка на бирже';
+      desc='Расчёты по сделкам';
+    } else if(opLow.includes('вознаграждение брокера')||opLow.includes('комиссия')){
+      type='expense';group='Инвестиции';sub='Комиссии брокера';
+      desc='Комиссия ВТБ Брокер: '+comment.slice(0,60);
+    } else if(opLow.includes('ндфл')){
+      type='expense';group='Инвестиции';sub='Налоги с инвестиций';
+      desc='НДФЛ брокерский';
+    } else if(opLow.includes('вариационная маржа')){
+      type=amt>0?'income':'expense';
+      group='Инвестиции';sub='Вариационная маржа';
+      desc='Вариационная маржа';
+    } else if(opLow.includes('перевод денежных средств')){
+      type='transfer';group='Перевод';sub='Перевод между субсчетами';
+      desc='Перевод между субсчетами ВТБ';
+    } else {
+      type=amt>0?'income':'expense';
+      const c=applyCategForTx({desc:opType,amtRub:amtRub});
+      group=c.g;sub=c.s;desc=opType;
+    }
+
+    txns.push({
+      id:Math.random().toString(36).slice(2,10),
+      date,month,dateDisplay,
+      desc:(desc+(comment&&!desc.includes(comment.slice(0,20))?': '+comment.slice(0,60):'')).slice(0,150),
+      card:'ВТБ Брокер',account:accNum,
+      bankCat:opType.slice(0,30),
+      amtOp:amtRub,curOp:'RUB',amtRub,
+      status:'OK',source:'vtb_broker_xlsx',
+      counterparty:'ВТБ',counterpartyINN:'7702070139',counterpartyAcc:'',
+      manualCategory:false,linkedTo:null,linkedAccount:null,
+      type,group,sub
+    });
+  }
+  console.log('[VTBBroker] parsed txns:',txns.length);
+  return txns;
+}
+
 // ── Tinkoff Broker XLSX parser ──
 function parseTinkoffBrokerXLSX(wb){
   const txns=[];
@@ -1794,9 +1933,14 @@ function processFile(file){
       const cell=ws['A4']||ws['B6']||{};
       const isBakay=(ws['A4']&&ws['A4'].v==='Сводная выписка по счету')||(ws['B6']&&String(ws['B6'].v||'').includes('Безценных'));
       // Detect Cifra Broker by sheet names
+      const isVTBBroker=wb.SheetNames.some(n=>n==='brokerage_report');
       const isTinkoffBroker=wb.SheetNames.some(n=>n==='broker_rep');
       const isCifraBroker=wb.SheetNames.some(n=>n.startsWith('Cash In Out')||n.startsWith('Trades 2'));
-      if(isTinkoffBroker){
+      if(isVTBBroker){
+        const txns=parseVTBBrokerXLSX(wb);
+        if(txns.length){ingest(txns);}
+        else{toast('ВТБ Брокер: не найдены операции','err');}
+      } else if(isTinkoffBroker){
         const txns=parseTinkoffBrokerXLSX(wb);
         if(txns.length){ingest(txns);}
         else{toast('Тинькофф Брокер: не найдены операции','err');}
