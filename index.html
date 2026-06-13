@@ -713,14 +713,27 @@ function parseCifraBankPDF(pages){
 function parseTinkoffBrokerXLSX(wb){
   const txns=[];
   const ws=wb.Sheets[wb.SheetNames[0]];
-  // Read raw with header:1 to get array of arrays, keep empty strings
-  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
 
-  // Extract investor/account info
-  let accNum='tinkoff_broker', owner='wife';
-  for(let i=0;i<10;i++){
-    const r=rows[i]||[];
-    const txt=String(r[0]||'');
+  // Read worksheet directly using cell addresses
+  function cellVal(col, row){
+    const addr=XLSX.utils.encode_cell({r:row,c:col});
+    const cell=ws[addr];
+    if(!cell)return '';
+    return cell.v===undefined?'':cell.v;
+  }
+
+  // Get sheet range
+  const ref=ws['!ref']||'A1:A1';
+  const range=XLSX.utils.decode_range(ref);
+  const maxRow=range.e.r;
+
+  // Column indices: A=0,K=10,W=22,AL=37,BA=52,BN=65,BY=76
+  const C_DATE=0,C_TIME=10,C_EXEC=22,C_OP=37,C_CREDIT=52,C_DEBIT=65,C_NOTE=76;
+
+  // Extract investor info from rows 0-9
+  let accNum='tinkoff_broker',owner='wife';
+  for(let r=0;r<10;r++){
+    const txt=String(cellVal(0,r)||'');
     if(txt.includes('Инвестор:')){
       const m=txt.match(/\/\s*(\d+)\s+от/);
       if(m)accNum='tinkoff_broker_'+m[1];
@@ -731,58 +744,52 @@ function parseTinkoffBrokerXLSX(wb){
   registerAccount(accNum,'tinkoff_broker_xlsx','Тинькофф Брокер','RUB');
   if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
 
-  // Column indices (0-based): A=0, K=10, W=22, AL=37, BA=52, BN=65, BY=76
-  const COL_DATE=0, COL_TIME=10, COL_EXEC=22, COL_OP=37, COL_CREDIT=52, COL_DEBIT=65, COL_NOTE=76;
-
   // Find section 2
   let cashStart=-1;
-  for(let i=0;i<rows.length;i++){
-    if(String(rows[i][0]||'').trim().startsWith('2. Операции с денежными средствами')){cashStart=i;break;}
+  for(let r=0;r<=maxRow;r++){
+    const v=String(cellVal(0,r)||'').trim();
+    if(v.startsWith('2. Операции с денежными средствами')){cashStart=r;break;}
   }
   if(cashStart<0){console.log('[TinkoffBroker] Section 2 not found');return txns;}
 
-  // Find data start row (where we see actual dates)
+  // Find data header row ('Дата' in col A)
   let dataStart=-1;
-  for(let i=cashStart;i<cashStart+30;i++){
-    const r=rows[i]||[];
-    if(String(r[COL_DATE]||'').trim()==='Дата'){dataStart=i+1;break;}
+  for(let r=cashStart;r<cashStart+30;r++){
+    if(String(cellVal(C_DATE,r)||'').trim()==='Дата'){dataStart=r+1;break;}
   }
   if(dataStart<0){console.log('[TinkoffBroker] header not found');return txns;}
 
-  // Find section 3 end
-  let dataEnd=rows.length;
-  for(let i=dataStart;i<rows.length;i++){
-    if(String(rows[i][0]||'').trim().startsWith('3.')){dataEnd=i;break;}
+  // Find section 3
+  let dataEnd=maxRow+1;
+  for(let r=dataStart;r<=maxRow;r++){
+    if(String(cellVal(0,r)||'').trim().startsWith('3.')){dataEnd=r;break;}
   }
 
-  for(let i=dataStart;i<dataEnd;i++){
-    const r=rows[i]||[];
-    // Get values from correct columns
-    const dateStr=String(r[COL_DATE]||'').trim();
-    const opStr=String(r[COL_OP]||'').trim();
-    const credit=parseFloat(r[COL_CREDIT])||0;
-    const debit=parseFloat(r[COL_DEBIT])||0;
-    const note=String(r[COL_NOTE]||'').trim();
+  console.log('[TinkoffBroker] dataStart:',dataStart,'dataEnd:',dataEnd);
 
-    // Skip if no operation type
+  for(let r=dataStart;r<dataEnd;r++){
+    const opStr=String(cellVal(C_OP,r)||'').trim();
     if(!opStr)continue;
-    // Skip page markers
-    if(dateStr.match(/^\d+ из /)||opStr.match(/^\d+ из /))continue;
-    // Skip balance header rows
-    if(opStr==='Исходящий остаток'||opStr==='Входящий остаток'||opStr==='Плановый')continue;
+    // Skip headers/markers
+    if(opStr==='Операция'||opStr==='Исходящий остаток'||opStr==='Входящий остаток')continue;
+    if(opStr.match(/^\d+ из /))continue;
 
-    // Get date - may be in dateStr or execDate column
-    const execStr=String(r[COL_EXEC]||'').trim();
-    const rawDate=dateStr.match(/^\d{2}\.\d{2}\.\d{4}$/)?dateStr:
-                  execStr.match(/^\d{2}\.\d{2}\.\d{4}$/)?execStr:'';
-    if(!rawDate)continue;
+    const credit=parseFloat(cellVal(C_CREDIT,r))||0;
+    const debit=parseFloat(cellVal(C_DEBIT,r))||0;
+    const note=String(cellVal(C_NOTE,r)||'').trim();
+    const net=credit-debit;
+    if(credit===0&&debit===0)continue;
+
+    // Get date
+    let rawDate=String(cellVal(C_DATE,r)||'').trim();
+    if(!rawDate.match(/^\d{2}\.\d{2}\.\d{4}$/)){
+      rawDate=String(cellVal(C_EXEC,r)||'').trim();
+    }
+    if(!rawDate.match(/^\d{2}\.\d{2}\.\d{4}$/))continue;
 
     const parts=rawDate.split('.');
     const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
     const month=date.slice(0,7);
-    const dateDisplay=rawDate;
-    const net=credit-debit;
-    if(net===0&&credit===0&&debit===0)continue;
 
     const opLow=opStr.toLowerCase();
     let type,group,sub,desc;
@@ -811,7 +818,7 @@ function parseTinkoffBrokerXLSX(wb){
 
     txns.push({
       id:Math.random().toString(36).slice(2,10),
-      date,month,dateDisplay,
+      date,month,dateDisplay:rawDate,
       desc:(desc+(note?': '+note.slice(0,60):'')).slice(0,150),
       card:'Тинькофф Брокер',account:accNum,
       bankCat:opStr.slice(0,30),
@@ -822,7 +829,7 @@ function parseTinkoffBrokerXLSX(wb){
       type,group,sub
     });
   }
-  console.log('[TinkoffBroker] parsed txns:', txns.length);
+  console.log('[TinkoffBroker] parsed txns:',txns.length);
   return txns;
 }
 
