@@ -707,6 +707,134 @@ function parseCifraBankPDF(pages){
   return txns;
 }
 
+
+// ── Cifra Broker (VTB Digital / IMEX) XLSX parser ──
+function parseCifraBrokerXLSX(wb){
+  const txns=[];
+  const accNum='broker_cifra_1861037';
+  registerAccount(accNum,'cifra_broker_xlsx','Цифра Брокер','RUB');
+
+  // Helper: parse date string "2026-02-01" or "2026-02-01 14:49:10"
+  function parseDate(d){
+    if(!d)return null;
+    const s=String(d).trim().slice(0,10);
+    if(s.match(/^\d{4}-\d{2}-\d{2}$/))return s;
+    return null;
+  }
+
+  // 1. Cash In Out — bank transfers and crypto movements
+  const cashSheet=wb.Sheets['Cash In Out 20251231 - 20260613']||
+                  Object.values(wb.Sheets).find(s=>wb.SheetNames.find(n=>n.startsWith('Cash In Out')));
+  if(cashSheet){
+    const rows=XLSX.utils.sheet_to_json(cashSheet,{header:1});
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i];
+      if(!r||!r[0])continue;
+      const type=String(r[0]||'').trim();
+      const date=parseDate(r[1]);
+      const account=String(r[2]||'').trim();
+      const amt=parseFloat(r[3])||0;
+      const currency=String(r[4]||'RUR').trim();
+      const comment=String(r[5]||'').trim();
+      if(!date||!amt)continue;
+      // Skip blocking/unblocking rows
+      if(type==='Блокировка'||type==='Разблокировка')continue;
+      // Only торговый account
+      if(account!=='торговый')continue;
+
+      const month=date.slice(0,7);
+      const parts=date.split('-');
+      const dateDisplay=`${parts[2]}.${parts[1]}.${parts[0]}`;
+      const amtRub=currency==='RUR'||currency==='RUB'?amt:(amt*90); // approx for USDT
+      const isCrypto=currency==='USDT';
+
+      let txType,group,sub,desc;
+      if(type==='Банковский перевод'){
+        txType='transfer';group='Перевод';
+        sub=amt>0?'Пополнение брокерского счёта':'Вывод с брокерского счёта';
+        desc=comment||type;
+      } else if(type.includes('Вывод криптовалюты')||type.includes('криптовалюты')){
+        txType='transfer';group='Перевод';sub='Вывод USDT';
+        desc=comment||'Вывод криптовалюты';
+      } else if(type.includes('Пополнение счёта')){
+        txType='transfer';group='Перевод';sub='Пополнение USDT';
+        desc=comment||'Пополнение счёта USDT';
+      } else {
+        txType='transfer';group='Перевод';sub=type;desc=comment||type;
+      }
+
+      txns.push({
+        id:Math.random().toString(36).slice(2,10),
+        date,month,dateDisplay,
+        desc:desc.slice(0,120),
+        card:'Цифра Брокер',account:accNum,
+        bankCat:'Брокер',
+        amtOp:amtRub,curOp:'RUB',amtRub,
+        status:'OK',source:'cifra_broker_xlsx',
+        counterparty:'Цифра Брокер',counterpartyINN:'6506000327',counterpartyAcc:'',
+        manualCategory:false,linkedTo:null,linkedAccount:null,
+        type:txType,group,sub
+      });
+    }
+  }
+
+  // 2. Trades — USDT-RUB conversions
+  const tradesSheet=wb.Sheets['Trades 20251231 - 20260613']||
+                    Object.values(wb.Sheets).find(s=>wb.SheetNames.find(n=>n.startsWith('Trades 2')));
+  if(tradesSheet){
+    const rows=XLSX.utils.sheet_to_json(tradesSheet,{header:1});
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i];
+      if(!r||!r[0])continue;
+      const ticker=String(r[0]||'').trim();
+      const op=String(r[3]||'').trim();
+      const qty=parseFloat(r[4])||0;
+      const price=parseFloat(r[5])||0;
+      const sum=parseFloat(r[7])||0;
+      const comm=parseFloat(r[8])||0;
+      const dateRaw=String(r[10]||'').trim();
+      const date=parseDate(dateRaw)||dateRaw.slice(0,10);
+      if(!date||!sum)continue;
+      const month=date.slice(0,7);
+      const parts=date.split('-');
+      const dateDisplay=`${parts[2]}.${parts[1]}.${parts[0]}`;
+      const isBuy=op.includes('Покупка');
+      const desc=(isBuy?'Покупка ':'Продажа ')+ticker+' '+qty+' @ '+price+' ₽';
+      // Trade = transfer (converting RUB to USDT or back)
+      txns.push({
+        id:Math.random().toString(36).slice(2,10),
+        date,month,dateDisplay,
+        desc:desc.slice(0,120),
+        card:'Цифра Брокер',account:accNum,
+        bankCat:'Сделка',
+        amtOp:isBuy?-sum:sum,curOp:'RUB',amtRub:isBuy?-sum:sum,
+        status:'OK',source:'cifra_broker_xlsx',
+        counterparty:'IMEX',counterpartyINN:'',counterpartyAcc:'',
+        manualCategory:false,linkedTo:null,linkedAccount:null,
+        type:'transfer',group:'Перевод',sub:'Конвертация USDT'
+      });
+      // Commission as separate expense
+      if(comm>0){
+        txns.push({
+          id:Math.random().toString(36).slice(2,10),
+          date,month,dateDisplay,
+          desc:'Комиссия: '+desc.slice(0,80),
+          card:'Цифра Брокер',account:accNum,
+          bankCat:'Комиссия',
+          amtOp:-comm,curOp:'RUB',amtRub:-comm,
+          status:'OK',source:'cifra_broker_xlsx',
+          counterparty:'Цифра Брокер',counterpartyINN:'',counterpartyAcc:'',
+          manualCategory:false,linkedTo:null,linkedAccount:null,
+          type:'expense',group:'Сервисы/Связь',sub:'Банковские комиссии'
+        });
+      }
+    }
+  }
+
+  console.log('[CifraBroker] parsed txns:', txns.length);
+  return txns;
+}
+
 // ── Bakay Bank (Kyrgyzstan) XLSX parser ──
 function parseBakayBank(rows) {
   // rows come from XLSX.utils.sheet_to_json with header:1 (array of arrays)
@@ -1543,7 +1671,13 @@ function processFile(file){
       // Detect Bakay Bank by sheet content
       const cell=ws['A4']||ws['B6']||{};
       const isBakay=(ws['A4']&&ws['A4'].v==='Сводная выписка по счету')||(ws['B6']&&String(ws['B6'].v||'').includes('Безценных'));
-      if(isBakay){
+      // Detect Cifra Broker by sheet names
+      const isCifraBroker=wb.SheetNames.some(n=>n.startsWith('Cash In Out')||n.startsWith('Trades 2'));
+      if(isCifraBroker){
+        const txns=parseCifraBrokerXLSX(wb);
+        if(txns.length){ingest(txns);}
+        else{toast('Цифра Брокер: не найдены операции','err');}
+      } else if(isBakay){
         const txns=processBakayRows(ws);
         if(txns.length){ingest(txns);}
         else{toast('Бакай Банк: не найдены операции','err');}
