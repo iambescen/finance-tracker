@@ -713,7 +713,8 @@ function parseCifraBankPDF(pages){
 function parseTinkoffBrokerXLSX(wb){
   const txns=[];
   const ws=wb.Sheets[wb.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  // Read raw with header:1 to get array of arrays, keep empty strings
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
 
   // Extract investor/account info
   let accNum='tinkoff_broker', owner='wife';
@@ -721,145 +722,106 @@ function parseTinkoffBrokerXLSX(wb){
     const r=rows[i]||[];
     const txt=String(r[0]||'');
     if(txt.includes('Инвестор:')){
-      // e.g. "Инвестор: БЕЗЦЕННЫХ ТАТЬЯНА ВЛАДИМИРОВНА / 2074432923 от 15.09.2023"
       const m=txt.match(/\/\s*(\d+)\s+от/);
       if(m)accNum='tinkoff_broker_'+m[1];
-      if(txt.toLowerCase().includes('владислав')||txt.toLowerCase().includes('влад'))owner='me';
-      else if(txt.toLowerCase().includes('татьяна')||txt.toLowerCase().includes('таня'))owner='wife';
+      if(txt.toLowerCase().includes('владислав'))owner='me';
+      else if(txt.toLowerCase().includes('татьяна'))owner='wife';
     }
   }
   registerAccount(accNum,'tinkoff_broker_xlsx','Тинькофф Брокер','RUB');
   if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
 
-  // Find section 2 header row
+  // Column indices (0-based): A=0, K=10, W=22, AL=37, BA=52, BN=65, BY=76
+  const COL_DATE=0, COL_TIME=10, COL_EXEC=22, COL_OP=37, COL_CREDIT=52, COL_DEBIT=65, COL_NOTE=76;
+
+  // Find section 2
   let cashStart=-1;
   for(let i=0;i<rows.length;i++){
-    const r=rows[i]||[];
-    if(String(r[0]||'').trim().startsWith('2. Операции с денежными средствами')){
-      cashStart=i;break;
-    }
+    if(String(rows[i][0]||'').trim().startsWith('2. Операции с денежными средствами')){cashStart=i;break;}
   }
-  console.log('[TinkoffBroker] rows total:', rows.length, 'cashStart:', cashStart);
-  if(cashStart<0){console.log('[TinkoffBroker] Section 2 not found');
-    // Log first 10 non-empty rows
-    for(let i=0;i<Math.min(rows.length,15);i++){const r=rows[i]||[];const v=r.filter(x=>x!=null);if(v.length)console.log('[TinkoffBroker] row'+i+':',JSON.stringify(v.slice(0,4)));}
-    return txns;
-  }
+  if(cashStart<0){console.log('[TinkoffBroker] Section 2 not found');return txns;}
 
-  // Find the data header row - just find 'Дата' after section 2
+  // Find data start row (where we see actual dates)
   let dataStart=-1;
   for(let i=cashStart;i<cashStart+30;i++){
     const r=rows[i]||[];
-    const cell=String(r[0]||'').trim();
-    if(cell==='Дата'){dataStart=i+1;break;}
+    if(String(r[COL_DATE]||'').trim()==='Дата'){dataStart=i+1;break;}
   }
-  if(dataStart<0){
-    console.log('[TinkoffBroker] data header not found, cashStart=',cashStart);
-    for(let i=cashStart;i<Math.min(cashStart+30,rows.length);i++){
-      const r=rows[i]||[];
-      const v=r.filter(x=>x!=null);
-      if(v.length)console.log('[TinkoffBroker] row'+i+':',JSON.stringify(v.slice(0,3)));
-    }
-    return txns;
-  }
-  console.log('[TinkoffBroker] cashStart:',cashStart,'dataStart:',dataStart);
-  // Log first 5 data rows
-  for(let i=dataStart;i<Math.min(dataStart+8,rows.length);i++){
-    const r=rows[i]||[];
-    const v=r.filter(x=>x!=null);
-    console.log('[TinkoffBroker] datarow'+i+':',JSON.stringify(v.slice(0,6)));
-  }
+  if(dataStart<0){console.log('[TinkoffBroker] header not found');return txns;}
 
-  // Parse cash operations until next section
+  // Find section 3 end
+  let dataEnd=rows.length;
   for(let i=dataStart;i<rows.length;i++){
+    if(String(rows[i][0]||'').trim().startsWith('3.')){dataEnd=i;break;}
+  }
+
+  for(let i=dataStart;i<dataEnd;i++){
     const r=rows[i]||[];
-    const cell0=String(r[0]||'').trim();
-    // Stop at next section
-    if(cell0.match(/^3\./))break;
-    // Skip page markers like "8 из 22"
-    if(cell0.match(/^\d+ из /))continue;
-    // Skip balance rows (Валюта, RUB, USD headers)
-    if(cell0==='RUB'||cell0==='USD'||cell0==='EUR'||cell0==='Валюта')continue;
+    // Get values from correct columns
+    const dateStr=String(r[COL_DATE]||'').trim();
+    const opStr=String(r[COL_OP]||'').trim();
+    const credit=parseFloat(r[COL_CREDIT])||0;
+    const debit=parseFloat(r[COL_DEBIT])||0;
+    const note=String(r[COL_NOTE]||'').trim();
 
-    // Date in col 0: DD.MM.YYYY
-    const dateMatch=cell0.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-    if(!dateMatch)continue;
+    // Skip if no operation type
+    if(!opStr)continue;
+    // Skip page markers
+    if(dateStr.match(/^\d+ из /)||opStr.match(/^\d+ из /))continue;
+    // Skip balance header rows
+    if(opStr==='Исходящий остаток'||opStr==='Входящий остаток'||opStr==='Плановый')continue;
 
-    const date=`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+    // Get date - may be in dateStr or execDate column
+    const execStr=String(r[COL_EXEC]||'').trim();
+    const rawDate=dateStr.match(/^\d{2}\.\d{2}\.\d{4}$/)?dateStr:
+                  execStr.match(/^\d{2}\.\d{2}\.\d{4}$/)?execStr:'';
+    if(!rawDate)continue;
+
+    const parts=rawDate.split('.');
+    const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
     const month=date.slice(0,7);
-    const dateDisplay=cell0;
-
-    // Determine row type - may have time in col1 or operation type directly
-    let opType='', credit=0, debit=0, note='';
-    const col1=String(r[1]||'').trim();
-    const col3=String(r[3]||'').trim();
-
-    if(col1.match(/^\d{2}:\d{2}/)){
-      // Full row: date, time, exec_date, operation, credit, debit, note
-      opType=col3||String(r[2]||'').trim();
-      credit=parseFloat(r[4])||0;
-      debit=parseFloat(r[5])||0;
-      note=String(r[6]||'').trim();
-    } else {
-      // Condensed row: date, operation, credit, debit
-      opType=col1;
-      credit=parseFloat(r[2])||0;
-      debit=parseFloat(r[3])||0;
-    }
-
-    if(!opType)continue;
+    const dateDisplay=rawDate;
     const net=credit-debit;
     if(net===0&&credit===0&&debit===0)continue;
 
-    // Categorize
+    const opLow=opStr.toLowerCase();
     let type,group,sub,desc;
-    const opLow=opType.toLowerCase();
 
-    if(opLow.includes('пополнение счета')||opLow.includes('пополнение счёта')){
-      type='transfer';group='Перевод';sub='Пополнение брокерского счёта';
-      desc='Пополнение брокерского счёта';
+    if(opLow.includes('пополнение счет')){
+      type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';
     } else if(opLow.includes('вывод')&&opLow.includes('средств')){
-      type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
-      desc='Вывод с брокерского счёта';
+      type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';
     } else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд')){
       type='income';group='Инвестиции';sub='Купоны и дивиденды';
-      // Extract asset name from note
       const assetM=note.match(/Наименование:\s*([^,]+)/);
       desc='Купон/дивиденд'+(assetM?' '+assetM[1].trim():'');
-    } else if(opLow.includes('покупка/продажа')||opLow.includes('покупка')||opLow.includes('продажа')){
-      type='transfer';group='Перевод';sub='Сделка на бирже';
-      desc='Покупка/продажа бумаг';
+    } else if(opLow.includes('покупка/продажа')||opLow==='покупка'||opLow==='продажа'){
+      type='transfer';group='Перевод';sub='Сделка на бирже';desc='Покупка/продажа бумаг';
     } else if(opLow.includes('комиссия')){
-      type='expense';group='Инвестиции';sub='Комиссии брокера';
-      desc='Комиссия: '+opType;
+      type='expense';group='Инвестиции';sub='Комиссии брокера';desc='Комиссия: '+opStr;
     } else if(opLow.includes('репо')){
-      type='transfer';group='Перевод';sub='РЕПО';
-      desc='РЕПО операция';
+      type='transfer';group='Перевод';sub='РЕПО';desc='РЕПО операция';
     } else if(opLow.includes('налог')){
-      type='expense';group='Инвестиции';sub='Налоги с инвестиций';
-      desc='Налог: '+opType;
+      type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='Налог: '+opStr;
     } else {
       type=net>0?'income':'expense';
-      const c=applyCategForTx({desc:opType,amtRub:net});
-      group=c.g;sub=c.s;
-      desc=opType;
+      const c=applyCategForTx({desc:opStr,amtRub:net});
+      group=c.g;sub=c.s;desc=opStr;
     }
 
-    const amtRub=net;
     txns.push({
       id:Math.random().toString(36).slice(2,10),
       date,month,dateDisplay,
       desc:(desc+(note?': '+note.slice(0,60):'')).slice(0,150),
       card:'Тинькофф Брокер',account:accNum,
-      bankCat:opType.slice(0,30),
-      amtOp:amtRub,curOp:'RUB',amtRub,
+      bankCat:opStr.slice(0,30),
+      amtOp:net,curOp:'RUB',amtRub:net,
       status:'OK',source:'tinkoff_broker_xlsx',
       counterparty:'АО ТБанк',counterpartyINN:'7710140679',counterpartyAcc:'',
       manualCategory:false,linkedTo:null,linkedAccount:null,
       type,group,sub
     });
   }
-
   console.log('[TinkoffBroker] parsed txns:', txns.length);
   return txns;
 }
