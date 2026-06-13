@@ -970,33 +970,26 @@ function parseTinkoffBrokerXLSX(wb){
       type,group,sub
     });
   }
-
-  // Parse securities holdings from section 3.1
-  let secStart=-1;
+  // Parse securities holdings (section 3.1)
   for(let r=0;r<=maxRow;r++){
-    if(String(cellVal(0,r)||'').trim()==='3.1 Движение по ценным бумагам инвестора'){secStart=r;break;}
-  }
-  if(secStart>=0){
-    let secDataStart=-1;
-    for(let r=secStart;r<secStart+5;r++){
-      if(String(cellVal(0,r)||'').trim()==='Наименование актива'){secDataStart=r+1;break;}
-    }
-    if(secDataStart>=0){
-      const holdings=[];
-      for(let r=secDataStart;r<=maxRow;r++){
-        const name=String(cellVal(0,r)||'').trim();
-        if(!name||name.startsWith('3.')||name.startsWith('4.'))break;
-        const ticker=String(cellVal(13,r)||'').trim();
-        const isin=String(cellVal(20,r)||'').trim();
-        const qtyEnd=parseFloat(cellVal(67,r))||0;
-        if(name&&qtyEnd>=0){
-          holdings.push({name,ticker,isin,qty:qtyEnd,broker:accNum,brokerName:'Тинькофф Брокер',updatedAt:new Date().toISOString()});
+    if(String(cellVal(0,r)||'').trim()==='3.1 Движение по ценным бумагам инвестора'){
+      for(let r2=r+1;r2<r+10;r2++){
+        if(String(cellVal(0,r2)||'').trim()==='Наименование актива'){
+          const holdings=[];
+          for(let r3=r2+1;r3<=maxRow;r3++){
+            const name=String(cellVal(0,r3)||'').trim();
+            if(!name||name.startsWith('3.')||name.startsWith('4.'))break;
+            const ticker=String(cellVal(13,r3)||'').trim();
+            const isin=String(cellVal(20,r3)||'').trim();
+            const qty=parseFloat(cellVal(67,r3))||0;
+            holdings.push({name,ticker,isin,qty,broker:accNum,brokerName:'Тинькофф Брокер',updatedAt:new Date().toISOString()});
+          }
+          if(!DB.investments)DB.investments={};
+          DB.investments[accNum]={holdings,updatedAt:new Date().toISOString()};
+          break;
         }
       }
-      if(holdings.length){
-        if(!DB.investments)DB.investments={};
-        DB.investments[accNum]={holdings,updatedAt:new Date().toISOString()};
-      }
+      break;
     }
   }
   return txns;
@@ -2570,7 +2563,9 @@ function pageAssets(){
 }
 
 function pageInvestments(){
-  if(!DB.investments||!Object.keys(DB.investments).length){
+  const prices=DB.investPrices||{};
+  const allHoldings=Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0);
+  if(!allHoldings.length){
     return '<div class="page-header"><div class="page-title">Инвестиции</div></div>'
       +'<div class="card" style="text-align:center;padding:40px;color:var(--muted)">'
       +'<div style="font-size:32px;margin-bottom:12px">📊</div>'
@@ -2578,121 +2573,85 @@ function pageInvestments(){
       +'<div style="font-size:13px">Загрузите брокерский отчёт Тинькофф — данные появятся автоматически</div>'
       +'</div>';
   }
-
-  let totalValue=0, totalCost=0;
-  const allHoldings=Object.values(DB.investments).flatMap(a=>a.holdings||[]);
-  const prices=DB.investPrices||{};
-
-  // Build holdings table
-  let rows='';
+  let totalValue=0;
   const byBroker={};
   for(const h of allHoldings){
-    if(!byBroker[h.brokerName])byBroker[h.brokerName]=[];
-    byBroker[h.brokerName].push(h);
+    const k=h.brokerName||'Брокер';
+    if(!byBroker[k])byBroker[k]=[];
+    byBroker[k].push(h);
   }
-
-  for(const [broker,holdings] of Object.entries(byBroker)){
-    rows+='<tr><td colspan="6" style="background:var(--bg3);font-weight:600;padding:10px 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">'+broker+'</td></tr>';
+  let rows='';
+  for(const[broker,holdings]of Object.entries(byBroker)){
+    rows+='<tr><td colspan="5" style="background:var(--bg3);font-weight:600;padding:10px 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">'+broker+'</td></tr>';
     for(const h of holdings){
-      if(h.qty===0)continue;
       const priceKey=h.isin||h.ticker;
       const price=prices[priceKey]||0;
       const value=h.qty*price;
       totalValue+=value;
-      const isObligation=h.name.includes('обб')||h.name.includes('обл')||h.name.toLowerCase().includes('bond');
-      const type=isObligation?'Облигация':h.ticker&&h.ticker.includes('@')?'Фонд':h.name.includes('паи')||h.name.includes('БПИФ')?'Фонд':'Акция';
+      const type=h.name.includes('обб')||h.name.includes('обл')?'Облигация':h.name.includes('паи')||h.name.includes('БПИФ')?'Фонд':'Акция';
       rows+='<tr>'
         +'<td><div style="font-weight:500">'+h.name+'</div>'
         +(h.ticker?'<div style="font-size:11px;color:var(--muted)">'+h.ticker+(h.isin?' · '+h.isin:'')+'</div>':'')+'</td>'
-        +'<td style="text-align:center"><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--muted)">'+type+'</span></td>'
+        +'<td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--muted)">'+type+'</span></td>'
         +'<td style="text-align:right">'+h.qty.toLocaleString('ru-RU')+'</td>'
-        +'<td style="text-align:right">'
-        +'<input type="number" value="'+(price||'')+'" placeholder="Цена ₽" '
+        +'<td style="text-align:right"><input type="number" value="'+(price||'')+'" placeholder="Цена ₽" '
         +'oninput="setInvestPrice(''+priceKey+'',this.value)" '
-        +'style="width:110px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);text-align:right">'
-        +'</td>'
+        +'style="width:100px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);text-align:right"></td>'
         +'<td style="text-align:right;font-weight:500">'+(value>0?fmtMoney(value):'—')+'</td>'
-        +'<td style="text-align:center;font-size:12px;color:var(--muted)">'+
-        (h.updatedAt?new Date(h.updatedAt).toLocaleDateString('ru-RU'):'—')+'</td>'
         +'</tr>';
     }
   }
-
   return '<div class="page-header"><div class="page-title">Инвестиции</div>'
     +'<div class="page-actions"><button class="btn sm" onclick="fetchMOEXPrices()">↻ Цены MOEX</button></div></div>'
-    +'<div class="grid-3" style="margin-bottom:16px">'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">'
     +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--income)">'+fmtMoney(totalValue)+'</div><div style="font-size:12px;color:var(--muted)">Стоимость портфеля</div></div>'
-    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+allHoldings.filter(h=>h.qty>0).length+'</div><div style="font-size:12px;color:var(--muted)">Позиций</div></div>'
-    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+Object.keys(byBroker).length+'</div><div style="font-size:12px;color:var(--muted)">Брокеров</div></div>'
+    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+allHoldings.length+'</div><div style="font-size:12px;color:var(--muted)">Позиций</div></div>'
     +'</div>'
     +'<div class="card"><div class="tbl-wrap"><table>'
-    +'<thead><tr><th>Актив</th><th>Тип</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Цена ₽</th><th style="text-align:right">Стоимость</th><th>Обновлено</th></tr></thead>'
-    +'<tbody>'+rows+'</tbody>'
-    +'</table></div></div>'
-    +'<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:0 4px">Цены вводятся вручную. Нажмите «↻ Цены MOEX» для автозагрузки котировок с биржи.</div>';
+    +'<thead><tr><th>Актив</th><th>Тип</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Цена ₽</th><th style="text-align:right">Стоимость</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div></div>';
 }
-
 function setInvestPrice(key,val){
   if(!DB.investPrices)DB.investPrices={};
   DB.investPrices[key]=parseFloat(val)||0;
   saveLocal();
-  // Debounce save
-  clearTimeout(window._investPriceTimer);
-  window._investPriceTimer=setTimeout(()=>{
+  clearTimeout(window._ipt);
+  window._ipt=setTimeout(()=>{
     const{token}=ghCfg();
-    if(token)ghPut('data/investments.json',JSON.stringify({prices:DB.investPrices,holdings:DB.investments},null,2),'Update investment prices');
+    if(token)ghPut('data/investments.json',JSON.stringify({prices:DB.investPrices,holdings:DB.investments},null,2),'Update prices');
   },1500);
-  // Update totals without full re-render
-  renderPage();
 }
-
 async function fetchMOEXPrices(){
-  toast('Загружаем котировки с MOEX...','info');
+  toast('Загружаем котировки MOEX...','info');
   if(!DB.investments)return;
   if(!DB.investPrices)DB.investPrices={};
-  const allHoldings=Object.values(DB.investments).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0);
-  const tickers=[...new Set(allHoldings.map(h=>h.ticker).filter(t=>t&&!t.includes('@')))];
-  if(!tickers.length){toast('Нет тикеров для загрузки','err');return;}
+  const all=Object.values(DB.investments).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0);
+  const tickers=[...new Set(all.map(h=>h.ticker).filter(Boolean))];
+  const isins=[...new Set(all.map(h=>h.isin).filter(Boolean))];
+  let updated=0;
   try{
-    // MOEX API - get last prices for all tickers
-    const tickersStr=tickers.join(',');
-    const url='https://iss.moex.com/iss/engines/stock/markets/shares/securities.json?securities='+tickersStr+'&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,LCURRENTPRICE';
-    const r=await fetch(url);
-    const data=await r.json();
-    const rows=data.marketdata?.data||[];
-    let updated=0;
-    for(const row of rows){
-      const [secid,last,lcur]=row;
-      const price=last||lcur||0;
-      if(secid&&price){
-        // Find by ticker
-        const h=allHoldings.find(h=>h.ticker===secid);
-        if(h){
-          const key=h.isin||h.ticker;
-          DB.investPrices[key]=price;
-          updated++;
-        }
+    // Stocks and funds
+    if(tickers.length){
+      const r=await fetch('https://iss.moex.com/iss/engines/stock/markets/shares/securities.json?securities='+tickers.join(',')+'&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,LCURRENTPRICE');
+      const d=await r.json();
+      for(const row of d.marketdata?.data||[]){
+        const[secid,last,lcur]=row;const price=last||lcur||0;
+        if(secid&&price){const h=all.find(h=>h.ticker===secid);if(h){DB.investPrices[h.isin||h.ticker]=price;updated++;}}
       }
     }
-    // Also try bonds
-    const bondTickers=allHoldings.filter(h=>h.qty>0&&h.isin).map(h=>h.isin);
-    if(bondTickers.length){
-      const bondUrl='https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?securities='+bondTickers.slice(0,20).join(',')+'&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,LCURRENTPRICE';
-      const r2=await fetch(bondUrl);
-      const data2=await r2.json();
-      const rows2=data2.marketdata?.data||[];
-      for(const row of rows2){
-        const [secid,last,lcur]=row;
-        const price=(last||lcur||0)*10; // bonds quoted as % of par (1000 RUB)
-        if(secid&&price){DB.investPrices[secid]=price;updated++;}
+    // Bonds (price in % of par 1000 RUB)
+    if(isins.length){
+      const r2=await fetch('https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?securities='+isins.slice(0,30).join(',')+'&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,LCURRENTPRICE');
+      const d2=await r2.json();
+      for(const row of d2.marketdata?.data||[]){
+        const[secid,last,lcur]=row;const pct=last||lcur||0;
+        if(secid&&pct){DB.investPrices[secid]=Math.round(pct*10);updated++;}
       }
     }
     saveLocal();
     toast('Обновлено '+updated+' котировок','ok');
     renderPage();
-  }catch(e){
-    toast('Ошибка MOEX: '+e.message,'err');
-  }
+  }catch(e){toast('Ошибка MOEX: '+e.message,'err');}
 }
 
 function pageRules(){
@@ -2902,12 +2861,9 @@ async function loadFromGithub(){
     }
     const p=Object.keys(DB.periods).sort().reverse();if(p.length)currentPeriod=p[0];
     ensureCashAccounts();
-
     // Load investments
-    try{
-      const ri=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/data/investments.json?t='+Date.now());
-      if(ri.ok){const inv=await ri.json();if(inv.prices)DB.investPrices=inv.prices;if(inv.holdings)DB.investments=inv.holdings;}
-    }catch(e){}
+    try{const ri=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/data/investments.json?t='+Date.now());
+      if(ri.ok){const inv=await ri.json();if(inv.prices)DB.investPrices=inv.prices;if(inv.holdings)DB.investments=inv.holdings;}}catch(e){}
     saveLocal();refreshUI();toast('Данные загружены из GitHub','info');
   }catch(e){console.error(e);}
 }
