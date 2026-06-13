@@ -114,13 +114,13 @@
       "counterparty": "Оплата товаров и услуг. PYATEROCHKA",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "fii7d3bf",
@@ -139,13 +139,13 @@
       "counterparty": "Оплата товаров и услуг. MAGNIT MM ANTIDOT.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "56vofxmm",
