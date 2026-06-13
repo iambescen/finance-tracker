@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "pyaterochka",
+    "group": "Питание",
+    "sub": "Продукты/супермаркеты",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "medicins kij centr",
     "group": "Здоровье",
     "sub": "Визиты врача/платные услуги",
@@ -23,13 +30,6 @@
   {
     "type": "keyword",
     "value": "magnit",
-    "group": "Питание",
-    "sub": "Продукты/супермаркеты",
-    "txType": "expense"
-  },
-  {
-    "type": "keyword",
-    "value": "pyaterochka",
     "group": "Питание",
     "sub": "Продукты/супермаркеты",
     "txType": "expense"
