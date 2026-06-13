@@ -1993,12 +1993,18 @@ function ingest(newTxns){
   autoSaveToGithub();
 }
 
+let _ghSaving=false;
 async function autoSaveToGithub(){
+  if(_ghSaving){console.log('GitHub save already in progress, skipping');return;}
   const{token}=ghCfg();
-  if(!token)return; // no token — skip silently
+  if(!token)return;
+  _ghSaving=true;
+  toast('Сохраняем в GitHub...','info');
   try{
     const date=new Date().toLocaleDateString('ru-RU');
-    for(const[period,data]of Object.entries(DB.periods)){
+    // Save periods sequentially to avoid 409 conflicts
+    const periods=Object.entries(DB.periods);
+    for(const[period,data]of periods){
       await ghPut('data/'+period+'.json',JSON.stringify(data,null,2),'Auto-save '+period+' — '+date);
     }
     await ghPut('data/assets.json',JSON.stringify(DB.assets,null,2),'Auto-save assets — '+date);
@@ -2006,7 +2012,9 @@ async function autoSaveToGithub(){
     await ghPut('data/rules.json',JSON.stringify(DB.rules,null,2),'Auto-save rules — '+date);
     toast('✓ Сохранено в GitHub','ok');
   }catch(e){
-    toast('GitHub: '+e.message,'err');
+    toast('Ошибка сохранения: '+e.message,'err');
+  }finally{
+    _ghSaving=false;
   }
 }
 
