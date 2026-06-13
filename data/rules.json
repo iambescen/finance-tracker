@@ -1,6 +1,20 @@
 [
   {
     "type": "keyword",
+    "value": "домово",
+    "group": "Жильё",
+    "sub": "Коммунальные/Интернет",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
+    "value": "жку",
+    "group": "Жильё",
+    "sub": "Коммунальные/Интернет",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "саб по уборке",
     "group": "Жильё",
     "sub": "Коммунальные/Интернет",
