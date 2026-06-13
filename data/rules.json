@@ -1,6 +1,13 @@
 [
   {
     "type": "keyword",
+    "value": "такси",
+    "group": "Транспорт",
+    "sub": "Такси/Общественный транспорт",
+    "txType": "expense"
+  },
+  {
+    "type": "keyword",
     "value": "medcent",
     "group": "Здоровье",
     "sub": "Визиты врача/платные услуги",
