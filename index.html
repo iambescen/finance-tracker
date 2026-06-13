@@ -2180,7 +2180,7 @@ async function autoSaveToGithub(){
     }
     await ghPut('data/assets.json',JSON.stringify(DB.assets,null,2),'Auto-save assets — '+date);
     await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Auto-save accounts — '+date);
-    await ghPut('data/rules.json',JSON.stringify(DB.rules,null,2),'Auto-save rules — '+date);
+    await ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Auto-save rules — '+date);
     toast('✓ Сохранено в GitHub','ok');
   }catch(e){
     toast('Ошибка сохранения: '+e.message,'err');
@@ -3229,7 +3229,9 @@ function forceReapply(){
 function deleteRule(i){
   DB.rules.splice(i,1);
   const changed=reapplyAllRules();
-  saveLocal();renderPage();
+  saveLocal();
+  const{token:_dt}=ghCfg();if(_dt)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Delete rule');
+  renderPage();
   toast('Правило удалено, пересчитано '+changed+' операций','info');
 }
 
@@ -3699,7 +3701,7 @@ function saveKeywordRule(){
   const changed=addRule({type:'keyword',value:word,group,sub,txType});
   saveLocal();
   const{token}=ghCfg();
-  if(token)ghPut('data/rules.json',JSON.stringify(DB.rules,null,2),'Add keyword rule');
+  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Add keyword rule');
   document.getElementById('keywordRuleModal').classList.remove('open');
   toast('Правило создано · обновлено '+changed+' операций','ok');
   if(currentPage==='rules')renderPage();
