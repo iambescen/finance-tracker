@@ -454,8 +454,8 @@
       "manualCategory": false,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Прочее",
-      "sub": "Прочие расходы",
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги",
       "type": "expense"
     },
     {
@@ -499,12 +499,12 @@
       "counterparty": "Юрьевич.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод"
     },
     {
       "id": "tekrrn45",
@@ -574,9 +574,9 @@
       "manualCategory": false,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Вывод с брокерского счёта"
     },
     {
       "id": "jb08rgjl",
@@ -625,8 +625,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "2lgumca8",
@@ -650,8 +650,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги"
     },
     {
       "id": "xfomghnu",
@@ -675,8 +675,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги"
     },
     {
       "id": "lfs6mi4i",
@@ -747,8 +747,8 @@
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
-      "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "group": "Прочее",
+      "sub": "Прочие расходы"
     },
     {
       "id": "n5x9q5vx",
@@ -914,8 +914,8 @@
       "manualCategory": false,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Прочее",
-      "sub": "Прочие расходы",
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги",
       "type": "expense"
     },
     {
@@ -965,8 +965,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет"
     },
     {
       "id": "uvedfh7l",
@@ -990,8 +990,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет"
     },
     {
       "id": "zfnb4dis",
@@ -1015,8 +1015,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет"
     },
     {
       "id": "sb0hsvgi",
@@ -1040,8 +1040,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет"
     },
     {
       "id": "7loe69pg",
@@ -1065,8 +1065,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Жильё",
+      "sub": "Коммунальные/Интернет"
     },
     {
       "id": "tw74zo7m",
@@ -1090,8 +1090,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "3pplbp3a",
@@ -1380,7 +1380,7 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Прочее",
-      "sub": "Прочие расходы"
+      "sub": "Подарки"
     },
     {
       "id": "m7a7twm8",
@@ -1404,8 +1404,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Транспорт",
+      "sub": "Такси/Общественный транспорт"
     },
     {
       "id": "o7vp1h82",
@@ -1429,8 +1429,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "e58p7d1c",
@@ -1452,9 +1452,9 @@
       "manualCategory": false,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Конвертация валюты"
+      "type": "expense",
+      "group": "Прочее",
+      "sub": "Прочие расходы"
     },
     {
       "id": "vgp5tk4f",
@@ -1476,9 +1476,9 @@
       "manualCategory": false,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Пополнение карты"
+      "type": "expense",
+      "group": "Прочее",
+      "sub": "Прочие расходы"
     },
     {
       "id": "081ss3dz",
@@ -1500,9 +1500,9 @@
       "manualCategory": false,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Конвертация валюты"
+      "type": "expense",
+      "group": "Прочее",
+      "sub": "Прочие расходы"
     },
     {
       "id": "4w2o87ox",
@@ -1860,8 +1860,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "2ky6hiyq",
@@ -1885,8 +1885,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "ww2phsqs",
@@ -1910,8 +1910,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Транспорт",
+      "sub": "Топливо"
     },
     {
       "id": "cft6mt65",
@@ -1982,8 +1982,8 @@
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
-      "group": "Инвестиции",
-      "sub": "Купоны и дивиденды"
+      "group": "Доход",
+      "sub": "Дивиденды/купоны/курсовая разница"
     },
     {
       "id": "4k33d01s",
@@ -2055,8 +2055,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "r7hzjl29",
@@ -2080,8 +2080,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "9zfftjbd",
@@ -2128,8 +2128,8 @@
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
-      "group": "Инвестиции",
-      "sub": "Купоны и дивиденды"
+      "group": "Доход",
+      "sub": "Дивиденды/купоны/курсовая разница"
     },
     {
       "id": "nyw53uav",
@@ -2512,7 +2512,7 @@
       "linkedTo": "geipqeco",
       "linkedAccount": "tinkoff_broker_2007721129",
       "group": "Перевод",
-      "sub": "Внутренний перевод",
+      "sub": "Пополнение брокерского счёта",
       "type": "transfer"
     },
     {
@@ -2584,7 +2584,7 @@
       "linkedTo": "d576a6mo",
       "linkedAccount": "tinkoff_broker_2030060362",
       "group": "Перевод",
-      "sub": "Внутренний перевод",
+      "sub": "Пополнение брокерского счёта",
       "type": "transfer"
     },
     {
@@ -2608,7 +2608,7 @@
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Перевод",
-      "sub": "Внутренний перевод",
+      "sub": "Пополнение брокерского счёта",
       "type": "transfer"
     },
     {
@@ -2967,9 +2967,9 @@
       "manualCategory": false,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Вывод с брокерского счёта"
     },
     {
       "id": "alrw9axv",
@@ -3399,8 +3399,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги"
     },
     {
       "id": "t71en2hx",
@@ -3424,8 +3424,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "vmzwg61w",
@@ -3449,8 +3449,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги"
     },
     {
       "id": "v6r8ywfu",
@@ -3473,8 +3473,8 @@
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
-      "group": "Инвестиции",
-      "sub": "Купоны и дивиденды"
+      "group": "Доход",
+      "sub": "Дивиденды/купоны/курсовая разница"
     },
     {
       "id": "3k7gp533",
