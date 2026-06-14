@@ -2562,6 +2562,8 @@ function filterTxns(){
     } else {
       shownIds.add(t.id);
       const fromAcc=accLabel(t.account);
+      const _accOwner=DB.accounts[t.account]?.owner;
+      const _ownerLabel=_accOwner==='me'?'Влад':_accOwner==='wife'?'Таня':_accOwner==='joint'?'Общий':'';
       if(isT&&t.linkedAccount){
         const toAcc=accLabel(t.linkedAccount);
         const arrow=t.amtRub<0?' → ':' ← ';
