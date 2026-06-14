@@ -393,8 +393,48 @@ tr:hover td{background:var(--bg3)}
 
 <script>
 const OWN_INN='570701153846';
+const OWN_INNS=new Set(['570701153846','463234158982']); // Влад + Таня
 const OWN_ACCOUNTS=new Set(['40802810100000077444','40802810500004846488','40817810400000461363','42109810600000071861','40802810600000071861']);
 const CASH_ACCOUNTS={me:'cash_me',wife:'cash_wife'};
+
+// Dynamic: is this counterparty account one of OUR accounts?
+function isOwnAccount(accNum){
+  if(!accNum)return false;
+  const k=String(accNum).replace(/[*\s]/g,'').trim();
+  if(!k||k.length<4)return false;
+  if(OWN_ACCOUNTS.has(k))return true;
+  if(DB.accounts&&DB.accounts[k])return true;
+  // match by last-4 against any registered account number or display
+  const last4=k.slice(-4);
+  if(DB.accounts){
+    for(const acc of Object.values(DB.accounts)){
+      const n=String(acc.number||'').replace(/[*\s]/g,'');
+      if(n&&n.slice(-4)===last4&&n.length>=4)return true;
+      const disp=String(acc.display||'').replace(/[*\s]/g,'');
+      if(disp&&disp.slice(-4)===last4&&disp.length>=4)return true;
+    }
+  }
+  return false;
+}
+
+// Comprehensive internal-transfer detection. Returns sub-category name or null.
+function detectInternalTransfer(tx){
+  const d=(tx.desc||'').toLowerCase();
+  const b=(tx.bankCat||'').toLowerCase();
+  const all=d+' '+b;
+  // Broker money movements (check these first — most specific)
+  if(/пополнение брокерск|зачисление на брокерск|перевод на брокерск/.test(all))return 'Пополнение брокерского счёта';
+  if(/вывод.*брокерск|денежных средств с брокерск|с брокерского счета|с брокерского счёта|вывод дс/.test(all))return 'Вывод с брокерского счёта';
+  if(/покупка\/продажа|сделка на бирже|расчёты по сделкам|расчеты по сделкам|расчёты по заключенным|сальдо расчетов|dfp\/rfp|\bрепо\b/.test(all))return 'Сделка на бирже';
+  // Cash withdrawal
+  if(/снятие.*банкомат|снятие наличных|выдача наличных|cash withdrawal|снятие в т-банк|снятие в t-bank/.test(all))return 'Снятие наличных';
+  // Internal transfer by counterparty (both owners' INNs or our own accounts)
+  if(tx.counterpartyINN&&OWN_INNS.has(tx.counterpartyINN))return 'Внутренний перевод';
+  if(tx.counterpartyAcc&&isOwnAccount(tx.counterpartyAcc))return 'Внутренний перевод';
+  // Internal transfer by description
+  if(/перевод между своими|собственных средств|перевод собственных|внутри втб|между счетами|между своими счет/.test(all))return 'Внутренний перевод';
+  return null;
+}
 
 const CAT_TREE={
   income:{subs:['Выручка от услуг/курсов/товаров','Дивиденды/купоны/курсовая разница','Кэшбэк/проценты на остаток','Пособия/вычеты','Возвраты','Прочие доходы']},
@@ -417,7 +457,6 @@ const CAT_TREE={
 function getExpenseGroups(){return Object.assign({},CAT_TREE.expense.groups,DB.customGroups||{});}
 function getAllGroups(){return['Доход',...Object.keys(getExpenseGroups()),'Перевод'];}
 const ALL_GROUPS=['Доход',...Object.keys(CAT_TREE.expense.groups),'Перевод'];
-function getAllGroups(){return['Доход',...Object.keys(getExpenseGroups()),'Перевод'];}
 
 const BASE_RULES=[
   {m:['зачисление кэшбэка','кэшбэк'], g:'Доход', s:'Кэшбэк/проценты на остаток', t:'income'},
@@ -496,13 +535,26 @@ function accLabel(accNum){
 }
 
 function applyRules(tx){
+  const d=(tx.desc||'').toLowerCase(),b=(tx.bankCat||'').toLowerCase();
+  // 1. User-defined rules (highest priority — explicit user intent)
   for(const rule of DB.rules){
     if(rule.type==='inn'&&tx.counterpartyINN&&tx.counterpartyINN===rule.value)return{g:rule.group,s:rule.sub,t:rule.txType};
-    if(rule.type==='keyword'){const d=(tx.desc||'').toLowerCase();if(d.includes(rule.value.toLowerCase()))return{g:rule.group,s:rule.sub,t:rule.txType};}
+    if(rule.type==='keyword'&&rule.value&&d.includes(rule.value.toLowerCase()))return{g:rule.group,s:rule.sub,t:rule.txType};
   }
-  const d=(tx.desc||'').toLowerCase(),b=(tx.bankCat||'').toLowerCase();
+  // 2. Broker commissions & taxes → expense (must beat transfer detection)
+  if(/комиссия брокера|вознаграждение брокера|комиссия банка за заключение|комиссия банка за проведение|комиссия за сделк/.test(d))return{g:'Инвестиции',s:'Комиссии брокера',t:'expense'};
+  if(/ндфл|налог.*продаж|уплата налога|списание задолженности по налогу|налог с инвест/.test(d))return{g:'Инвестиции',s:'Налоги с инвестиций',t:'expense'};
+  // 3. Income from broker (coupons/dividends) → income (must beat transfer detection)
+  if(/купон|дивиденд|выплата доходов по ценным/.test(d))return{g:'Доход',s:'Дивиденды/купоны/курсовая разница',t:'income'};
+  // 4. Internal transfer detection (own accounts / broker moves / cash)
+  const transferSub=detectInternalTransfer(tx);
+  if(transferSub)return{g:'Перевод',s:transferSub,t:'transfer'};
+  // 5. BASE_RULES (specific merchant patterns)
   for(const r of BASE_RULES){if(r.m.some(m=>d.includes(m)||b.includes(m)))return{g:r.g,s:r.s,t:r.t};}
+  // 6. Bank category mapping
   if(BANK_CAT[b]){const c=BANK_CAT[b];return{g:c.g,s:c.s,t:c.t};}
+  // 7. Sign-aware fallback: positive unmatched → income, negative → expense
+  if(tx.amtRub>0)return{g:'Доход',s:'Прочие доходы',t:'income'};
   return{g:'Прочее',s:'Прочие расходы',t:'expense'};
 }
 
@@ -537,6 +589,7 @@ function reapplyAllRules(){
     for(const tx of txns){
       if(tx.manualCategory)continue;
       if(PROTECTED_SOURCES.includes(tx.source))continue; // don't touch mortgage/loan txns
+      if(tx.manualLink){tx.type='transfer';continue;} // keep manually-linked transfers as transfers
       const c=applyCategForTx(tx);
       if(c.g!==tx.group||c.s!==tx.sub||c.t!==tx.type){tx.group=c.g;tx.sub=c.s;tx.type=c.t;changed++;}
     }
@@ -1424,26 +1477,44 @@ function processRows(rows){
 
 function linkTransferPairs(){
   let linked=0;
-  for(const period of Object.keys(DB.periods)){
-    const txns=getTxns(period);
-    const transfers=txns.filter(t=>t.type==='transfer'&&!t.linkedTo);
-    for(const tx of transfers){
-      if(tx.linkedTo)continue;
-      const amt=Math.abs(tx.amtRub),txDate=new Date(tx.date);
-      for(const p2 of Object.keys(DB.periods).sort()){
-        if(linked>2000)break;
-        const pair=getTxns(p2).find(t2=>
-          t2.id!==tx.id&&t2.type==='transfer'&&!t2.linkedTo&&
-          Math.abs(Math.abs(t2.amtRub)-amt)<100&&
-          Math.abs(new Date(t2.date)-txDate)<=5*86400000&&
-          ((tx.account&&t2.account&&tx.account!==t2.account)||(tx.counterpartyAcc&&t2.account&&tx.counterpartyAcc===t2.account))
-        );
-        if(pair){tx.linkedTo=pair.id;tx.linkedAccount=pair.account;pair.linkedTo=tx.id;pair.linkedAccount=tx.account;linked++;break;}
-      }
+  // Collect ALL unlinked transfers across all periods into one pool
+  const pool=[];
+  for(const period of Object.keys(DB.periods))
+    for(const t of getTxns(period))
+      if(t.type==='transfer'&&!t.linkedTo&&t.amtRub!==0)pool.push(t);
+
+  for(const tx of pool){
+    if(tx.linkedTo)continue;
+    const amt=Math.abs(tx.amtRub),txDate=new Date(tx.date),txSign=Math.sign(tx.amtRub);
+    // Find the best opposite-direction partner: closest date, amount within tolerance
+    let best=null,bestScore=Infinity;
+    for(const t2 of pool){
+      if(t2.linkedTo||t2.id===tx.id)continue;
+      if(Math.sign(t2.amtRub)===txSign)continue;            // must be opposite direction
+      const amtDiff=Math.abs(Math.abs(t2.amtRub)-amt);
+      if(amtDiff>100)continue;                               // amount within ±100₽ (covers transfer fees)
+      const days=Math.abs(new Date(t2.date)-txDate)/86400000;
+      if(days>7)continue;                                    // within 7 days
+      // Prefer different account (real transfer) over same account
+      const sameAcc=tx.account&&t2.account&&tx.account===t2.account?1:0;
+      const score=days+amtDiff/100+sameAcc*3;                // lower is better
+      if(score<bestScore){best=t2;bestScore=score;}
+    }
+    if(best){
+      tx.linkedTo=best.id;tx.linkedAccount=best.account;
+      best.linkedTo=tx.id;best.linkedAccount=tx.account;
+      linked++;
     }
   }
   if(linked>0)saveLocal();
   return linked;
+}
+
+// Unlink a transfer pair (used when re-linking)
+function unlinkAllTransfers(){
+  for(const period of Object.keys(DB.periods))
+    for(const t of getTxns(period))
+      if(t.type==='transfer'){t.linkedTo=null;t.linkedAccount=null;}
 }
 
 
@@ -2162,8 +2233,17 @@ function ingest(newTxns){
   }
   const months=Object.keys(byMonth);
   if(!currentPeriod&&months.length)currentPeriod=months.sort().reverse()[0];
-  const pairs=linkTransferPairs();
   ensureCashAccounts();
+  // Reclassify freshly added txns with full detection (transfer/broker/own-account)
+  const PROTECTED=['vtb_mortgage_pdf','sber_loan_pdf'];
+  for(const period of months){
+    for(const tx of getTxns(period)){
+      if(tx.manualCategory||PROTECTED.includes(tx.source))continue;
+      const c=applyCategForTx(tx);
+      tx.group=c.g;tx.sub=c.s;tx.type=c.t;
+    }
+  }
+  const pairs=linkTransferPairs();
   saveLocal();refreshUI();
   toast('Добавлено '+added+' операций за '+months.join(', ')+(pairs?' · связано '+pairs+' пар переводов':''),'ok');
   // Auto-save to GitHub in background
@@ -2632,9 +2712,9 @@ function showLinkCandidates(txId, period){
   if(idx===null||idx==='')return;
   const pair=candidates[+idx];
   if(!pair){toast('Неверный номер','err');return;}
-  // Link them
-  tx.linkedTo=pair.id;tx.linkedAccount=pair.account;
-  pair.linkedTo=tx.id;pair.linkedAccount=tx.account;
+  // Link them (mark as manual so reapply won't break it)
+  tx.linkedTo=pair.id;tx.linkedAccount=pair.account;tx.manualLink=true;tx.type='transfer';
+  pair.linkedTo=tx.id;pair.linkedAccount=tx.account;pair.manualLink=true;pair.type='transfer';
   saveLocal();
   // Save both periods
   const p1=tx.month,p2=pair.month;
@@ -3299,21 +3379,27 @@ function addSubToCat(group){
   }
 }
 
-function forceReapply(){
-  // Reapply withdrawal detection too
-  for(const period of Object.keys(DB.periods)){
-    const txns=getTxns(period);
-    for(const tx of txns){
-      if(tx.manualCategory)continue;
-      // Re-check cash withdrawal
-      if(isCashWithdrawal(tx)){
-        tx.type='transfer';tx.group='Перевод';tx.sub='Снятие наличных';
-        tx.linkedAccount=getCashAccountForTx(tx);
-      }
-    }
-  }
+async function forceReapply(){
+  toast('Пересчитываю операции...','info');
+  // 1. Reclassify all non-manual transactions with current rules
   const changed=reapplyAllRules();
-  toast('Пересчитано '+changed+' операций','ok');
+  // 2. Rebuild transfer links from scratch (only for non-manual; preserve manual links)
+  for(const period of Object.keys(DB.periods))
+    for(const t of getTxns(period))
+      if(t.type==='transfer'&&!t.manualLink){t.linkedTo=null;t.linkedAccount=null;}
+  const pairs=linkTransferPairs();
+  saveLocal();
+  // 3. Save all affected periods to GitHub
+  const{token}=ghCfg();
+  if(token){
+    try{
+      for(const period of Object.keys(DB.periods))
+        await ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),'Reapply rules '+period);
+      toast('Пересчитано '+changed+' операций · связано '+pairs+' пар ✓','ok');
+    }catch(e){toast('Пересчитано локально ('+changed+' опер.)','ok');}
+  } else {
+    toast('Пересчитано '+changed+' операций · связано '+pairs+' пар','ok');
+  }
   renderPage();
 }
 
