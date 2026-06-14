@@ -427,12 +427,12 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Прочее",
-      "sub": "Прочие расходы",
-      "type": "expense"
+      "group": "Доход",
+      "sub": "Возвраты",
+      "type": "income"
     },
     {
       "id": "nwc4rnoe",
