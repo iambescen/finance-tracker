@@ -523,10 +523,10 @@
       "counterparty": "Внутри ВТБ. Безценных Татьяна Владимировна.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
+      "type": "transfer",
       "group": "Прочее",
       "sub": "Прочие расходы"
     },
