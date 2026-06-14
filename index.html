@@ -756,7 +756,7 @@ function parseVTBBrokerXLSX(wb){
     const v0=String(cellVal(0,r)||'')+String(cellVal(1,r)||'');
     if(v0.includes('субсчета')){
       const sub=String(cellVal(1,r)||'').trim();
-      if(sub)accNum='vtb_broker_'+sub;
+      if(sub)accNum='vtb_broker_'+sub.replace(/[^a-zA-Z0-9_]/g,'').slice(0,20);
     }
   }
   registerAccount(accNum,'vtb_broker_xlsx','ВТБ Брокер','RUB');
@@ -1430,8 +1430,8 @@ function linkTransferPairs(){
         if(linked>2000)break;
         const pair=getTxns(p2).find(t2=>
           t2.id!==tx.id&&t2.type==='transfer'&&!t2.linkedTo&&
-          Math.abs(Math.abs(t2.amtRub)-amt)<1&&
-          Math.abs(new Date(t2.date)-txDate)<=2*86400000&&
+          Math.abs(Math.abs(t2.amtRub)-amt)<10&&
+          Math.abs(new Date(t2.date)-txDate)<=5*86400000&&
           ((tx.account&&t2.account&&tx.account!==t2.account)||(tx.counterpartyAcc&&t2.account&&tx.counterpartyAcc===t2.account))
         );
         if(pair){tx.linkedTo=pair.id;tx.linkedAccount=pair.account;pair.linkedTo=tx.id;pair.linkedAccount=tx.account;linked++;break;}
@@ -2545,7 +2545,7 @@ function filterTxns(){
       +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
       +'<td style="text-align:right;white-space:nowrap" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
-      +'<td style="white-space:nowrap;text-align:right">'+'<button onclick="openEditTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>'+'<button onclick="deleteTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Удалить" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:12px;padding:2px 5px;opacity:0.5">✕</button>'+'</td>'
+      +'<td style="white-space:nowrap;text-align:right">'+(isT&&!t.linkedTo?'<button onclick="showLinkCandidates(\''+t.id+'\',\''+currentPeriod+'\')" title="Найти пару" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;padding:2px 5px">⇄</button>':'')+'<button onclick="openEditTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>'+'<button onclick="deleteTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Удалить" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:12px;padding:2px 5px;opacity:0.5">✕</button>'+'</td>'
       +'</tr>';
   }).join('');
   const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
@@ -2567,6 +2567,44 @@ function markAsExpense(txId,period){
 }
 
 // ── Delete transaction ──
+
+function showLinkCandidates(txId, period){
+  const allTx=Object.values(DB.periods).flatMap(p=>p.transactions||[]);
+  const tx=allTx.find(t=>t.id===txId);
+  if(!tx)return;
+  const amt=Math.abs(tx.amtRub);
+  const txDate=new Date(tx.date);
+  // Find candidates: same amount ±50₽, within 7 days, different account
+  const candidates=allTx.filter(t=>
+    t.id!==txId&&t.type==='transfer'&&!t.linkedTo&&
+    Math.abs(Math.abs(t.amtRub)-amt)<50&&
+    Math.abs(new Date(t.date)-txDate)<=7*86400000&&
+    t.account!==tx.account
+  );
+  if(!candidates.length){toast('Парных переводов не найдено (±50₽, 7 дней)','info');return;}
+  // Show in alert for now
+  const msg='Найдено '+candidates.length+' кандидатов:\n'+
+    candidates.map((c,i)=>i+': '+c.dateDisplay+' '+c.desc?.slice(0,30)+' '+Math.abs(c.amtRub)+'₽ ('+c.account?.slice(-8)+')').join('\n')+
+    '\n\nВведите номер для связывания:';
+  const idx=prompt(msg);
+  if(idx===null||idx==='')return;
+  const pair=candidates[+idx];
+  if(!pair){toast('Неверный номер','err');return;}
+  // Link them
+  tx.linkedTo=pair.id;tx.linkedAccount=pair.account;
+  pair.linkedTo=tx.id;pair.linkedAccount=tx.account;
+  saveLocal();
+  // Save both periods
+  const p1=tx.month,p2=pair.month;
+  const{token}=ghCfg();
+  if(token){
+    ghPut('data/'+p1+'.json',JSON.stringify(DB.periods[p1],null,2),'Link transfer '+p1);
+    if(p2!==p1)ghPut('data/'+p2+'.json',JSON.stringify(DB.periods[p2],null,2),'Link transfer '+p2);
+  }
+  toast('Переводы связаны ✓','ok');
+  filterTxns();
+}
+
 function deleteTx(txId, period){
   if(!confirm('Удалить операцию?'))return;
   const p=period||currentPeriod;
