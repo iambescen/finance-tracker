@@ -2523,33 +2523,69 @@ function filterTxns(){
     return true;
   });
   const body=document.getElementById('txBody');if(!body)return;
+
+  // When no account filter — merge paired transfers into one row
+  const shownIds=new Set();
   let _lastDate='';
-  body.innerHTML=txns.map(t=>{
-    const _sep=t.dateDisplay!==_lastDate?'<tr class="date-sep"><td colspan="7" style="padding:4px 12px 2px;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg3);letter-spacing:0.3px;border-top:1px solid var(--border)">'+t.dateDisplay+'</td></tr>':'';
-    _lastDate=t.dateDisplay;
+  const rows=[];
+  for(const t of txns){
+    if(shownIds.has(t.id))continue;
     const isI=t.type==='income',isT=t.type==='transfer';
     const cls=isT?'amt-transfer':isI?'amt-income':'amt-expense';
     const sign=isI?'+':'';
     const manualIcon=t.manualCategory?'<span title="Изменено вручную" style="color:var(--accent);font-size:10px;margin-right:3px">●</span>':'';
-    const fromAcc=accLabel(t.account);
-    let accCell='<div style="font-size:12px;color:var(--muted2)">'+fromAcc+'</div>';
-    if(isT&&t.linkedAccount){
-      const toAcc=accLabel(t.linkedAccount);
-      const arrow=t.amtRub<0?' → ':' ← ';
-      accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+arrow+toAcc+'</div>';
-    }else if(isT&&t.counterpartyAcc){
-      accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
+
+    // Check if this transfer has a linked pair also in txns
+    const noAccFilter=!account;
+    const pair=isT&&t.linkedTo&&noAccFilter?txns.find(t2=>t2.id===t.linkedTo):null;
+
+    const _sep=t.dateDisplay!==_lastDate?'<tr class="date-sep"><td colspan="7" style="padding:4px 12px 2px;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg3);letter-spacing:0.3px;border-top:1px solid var(--border)">'+t.dateDisplay+'</td></tr>':'';
+    _lastDate=t.dateDisplay;
+
+    let accCell,amtDisplay,actBtns;
+    if(pair){
+      // Merged row: show FROM → TO
+      shownIds.add(t.id);shownIds.add(pair.id);
+      const fromTx=t.amtRub<0?t:pair;
+      const toTx=t.amtRub<0?pair:t;
+      const fromName=accLabel(fromTx.account)||'?';
+      const toName=accLabel(toTx.account)||accLabel(toTx.linkedAccount)||'?';
+      accCell='<div style="font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:4px">'
+        +'<span style="font-weight:500;color:var(--text)">'+fromName+'</span>'
+        +'<span style="color:var(--accent)">→</span>'
+        +'<span style="font-weight:500;color:var(--text)">'+toName+'</span>'
+        +'</div>';
+      amtDisplay='<span style="color:var(--muted2)">'+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span>';
+      actBtns='<button onclick="openEditTx(\''+t.id+'\',\''+t.month+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>';
+    } else {
+      shownIds.add(t.id);
+      const fromAcc=accLabel(t.account);
+      if(isT&&t.linkedAccount){
+        const toAcc=accLabel(t.linkedAccount);
+        const arrow=t.amtRub<0?' → ':' ← ';
+        accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+arrow+toAcc+'</div>';
+      }else if(isT&&t.counterpartyAcc){
+        accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
+      }else{
+        accCell='<div style="font-size:12px;color:var(--muted2)">'+fromAcc+'</div>';
+      }
+      amtDisplay='<span class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span>';
+      actBtns=(isT&&!t.linkedTo?'<button onclick="showLinkCandidates(\''+t.id+'\',\''+t.month+'\')" title="Найти пару" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;padding:2px 5px">⇄</button>':'')
+        +'<button onclick="openEditTx(\''+t.id+'\',\''+t.month+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>'
+        +'<button onclick="deleteTx(\''+t.id+'\',\''+t.month+'\')" title="Удалить" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:12px;padding:2px 5px;opacity:0.5">✕</button>';
     }
-    return _sep+'<tr>'
+
+    rows.push(_sep+'<tr>'
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
       +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+t.counterparty+'</div>':'')+'</td>'
       +'<td style="min-width:120px">'+accCell+'</td>'
-      +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
+      +'<td><span class="type-tag '+(pair?'transfer':t.type)+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
-      +'<td style="text-align:right;white-space:nowrap" class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</td>'
-      +'<td style="white-space:nowrap;text-align:right">'+(isT&&!t.linkedTo?'<button onclick="showLinkCandidates(\''+t.id+'\',\''+currentPeriod+'\')" title="Найти пару" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;padding:2px 5px">⇄</button>':'')+'<button onclick="openEditTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>'+'<button onclick="deleteTx(\''+t.id+'\',\''+currentPeriod+'\')" title="Удалить" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:12px;padding:2px 5px;opacity:0.5">✕</button>'+'</td>'
-      +'</tr>';
-  }).join('');
+      +'<td style="text-align:right;white-space:nowrap">'+amtDisplay+'</td>'
+      +'<td style="white-space:nowrap;text-align:right">'+actBtns+'</td>'
+      +'</tr>');
+  }
+  body.innerHTML=rows.join('');
   const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
 }
 
