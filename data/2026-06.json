@@ -547,12 +547,12 @@
       "counterparty": "Константинович. Перевод между своими счетами. Вывод",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод"
     },
     {
       "id": "9xags0xp",
