@@ -2579,10 +2579,9 @@ function showLinkCandidates(txId, period){
   const candidates=allTx.filter(t=>
     t.id!==txId&&t.type==='transfer'&&!t.linkedTo&&
     Math.abs(Math.abs(t.amtRub)-amt)<200&&
-    Math.abs(new Date(t.date)-txDate)<=7*86400000&&
-    t.account!==tx.account
+    Math.abs(new Date(t.date)-txDate)<=7*86400000
   );
-  if(!candidates.length){toast('Парных переводов не найдено (±50₽, 7 дней)','info');return;}
+  if(!candidates.length){toast('Парных переводов не найдено (±200₽, 7 дней)','info');return;}
   // Show in alert for now
   const msg='Найдено '+candidates.length+' кандидатов:\n'+
     candidates.map((c,i)=>i+': '+c.dateDisplay+' '+c.desc?.slice(0,30)+' '+Math.abs(c.amtRub)+'₽ ('+c.account?.slice(-8)+')').join('\n')+
@@ -3784,9 +3783,14 @@ function saveKeywordRule(){
   const changed=addRule({type:'keyword',value:word,group,sub,txType});
   saveLocal();
   const{token}=ghCfg();
-  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Add keyword rule');
+  if(token){
+    ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Add keyword rule')
+      .then(()=>toast('Правило создано ✓ · обновлено '+changed+' операций','ok'))
+      .catch(()=>toast('Правило создано (локально) · обновлено '+changed,'ok'));
+  } else {
+    toast('Правило создано · обновлено '+changed+' операций','ok');
+  }
   document.getElementById('keywordRuleModal').classList.remove('open');
-  toast('Правило создано · обновлено '+changed+' операций','ok');
   if(currentPage==='rules')renderPage();
 }
 
