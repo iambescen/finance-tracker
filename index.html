@@ -446,6 +446,7 @@ const BASE_RULES=[
   {m:['пополнение брокерского','пополнение брокерского счёта'], g:'Перевод', s:'Пополнение брокерского счёта', t:'transfer'},
   {m:['вывод с брокерского','вывод с брокерского счёта'], g:'Перевод', s:'Вывод с брокерского счёта', t:'transfer'},
   {m:['денежных средств с брокерского счета','перечисление с брокерского','поступление с брокерского'], g:'Перевод', s:'Вывод с брокерского счёта', t:'transfer'},
+  {m:['перевод между своими счетами','внутри втб','перевод между счетами'], g:'Перевод', s:'Внутренний перевод', t:'transfer'},
 ];
 const BANK_CAT={
   'супермаркеты':{g:'Питание',s:'Продукты/супермаркеты',t:'expense'},
@@ -2628,6 +2629,12 @@ function openEditTx(txId, period){
   document.getElementById('etDesc').value=tx.desc||'';
   document.getElementById('etAmt').value=Math.abs(tx.amtRub)||'';
   document.getElementById('etDate').value=tx.date||'';
+  // Populate type
+  document.getElementById('etType').value=tx.type||'expense';
+  // Populate linked account selector
+  const accSel=document.getElementById('etLinked');
+  accSel.innerHTML='<option value="">— не указан —</option>'+
+    Object.values(DB.accounts).map(a=>'<option value="'+a.number+'"'+(tx.linkedAccount===a.number?' selected':'')+'>'+a.name+'</option>').join('');
   document.getElementById('editTxModal').classList.add('open');
 }
 function saveEditTx(){
@@ -2640,7 +2647,11 @@ function saveEditTx(){
   const newDate=document.getElementById('etDate').value;
   if(newDesc)tx.desc=newDesc;
   if(newDate){tx.date=newDate;const parts=newDate.split('-');tx.dateDisplay=parts[2]+'.'+parts[1]+'.'+parts[0];}
-  tx.amtRub=tx.amtRub<0?-newAmt:newAmt;
+  const newType=document.getElementById('etType').value;
+  if(newType){tx.type=newType;if(newType!=='transfer'){tx.linkedTo=null;tx.linkedAccount=null;}}
+  const newLinked=document.getElementById('etLinked').value;
+  if(newLinked)tx.linkedAccount=newLinked;
+  tx.amtRub=tx.type==='expense'?-Math.abs(newAmt):(tx.type==='income'?Math.abs(newAmt):newAmt<0?-Math.abs(newAmt):Math.abs(newAmt));
   tx.amtOp=tx.amtRub;
   tx.manualCategory=true;
   saveLocal();
@@ -4155,6 +4166,14 @@ function updateBottomNav(page){
     <div class="field"><label>Дата</label><input type="date" id="etDate"></div>
     <div class="field"><label>Описание</label><input type="text" id="etDesc" placeholder="Описание операции"></div>
     <div class="field"><label>Сумма (₽, всегда положительная)</label><input type="number" id="etAmt" placeholder="0" min="0" step="0.01"></div>
+    <div class="field" id="etTypeRow"><label>Тип</label>
+      <select id="etType" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option>
+      </select></div>
+    <div class="field" id="etLinkedRow"><label>Связанный счёт (куда/откуда перевод)</label>
+      <select id="etLinked" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+        <option value="">— не указан —</option>
+      </select></div>
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('editTxModal').classList.remove('open')">Отмена</button>
       <button class="btn primary" onclick="saveEditTx()">Сохранить</button>
