@@ -445,6 +445,7 @@ const BASE_RULES=[
   {m:['купон/дивиденд','выплата доходов','купоны и дивиденды'], g:'Доход', s:'Дивиденды/купоны/курсовая разница', t:'income'},
   {m:['пополнение брокерского','пополнение брокерского счёта'], g:'Перевод', s:'Пополнение брокерского счёта', t:'transfer'},
   {m:['вывод с брокерского','вывод с брокерского счёта'], g:'Перевод', s:'Вывод с брокерского счёта', t:'transfer'},
+  {m:['денежных средств с брокерского счета','перечисление с брокерского','поступление с брокерского'], g:'Перевод', s:'Вывод с брокерского счёта', t:'transfer'},
 ];
 const BANK_CAT={
   'супермаркеты':{g:'Питание',s:'Продукты/супермаркеты',t:'expense'},
@@ -1430,7 +1431,7 @@ function linkTransferPairs(){
         if(linked>2000)break;
         const pair=getTxns(p2).find(t2=>
           t2.id!==tx.id&&t2.type==='transfer'&&!t2.linkedTo&&
-          Math.abs(Math.abs(t2.amtRub)-amt)<10&&
+          Math.abs(Math.abs(t2.amtRub)-amt)<100&&
           Math.abs(new Date(t2.date)-txDate)<=5*86400000&&
           ((tx.account&&t2.account&&tx.account!==t2.account)||(tx.counterpartyAcc&&t2.account&&tx.counterpartyAcc===t2.account))
         );
@@ -2577,7 +2578,7 @@ function showLinkCandidates(txId, period){
   // Find candidates: same amount ±50₽, within 7 days, different account
   const candidates=allTx.filter(t=>
     t.id!==txId&&t.type==='transfer'&&!t.linkedTo&&
-    Math.abs(Math.abs(t.amtRub)-amt)<50&&
+    Math.abs(Math.abs(t.amtRub)-amt)<200&&
     Math.abs(new Date(t.date)-txDate)<=7*86400000&&
     t.account!==tx.account
   );
