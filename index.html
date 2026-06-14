@@ -2521,7 +2521,7 @@ function filterTxns(){
     if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search))return false;
     if(group&&t.group!==group)return false;
     if(type&&t.type!==type)return false;
-    if(account&&t.account!==account)return false;
+    if(account&&t.account!==account&&t.linkedAccount!==account)return false;
     return true;
   });
   const body=document.getElementById('txBody');if(!body)return;
