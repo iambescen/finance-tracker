@@ -2,6 +2,13 @@
   "rules": [
     {
       "type": "keyword",
+      "value": "anthropic",
+      "group": "Сервисы/Связь",
+      "sub": "Подписки на сервисы",
+      "txType": "expense"
+    },
+    {
+      "type": "keyword",
       "value": "центр здоровья",
       "group": "Здоровье",
       "sub": "Визиты врача/платные услуги",
