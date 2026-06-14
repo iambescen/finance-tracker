@@ -2490,7 +2490,7 @@ function pageTxns(){
     +'<select id="txType" onchange="filterTxns()"><option value="">Все типы</option><option value="income">Доходы</option><option value="expense">Расходы</option><option value="transfer">Переводы</option></select>'
     +'<select id="txAccount" onchange="filterTxns()"><option value="">Все счета</option>'+accOpts+'</select>'
     +'<span class="tbl-count" id="txCount"></span></div>'
-    +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th style="text-align:right">Сумма</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>';
+    +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th>Подкатегория</th><th style="text-align:right">Сумма</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>';
 }
 
 function bindTxnEvents(){
@@ -2539,7 +2539,7 @@ function filterTxns(){
     const noAccFilter=!account;
     const pair=isT&&t.linkedTo&&noAccFilter?txns.find(t2=>t2.id===t.linkedTo):null;
 
-    const _sep=t.dateDisplay!==_lastDate?'<tr class="date-sep"><td colspan="7" style="padding:4px 12px 2px;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg3);letter-spacing:0.3px;border-top:1px solid var(--border)">'+t.dateDisplay+'</td></tr>':'';
+    const _sep=t.dateDisplay!==_lastDate?'<tr class="date-sep"><td colspan="8" style="padding:4px 12px 2px;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg3);letter-spacing:0.3px;border-top:1px solid var(--border)">'+t.dateDisplay+'</td></tr>':'';
     _lastDate=t.dateDisplay;
 
     let accCell,amtDisplay,actBtns;
@@ -2581,6 +2581,7 @@ function filterTxns(){
       +'<td style="min-width:120px">'+accCell+'</td>'
       +'<td><span class="type-tag '+(pair?'transfer':t.type)+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
+      +'<td style="font-size:12px;color:var(--muted)">'+t.sub+'</td>'
       +'<td style="text-align:right;white-space:nowrap">'+amtDisplay+'</td>'
       +'<td style="white-space:nowrap;text-align:right">'+actBtns+'</td>'
       +'</tr>');
