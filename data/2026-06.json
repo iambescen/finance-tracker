@@ -430,8 +430,8 @@
       "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Перевод",
-      "sub": "Внутренний перевод",
+      "group": "Доход",
+      "sub": "Возвраты",
       "type": "income"
     },
     {
