@@ -1,4 +1,16 @@
 {
+  "1": {
+    "number": "1",
+    "display": "***1",
+    "bank": "Кас",
+    "name": "Кас",
+    "owner": "me",
+    "source": "manual",
+    "currentBalance": null,
+    "currency": "RUB",
+    "virtual": false,
+    "manual": true
+  },
   "4029": {
     "number": "4029",
     "display": "***4029",
