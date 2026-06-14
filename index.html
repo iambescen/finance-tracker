@@ -2565,11 +2565,11 @@ function filterTxns(){
       if(isT&&t.linkedAccount){
         const toAcc=accLabel(t.linkedAccount);
         const arrow=t.amtRub<0?' → ':' ← ';
-        accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+arrow+toAcc+'</div>';
+        accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+arrow+toAcc+'</div>'+(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
       }else if(isT&&t.counterpartyAcc){
         accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
       }else{
-        accCell='<div style="font-size:12px;color:var(--muted2)">'+fromAcc+'</div>';
+        accCell='<div style="font-size:12px;color:var(--muted2)">'+fromAcc+'</div>'+(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
       }
       amtDisplay='<span class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span>';
       actBtns=(isT&&!t.linkedTo?'<button onclick="showLinkCandidates(\''+t.id+'\',\''+t.month+'\')" title="Найти пару" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;padding:2px 5px">⇄</button>':'')
