@@ -527,8 +527,8 @@
       "linkedTo": "82jmtgm2",
       "linkedAccount": "40817810690179282810",
       "type": "transfer",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Перевод",
+      "sub": "Внутренний перевод"
     },
     {
       "id": "82jmtgm2",
