@@ -524,8 +524,8 @@
       "counterpartyINN": "",
       "counterpartyAcc": "",
       "manualCategory": true,
-      "linkedTo": null,
-      "linkedAccount": null,
+      "linkedTo": "82jmtgm2",
+      "linkedAccount": "40817810690179282810",
       "type": "transfer",
       "group": "Прочее",
       "sub": "Прочие расходы"
@@ -548,8 +548,8 @@
       "counterpartyINN": "",
       "counterpartyAcc": "",
       "manualCategory": true,
-      "linkedTo": null,
-      "linkedAccount": null,
+      "linkedTo": "tekrrn45",
+      "linkedAccount": "40817810720414002560",
       "type": "transfer",
       "group": "Перевод",
       "sub": "Внутренний перевод"
