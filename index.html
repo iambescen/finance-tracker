@@ -417,6 +417,7 @@ const CAT_TREE={
 function getExpenseGroups(){return Object.assign({},CAT_TREE.expense.groups,DB.customGroups||{});}
 function getAllGroups(){return['Доход',...Object.keys(getExpenseGroups()),'Перевод'];}
 const ALL_GROUPS=['Доход',...Object.keys(CAT_TREE.expense.groups),'Перевод'];
+function getAllGroups(){return['Доход',...Object.keys(getExpenseGroups()),'Перевод'];}
 
 const BASE_RULES=[
   {m:['зачисление кэшбэка','кэшбэк'], g:'Доход', s:'Кэшбэк/проценты на остаток', t:'income'},
@@ -3332,7 +3333,7 @@ function openCatModal(txId){
   editTxId=txId;
   const tx=getTxns(currentPeriod).find(t=>t.id===txId);if(!tx)return;
   const gs=document.getElementById('catGroup');
-  gs.innerHTML=ALL_GROUPS.map(g=>'<option value="'+g+'">'+g+'</option>').join('');
+  gs.innerHTML=getAllGroups().map(g=>'<option value="'+g+'">'+g+'</option>').join('');
   gs.value=tx.group;onCatGroupChange();
   document.getElementById('catSub').value=tx.sub;
   document.getElementById('catType').value=tx.type;
@@ -3349,7 +3350,8 @@ function openCatModal(txId){
 }
 function onCatGroupChange(){
   const g=document.getElementById('catGroup').value;
-  const subs=g==='Доход'?CAT_TREE.income.subs:g==='Перевод'?['Внутренний перевод']:CAT_TREE.expense.groups[g]||['Прочее'];
+  const _incomeSubs=(DB.customGroups||{})['__income__']||(CAT_TREE.income.subs||[]);
+  const subs=g==='Доход'?_incomeSubs:g==='Перевод'?['Внутренний перевод','Снятие наличных','Пополнение брокерского счёта','Вывод с брокерского счёта','Переводы физлицам']:getExpenseGroups()[g]||['Прочее'];
   document.getElementById('catSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
 }
 function saveCatModal(applyToAll){
@@ -3703,14 +3705,15 @@ function openManualTx(){
 }
 function updateMtGroups(){
   const type=document.getElementById('mtType').value;
-  const groups=type==='income'?['Зарплата','Фриланс','Инвестиции','Прочие доходы']:Object.keys(CAT_TREE.expense.groups||{'Прочее':[]});
+  const groups=type==='income'?((DB.customGroups||{})['__income__']||CAT_TREE.income.subs||['Прочие доходы']):Object.keys(getExpenseGroups());
   document.getElementById('mtGroup').innerHTML=groups.map(g=>'<option>'+g+'</option>').join('');
   updateMtSubs();
 }
 function updateMtSubs(){
   const type=document.getElementById('mtType').value;
   const group=document.getElementById('mtGroup').value;
-  const subs=type==='income'?['Прочие доходы']:(CAT_TREE.expense.groups?.[group]||['Прочие расходы']);
+  const _iSubs2=(DB.customGroups||{})['__income__']||CAT_TREE.income.subs||['Прочие доходы'];
+  const subs=type==='income'?_iSubs2:(getExpenseGroups()[group]||['Прочие расходы']);
   document.getElementById('mtSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
 }
 function saveManualTx(){
