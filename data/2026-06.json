@@ -887,12 +887,12 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Перевод",
-      "sub": "Внутренний перевод",
-      "type": "transfer"
+      "group": "Покупки",
+      "sub": "Прочее",
+      "type": "expense"
     },
     {
       "id": "fi981iqy",
