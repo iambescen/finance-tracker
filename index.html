@@ -514,7 +514,8 @@ let DB={
     vehicles:[{name:'Hyundai Palisade',balanceCost:4044000,marketCost:4823185}],
     broker:0,trading:0,cash:0,eduLoan:0,updatedAt:null},
   accounts:{},
-  rules:[]
+  rules:[],
+  customGroups:{}
 };
 let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=false,investFilter='all';
 
@@ -2339,8 +2340,9 @@ function pageDash(){
     +'<div>Загрузка данных...</div></div>';
   // Get available years from periods
   const availYears=[...new Set(allP.map(p=>+p.split('-')[0]))].sort().reverse();
-  const curY=dashYear||+currentPeriod.split('-')[0];
-  const curQ=dashQuarter||Math.ceil(+currentPeriod.split('-')[1]/3);
+  const _cp=currentPeriod||allP[0]||'2026-01';
+  const curY=dashYear||+_cp.split('-')[0];
+  const curQ=dashQuarter||Math.ceil(+_cp.split('-')[1]/3);
   let selP=[currentPeriod];
   if(range==='quarter'){
     const qStart=(curQ-1)*3+1;
@@ -2576,8 +2578,10 @@ function pageTxns(){
 }
 
 function bindTxnEvents(){
+  const body=document.getElementById('txBody');
+  if(!body)return; // empty state — no table rendered
   filterTxns();
-  document.getElementById('txBody').addEventListener('click',e=>{const btn=e.target.closest('[data-id]');if(btn)openCatModal(btn.dataset.id);});
+  body.addEventListener('click',e=>{const btn=e.target.closest('[data-id]');if(btn)openCatModal(btn.dataset.id);});
 }
 
 function setTxPeriod(v){
@@ -2681,11 +2685,7 @@ function markAsExpense(txId,period){
   if(!tx)return;
   tx.type='expense';tx.group='Прочее';tx.sub='Переводы физлицам';tx.manualCategory=true;
   DB.periods[p].transactions=txns;
-  saveLocal();
-  const{token}=ghCfg();
-  if(token){ghPut('data/'+p+'.json',JSON.stringify(DB.periods[p],null,2),'Mark expense '+p)
-    .then(()=>toast('Помечено как расход ✓','ok')).catch(()=>toast('Сохранено локально','ok'));}
-  else toast('Помечено как расход','ok');
+  savePeriod(p,'Mark as expense').then(ok=>toast(ok?'Помечено как расход ✓':'Помечено локально','ok'));
   filterTxns();
 }
 
@@ -2715,14 +2715,8 @@ function showLinkCandidates(txId, period){
   // Link them (mark as manual so reapply won't break it)
   tx.linkedTo=pair.id;tx.linkedAccount=pair.account;tx.manualLink=true;tx.type='transfer';
   pair.linkedTo=tx.id;pair.linkedAccount=tx.account;pair.manualLink=true;pair.type='transfer';
-  saveLocal();
-  // Save both periods
   const p1=tx.month,p2=pair.month;
-  const{token}=ghCfg();
-  if(token){
-    ghPut('data/'+p1+'.json',JSON.stringify(DB.periods[p1],null,2),'Link transfer '+p1);
-    if(p2!==p1)ghPut('data/'+p2+'.json',JSON.stringify(DB.periods[p2],null,2),'Link transfer '+p2);
-  }
+  savePeriod(p1,'Link transfer').then(()=>{if(p2!==p1)savePeriod(p2,'Link transfer');});
   toast('Переводы связаны ✓','ok');
   filterTxns();
 }
@@ -2732,11 +2726,7 @@ function deleteTx(txId, period){
   const p=period||currentPeriod;
   if(!DB.periods[p])return;
   DB.periods[p].transactions=(DB.periods[p].transactions||[]).filter(t=>t.id!==txId);
-  saveLocal();
-  const{token}=ghCfg();
-  if(token){ghPut('data/'+p+'.json',JSON.stringify(DB.periods[p],null,2),'Delete tx '+p)
-    .then(()=>toast('Операция удалена ✓','ok')).catch(()=>toast('Удалено локально','ok'));}
-  else toast('Операция удалена','ok');
+  savePeriod(p,'Delete tx').then(ok=>toast(ok?'Операция удалена ✓':'Удалено локально','ok'));
   filterTxns();refreshUI();
 }
 
@@ -2775,11 +2765,7 @@ function saveEditTx(){
   tx.amtRub=tx.type==='expense'?-Math.abs(newAmt):(tx.type==='income'?Math.abs(newAmt):newAmt<0?-Math.abs(newAmt):Math.abs(newAmt));
   tx.amtOp=tx.amtRub;
   tx.manualCategory=true;
-  saveLocal();
-  const{token}=ghCfg();
-  if(token){ghPut('data/'+p+'.json',JSON.stringify(DB.periods[p],null,2),'Edit tx '+p)
-    .then(()=>toast('Сохранено ✓','ok')).catch(()=>toast('Сохранено локально','ok'));}
-  else toast('Сохранено','ok');
+  savePeriod(p,'Edit tx').then(ok=>toast(ok?'Сохранено ✓':'Сохранено локально','ok'));
   document.getElementById('editTxModal').classList.remove('open');
   filterTxns();
 }
@@ -2912,25 +2898,13 @@ function pageAccounts(){
       :'<div style="color:var(--muted);padding:20px 0;text-align:center">Счета появятся после загрузки выписок</div>')
     +'</div>';
 }
-let _accSaveTimer=null;
-function saveAccountsToGithub(){
-  clearTimeout(_accSaveTimer);
-  _accSaveTimer=setTimeout(async()=>{
-    const{token}=ghCfg();
-    if(!token)return;
-    try{
-      const date=new Date().toLocaleDateString('ru-RU');
-      await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Update accounts — '+date);
-      toast('Сохранено ✓','ok');
-    }catch(e){toast('Сохранено локально','ok');}
-  },800);
-}
+
 function updateAcc(el){
   const acc=el.dataset.acc,field=el.dataset.field;
   if(DB.accounts[acc]){
     DB.accounts[acc][field]=field==='currentBalance'?(el.value!==''?parseFloat(el.value):null):el.value;
     saveLocal();
-    saveAccountsToGithub();
+    saveAccounts();
     if(currentPage==='balance')renderPage();
   }
 }
@@ -2942,7 +2916,7 @@ function updateAccCheck(el){
       DB.accounts[acc].bank=DB.accounts[acc].bank+' Кредитная';
     }
     saveLocal();
-    saveAccountsToGithub();
+    saveAccounts();
     if(currentPage==='balance')renderPage();
   }
 }
@@ -3138,10 +3112,7 @@ function setInvestPrice(key,val){
   DB.investPrices[key]=parseFloat(val)||0;
   saveLocal();
   clearTimeout(window._ipt);
-  window._ipt=setTimeout(()=>{
-    const{token}=ghCfg();
-    if(token)ghPut('data/investments.json',JSON.stringify({prices:DB.investPrices,holdings:DB.investments},null,2),'Update prices');
-  },1500);
+  window._ipt=setTimeout(()=>saveInvestments('Update prices'),1500);
 }
 async function fetchMOEXPrices(){
   toast('Загружаем котировки MOEX...','info');
@@ -3170,7 +3141,7 @@ async function fetchMOEXPrices(){
         if(secid&&pct){DB.investPrices[secid]=Math.round(pct*10);updated++;}
       }
     }
-    saveLocal();
+    saveInvestments('MOEX prices');
     toast('Обновлено '+updated+' котировок','ok');
     renderPage();
   }catch(e){toast('Ошибка MOEX: '+e.message,'err');}
@@ -3270,8 +3241,7 @@ function renameIncomeSub(sub){
     for(const t of getTxns(p))
       if(t.type==='income'&&t.sub===sub&&!t.manualCategory){t.sub=newName;changed++;}
   saveLocal();
-  const{token}=ghCfg();
-  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Rename income sub');
+  saveRules('Rename income sub');
   toast('Переименовано, обновлено '+changed+' операций','ok');renderPage();
 }
 function deleteIncomeSub(sub){
@@ -3280,8 +3250,7 @@ function deleteIncomeSub(sub){
   if(!DB.customGroups['__income__'])DB.customGroups['__income__']=[...CAT_TREE.income.subs];
   DB.customGroups['__income__']=DB.customGroups['__income__'].filter(s=>s!==sub);
   saveLocal();
-  const{token}=ghCfg();
-  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Delete income sub');
+  saveRules('Delete income sub');
   toast('Удалено','ok');renderPage();
 }
 function addIncomeSubCat(){
@@ -3292,8 +3261,7 @@ function addIncomeSubCat(){
   if(!DB.customGroups['__income__'].includes(sub)){
     DB.customGroups['__income__'].push(sub);
     saveLocal();
-    const{token}=ghCfg();
-    if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Add income sub');
+    saveRules('Add income sub');
     toast('Добавлено: '+sub,'ok');renderPage();
   }
 }
@@ -3340,8 +3308,7 @@ function renameCat(group, sub){
     toast('Группа переименована, обновлено '+changed+' операций','ok');
   }
   saveLocal();
-  const{token}=ghCfg();
-  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Rename category');
+  saveRules('Rename category');
   renderPage();
 }
 
@@ -3349,8 +3316,7 @@ function deleteCatGroup(group){
   if(!confirm('Удалить группу "'+group+'" и все её подкатегории?'))return;
   if(DB.customGroups)delete DB.customGroups[group];
   saveLocal();
-  const{token}=ghCfg();
-  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Delete cat group');
+  saveRules('Delete cat group');
   toast('Группа удалена','ok');renderPage();
 }
 
@@ -3360,8 +3326,7 @@ function deleteCatSub(group, sub){
   if(!DB.customGroups[group])DB.customGroups[group]=[...(CAT_TREE.expense.groups[group]||[])];
   DB.customGroups[group]=DB.customGroups[group].filter(s=>s!==sub);
   saveLocal();
-  const{token}=ghCfg();
-  if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Delete cat sub');
+  saveRules('Delete cat sub');
   toast('Подкатегория удалена','ok');renderPage();
 }
 
@@ -3373,8 +3338,7 @@ function addSubToCat(group){
   if(!DB.customGroups[group].includes(sub)){
     DB.customGroups[group].push(sub);
     saveLocal();
-    const{token}=ghCfg();
-    if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Add cat sub');
+    saveRules('Add cat sub');
     toast('Добавлено: '+sub,'ok');renderPage();
   }
 }
@@ -3407,7 +3371,7 @@ function deleteRule(i){
   DB.rules.splice(i,1);
   const changed=reapplyAllRules();
   saveLocal();
-  const{token:_dt}=ghCfg();if(_dt)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Delete rule');
+  saveRules('Delete rule');
   renderPage();
   toast('Правило удалено, пересчитано '+changed+' операций','info');
 }
@@ -3454,17 +3418,7 @@ function saveCatModal(applyToAll){
     const changed=addRule({type:'inn',value:tx.counterpartyINN,group:newGroup,sub:newSub,txType:newType});
     toast('Правило по ИНН создано · обновлено '+changed+' операций во всех месяцах','ok');
   }else{
-    saveLocal();
-    // Save to GitHub immediately
-    const{token}=ghCfg();
-    if(token){
-      const date=new Date().toLocaleDateString('ru-RU');
-      ghPut('data/'+currentPeriod+'.json',JSON.stringify(DB.periods[currentPeriod],null,2),'Edit category '+currentPeriod+' — '+date)
-        .then(()=>toast('Категория сохранена ✓','ok'))
-        .catch(()=>toast('Категория сохранена локально','ok'));
-    } else {
-      toast('Категория сохранена','ok');
-    }
+    savePeriod(currentPeriod,'Edit category').then(ok=>toast(ok?'Категория сохранена ✓':'Категория сохранена локально','ok'));
   }
   closeCatModal();filterTxns();
 }
@@ -3563,6 +3517,54 @@ async function ghPut(path,content,msg){
   return fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
 }
 
+// ════════════════════════════════════════════════
+// UNIFIED SAVE HELPERS — single source of truth
+// All data mutations route through these to prevent
+// inconsistent formats and lost data.
+// ════════════════════════════════════════════════
+function _ghDate(){return new Date().toLocaleDateString('ru-RU');}
+
+// Save one period's transactions to GitHub
+function savePeriod(period, msg){
+  saveLocal();
+  const{token}=ghCfg();
+  if(!token||!DB.periods[period])return Promise.resolve();
+  return ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),(msg||'Update '+period)+' — '+_ghDate())
+    .then(()=>true).catch(()=>false);
+}
+
+// Save rules + customGroups (ALWAYS together, single format)
+function saveRules(msg){
+  saveLocal();
+  const{token}=ghCfg();
+  if(!token)return Promise.resolve();
+  return ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),(msg||'Update rules')+' — '+_ghDate())
+    .then(()=>true).catch(()=>false);
+}
+
+// Save accounts (debounced)
+let _accSaveTimer=null;
+function saveAccounts(msg){
+  saveLocal();
+  const{token}=ghCfg();
+  if(!token)return;
+  clearTimeout(_accSaveTimer);
+  _accSaveTimer=setTimeout(()=>{
+    ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),(msg||'Update accounts')+' — '+_ghDate()).catch(()=>{});
+  },600);
+}
+
+// (saveAssets handled by the form-aware function below)
+
+// Save investments (prices + holdings)
+function saveInvestments(msg){
+  saveLocal();
+  const{token}=ghCfg();
+  if(!token)return;
+  ghPut('data/investments.json',JSON.stringify({prices:DB.investPrices||{},holdings:DB.investments||{}},null,2),(msg||'Update investments')+' — '+_ghDate()).catch(()=>{});
+}
+
+
 async function saveToGithub(){
   const{token}=ghCfg();if(!token){toast('Введите токен GitHub (кнопка ⚙)','err');openGhModal();return;}
   try{
@@ -3573,7 +3575,7 @@ async function saveToGithub(){
     }
     await ghPut('data/assets.json',JSON.stringify(DB.assets,null,2),'Update assets — '+date);
     await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Update accounts — '+date);
-    await ghPut('data/rules.json',JSON.stringify(DB.rules,null,2),'Update rules — '+date);
+    saveRules('Update rules');
     toast('Сохранено в GitHub ✓','ok');
   }catch(e){toast('Ошибка: '+e.message,'err');}
   if(btnEl){btnEl.textContent='↑ GitHub';btnEl.disabled=false;}
@@ -3744,7 +3746,7 @@ function saveEditAccount(){
   acc.currentBalance=bal!==''?parseFloat(bal):null;
   acc.isCredit=document.getElementById('eaIsCredit').checked;
   saveLocal();
-  saveAccountsToGithub();
+  saveAccounts();
   document.getElementById('editAccountModal').classList.remove('open');
   toast('Счёт сохранён ✓','ok');
   renderPage();
@@ -3755,7 +3757,7 @@ function deleteAccount(accNum){
   if(!confirm('Удалить счёт "'+acc.name+'"? Операции по нему останутся.'))return;
   delete DB.accounts[accNum];
   saveLocal();
-  saveAccountsToGithub();
+  saveAccounts();
   toast('Счёт удалён','ok');
   renderPage();
 }
@@ -3777,7 +3779,7 @@ function saveAddAccount(){
   const currency=document.getElementById('aaCurrency').value;
   const balance=document.getElementById('aaBalance').value!==''?parseFloat(document.getElementById('aaBalance').value):null;
   DB.accounts[number]={number,display:'***'+number.slice(-4),bank,name,owner,source:'manual',currentBalance:balance,currency,virtual:false,manual:true};
-  saveLocal();saveAccountsToGithub();
+  saveLocal();saveAccounts();
   document.getElementById('addAccountModal').classList.remove('open');
   toast('Счёт добавлен ✓','ok');renderPage();
 }
@@ -3826,10 +3828,7 @@ function saveManualTx(){
   if(!DB.periods[month])DB.periods[month]={transactions:[]};
   DB.periods[month].transactions.push(tx);
   saveLocal();
-  const{token}=ghCfg();
-  if(token){ghPut('data/'+month+'.json',JSON.stringify(DB.periods[month],null,2),'Manual tx '+month)
-    .then(()=>toast('Операция добавлена ✓','ok')).catch(()=>toast('Добавлено локально','ok'));}
-  else toast('Операция добавлена','ok');
+  savePeriod(month,'Manual tx').then(ok=>toast(ok?'Операция добавлена ✓':'Добавлено локально','ok'));
   document.getElementById('manualTxModal').classList.remove('open');
   currentPeriod=month;refreshUI();
 }
@@ -3845,10 +3844,6 @@ function openAddCatModal(){
 function updateAcSubs(){
   // just for info - could show existing subs
 }
-function getExpenseGroups(){
-  const custom=DB.customGroups||{};
-  return Object.assign({},CAT_TREE.expense.groups,custom);
-}
 function saveCustomCat(){
   const newGroupInput=document.getElementById('acNewGroup').value.trim();
   const selGroup=document.getElementById('acGroup').value;
@@ -3861,8 +3856,7 @@ function saveCustomCat(){
   if(!DB.customGroups[group].includes(sub)){
     DB.customGroups[group].push(sub);
     saveLocal();
-    const{token}=ghCfg();
-    if(token)ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups},null,2),'Add custom category');
+    saveRules('Add custom category');
     toast('Категория добавлена: '+group+' / '+sub,'ok');
   } else {
     toast('Такая подкатегория уже есть','info');
@@ -3923,13 +3917,7 @@ function saveKeywordRule(){
   const changed=addRule({type:'keyword',value:word,group,sub,txType});
   saveLocal();
   const{token}=ghCfg();
-  if(token){
-    ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Add keyword rule')
-      .then(()=>toast('Правило создано ✓ · обновлено '+changed+' операций','ok'))
-      .catch(()=>toast('Правило создано (локально) · обновлено '+changed,'ok'));
-  } else {
-    toast('Правило создано · обновлено '+changed+' операций','ok');
-  }
+  saveRules('Add keyword rule').then(ok=>toast((ok?'Правило создано ✓':'Правило создано локально')+' · обновлено '+changed+' операций','ok'));
   document.getElementById('keywordRuleModal').classList.remove('open');
   if(currentPage==='rules')renderPage();
 }
