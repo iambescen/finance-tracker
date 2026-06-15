@@ -533,7 +533,7 @@ let DB={
   rules:[],
   customGroups:{}
 };
-let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set();
+let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,reportRange='month',reportYear=null,reportQuarter=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set();
 
 function uid(){return Math.random().toString(36).slice(2,10);}
 function parseAmt(s){if(!s) return 0;return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
@@ -2612,13 +2612,25 @@ function renderDashCharts(){
 
 // ── P&L ──
 function pagePL(){
-  const txns=getTxns(currentPeriod).filter(t=>t.type!=='transfer');if(!txns.length)return pageEmpty();
+  const allP=Object.keys(DB.periods).sort().reverse();
+  if(!allP.length)return pageEmpty();
+  const range=reportRange,curY=reportYear||+(currentPeriod||allP[0]||'2026-01').split('-')[0];
+  const curQ=reportQuarter||Math.ceil(+((currentPeriod||allP[0]||'2026-01').split('-')[1])/3);
+  let selP;
+  if(range==='quarter'){const qS=(curQ-1)*3+1;selP=allP.filter(p=>{const[py,pm]=p.split('-').map(Number);return py===curY&&pm>=qS&&pm<qS+3;});}
+  else if(range==='year')selP=allP.filter(p=>p.startsWith(String(curY)));
+  else if(range==='all')selP=[...allP];
+  else selP=[currentPeriod||allP[0]];
+  if(!selP.length)return pageEmpty();
+  const label=range==='month'?fmtMonth(selP[0]):range==='quarter'?'Q'+curQ+' '+curY:range==='year'?String(curY):'Всё время';
+  const txns=selP.flatMap(p=>getTxns(p)).filter(t=>t.type!=='transfer');
+  if(!txns.length)return pageEmpty();
   const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
   const expense=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
   const profit=income-expense;
   const savingsRate=income>0?Math.round(profit/income*100):0;
-  const allP=Object.keys(DB.periods).sort().reverse();
-  const prevP=allP[allP.indexOf(currentPeriod)+1];
+  // Previous period for comparison (month only)
+  const prevP=range==='month'?allP[allP.indexOf(selP[0])+1]:null;
   const prevTxns=prevP?getTxns(prevP).filter(t=>t.type!=='transfer'):[];
   const pI=prevTxns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
   const pE=Math.abs(prevTxns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
@@ -2633,10 +2645,14 @@ function pagePL(){
     expRows+='<div class="pl-row group"><div>'+group+'</div><div class="pl-val expense">'+fmtMoney(gt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pg?fmtMoney(pg):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(delta!==null?(+delta>0?'+':'')+delta+'%':'—')+'</div></div>';
     for(const[sub,amt]of Object.entries(subs).sort((a,b)=>b[1]-a[1]))expRows+='<div class="pl-row sub"><div>'+sub+'</div><div class="pl-val expense">'+fmtMoney(amt)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">—</div><div></div></div>';
   }
-  const allPeriodsPL=Object.keys(DB.periods).sort().reverse();
-  const selStylePL='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  const periodOptsPL=allPeriodsPL.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">P&amp;L</div><div class="page-actions"><button class="btn sm" onclick="openYearPL()">Итог года</button><select onchange="selectPeriod(this.value)" style="'+selStylePL+'">'+periodOptsPL+'</select></div></div>'
+  const ss='padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--font)';
+  const availY=[...new Set(allP.map(p=>+p.split('-')[0]))].sort().reverse();
+  const rangeBar='<select onchange="setReportRange(this.value)" style="'+ss+'">'
+    +['month','quarter','year','all'].map(v=>'<option value="'+v+'"'+(v===range?' selected':'')+'>'+{month:'Месяц',quarter:'Квартал',year:'Год',all:'Всё время'}[v]+'</option>').join('')+'</select>'
+    +(range==='month'?'<select onchange="selectPeriod(this.value)" style="'+ss+'">'+allP.map(p=>'<option value="'+p+'"'+(p===selP[0]?' selected':'')+'>'+fmtMonth(p)+'</option>').join('')+'</select>':'')
+    +(range==='quarter'||range==='year'?'<select onchange="setReportYear(this.value)" style="'+ss+'">'+availY.map(y=>'<option value="'+y+'"'+(y===curY?' selected':'')+'>'+y+'</option>').join('')+'</select>':'')
+    +(range==='quarter'?'<select onchange="setReportQuarter(this.value)" style="'+ss+'">'+[1,2,3,4].map(q=>'<option value="'+q+'"'+(q===curQ?' selected':'')+'>Q'+q+'</option>').join('')+'</select>':'');
+  return '<div class="page-header"><div class="page-title">P&amp;L <span style="font-weight:400;color:var(--muted);font-size:15px">'+label+'</span></div><div class="page-actions">'+rangeBar+'</div></div>'
     +'<div class="card"><div class="pl-header"><div>Статья</div><div style="text-align:right">'+fmtMonth(currentPeriod)+'</div><div style="text-align:right">'+(prevP?fmtMonth(prevP):'Пред. период')+'</div><div style="text-align:right">Δ%</div></div>'
     +'<div class="pl-row group" style="color:var(--income)"><div>Доходы</div><div class="pl-val income">+'+income.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?fmtMoney(pI):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI?(((income-pI)/pI*100)>0?'+':'')+(((income-pI)/pI*100)).toFixed(0)+'%':'—')+'</div></div>'
     +incRows+'<div style="height:10px"></div>'
@@ -2648,8 +2664,18 @@ function pagePL(){
 // ── Cash Flow ──
 function pageCF(){
   const allP=Object.keys(DB.periods).sort().reverse();
-  if(!allP.length)return '<div style="text-align:center;padding:60px 20px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">⏳</div><div>Загрузка данных...</div></div>';
-  const txns=getTxns(currentPeriod);if(!txns.length)return pageEmpty();
+  if(!allP.length)return pageEmpty();
+  const range=reportRange,curY=reportYear||+(currentPeriod||allP[0]||'2026-01').split('-')[0];
+  const curQ=reportQuarter||Math.ceil(+((currentPeriod||allP[0]||'2026-01').split('-')[1])/3);
+  let selP;
+  if(range==='quarter'){const qS=(curQ-1)*3+1;selP=allP.filter(p=>{const[py,pm]=p.split('-').map(Number);return py===curY&&pm>=qS&&pm<qS+3;});}
+  else if(range==='year')selP=allP.filter(p=>p.startsWith(String(curY)));
+  else if(range==='all')selP=[...allP];
+  else selP=[currentPeriod||allP[0]];
+  if(!selP.length)return pageEmpty();
+  const label=range==='month'?fmtMonth(selP[0]):range==='quarter'?'Q'+curQ+' '+curY:range==='year'?String(curY):'Всё время';
+  const txns=selP.flatMap(p=>getTxns(p));
+  if(!txns.length)return pageEmpty();
   const opExpGroups=['Питание','Дети','Жильё','Здоровье','Покупки','Развлечения/Отдых','Сервисы/Связь','Прочее','Образование'];
   const finGroups=['Предпринимательство'];
   const opIncome=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
@@ -2658,10 +2684,14 @@ function pageCF(){
   const transfers=txns.filter(t=>t.type==='transfer');
   const opFlow=opIncome-opExpense,finFlow=-finExpense,total=opFlow+finFlow;
   function row(label,amt,sub){return '<div class="pl-row '+(sub?'sub':'group')+'"><div>'+label+'</div><div class="pl-val '+(amt>=0?'pos':'neg')+'">'+fmtMoney(amt,true)+'</div><div></div><div></div></div>';}
-  const cfPeriods=Object.keys(DB.periods).sort().reverse();
-  const cfSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  const cfPeriodOpts=cfPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Cash Flow</div><div class="page-actions"><select onchange="selectPeriod(this.value)" style="'+cfSelStyle+'">'+cfPeriodOpts+'</select></div></div>'
+  const ss='padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--font)';
+  const availY=[...new Set(allP.map(p=>+p.split('-')[0]))].sort().reverse();
+  const rangeBar='<select onchange="setReportRange(this.value)" style="'+ss+'">'
+    +['month','quarter','year','all'].map(v=>'<option value="'+v+'"'+(v===range?' selected':'')+'>'+{month:'Месяц',quarter:'Квартал',year:'Год',all:'Всё время'}[v]+'</option>').join('')+'</select>'
+    +(range==='month'?'<select onchange="selectPeriod(this.value)" style="'+ss+'">'+allP.map(p=>'<option value="'+p+'"'+(p===selP[0]?' selected':'')+'>'+fmtMonth(p)+'</option>').join('')+'</select>':'')
+    +(range==='quarter'||range==='year'?'<select onchange="setReportYear(this.value)" style="'+ss+'">'+availY.map(y=>'<option value="'+y+'"'+(y===curY?' selected':'')+'>'+y+'</option>').join('')+'</select>':'')
+    +(range==='quarter'?'<select onchange="setReportQuarter(this.value)" style="'+ss+'">'+[1,2,3,4].map(q=>'<option value="'+q+'"'+(q===curQ?' selected':'')+'>Q'+q+'</option>').join('')+'</select>':'');
+  return '<div class="page-header"><div class="page-title">Cash Flow <span style="font-weight:400;color:var(--muted);font-size:15px">'+label+'</span></div><div class="page-actions">'+rangeBar+'</div></div>'
     +'<div class="card"><div class="pl-header"><div>Поток</div><div style="text-align:right">Сумма</div><div></div><div></div></div>'
     +'<div class="pl-row group" style="color:var(--muted2);font-size:12px"><div>Операционная деятельность</div><div></div><div></div><div></div></div>'
     +row('Доходы',opIncome,true)+row('Операционные расходы',-opExpense,true)+row('Операционный поток',opFlow,false)
@@ -4280,6 +4310,21 @@ function initPeriodList(){
     if(arrow)arrow.style.transform='rotate(-90deg)';
   }
 }
+
+
+function setReportRange(v){
+  reportRange=v;
+  const allP=Object.keys(DB.periods).sort().reverse();
+  const _cp=currentPeriod||allP[0]||'2026-01';
+  if(v==='quarter'&&!reportQuarter){
+    const[y,m]=_cp.split('-').map(Number);
+    reportQuarter=Math.ceil(m/3);reportYear=y;
+  }
+  if(v==='year'&&!reportYear)reportYear=+_cp.split('-')[0];
+  renderPage();
+}
+function setReportYear(y){reportYear=+y;renderPage();}
+function setReportQuarter(q){reportQuarter=+q;renderPage();}
 
 
 function setDashRange(v){
