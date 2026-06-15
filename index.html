@@ -517,7 +517,7 @@ let DB={
   rules:[],
   customGroups:{}
 };
-let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=false,investFilter='all';
+let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all';
 
 function uid(){return Math.random().toString(36).slice(2,10);}
 function parseAmt(s){if(!s) return 0;return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
@@ -2627,12 +2627,16 @@ function pageBalance(){
 
 // ── Transactions ──
 function pageTxns(){
-  const txns=getTxns(currentPeriod);if(!txns.length)return pageEmpty();
-  const groups=[...new Set(txns.map(t=>t.group))].sort();
+  const allPKeys=Object.keys(DB.periods).sort().reverse();
+  const allTxns=allPKeys.flatMap(p=>getTxns(p));
+  if(!allTxns.length)return pageEmpty();
+  const srcTxns=txAllPeriods?allTxns:getTxns(currentPeriod);
+  const groups=[...new Set(srcTxns.map(t=>t.group))].sort();
   const accOpts=Object.values(DB.accounts).map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('');
-  const txPeriods=Object.keys(DB.periods).sort().reverse();
+  const txPeriods=allPKeys;
   const txSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
-  const txPeriodOpts=txPeriods.map(p=>'<option value="'+p+'"'+(p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
+  const txPeriodOpts='<option value="all"'+(txAllPeriods?' selected':'')+'>Все периоды</option>'
+    +txPeriods.map(p=>'<option value="'+p+'"'+(!txAllPeriods&&p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
   return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="setTxPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
     +'<div class="tbl-wrap sticky-header"><div class="tbl-toolbar">'
     +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
@@ -2741,7 +2745,11 @@ function filterTxns(){
       +'</tr>');
   }
   body.innerHTML=rows.join('');
-  const cnt=document.getElementById('txCount');if(cnt)cnt.textContent=txns.length+' из '+getTxns(currentPeriod).length;
+  const cnt=document.getElementById('txCount');
+  if(cnt){
+    const total=txAllPeriods?Object.keys(DB.periods).reduce((s,p)=>s+getTxns(p).length,0):getTxns(currentPeriod).length;
+    cnt.textContent=txns.length+(txns.length!==total?' из '+total:'')+(txAllPeriods?' · все периоды':'');
+  }
 }
 
 function markAsExpense(txId,period){
