@@ -178,7 +178,7 @@
     "name": "ВТБ Счет ипотечный *3464",
     "owner": "me",
     "source": "vtb_mortgage_pdf",
-    "currentBalance": 1581007.97,
+    "currentBalance": null,
     "currency": "RUB",
     "isCredit": true,
     "virtual": false
@@ -190,7 +190,7 @@
     "name": "СБ Счет кредитный *8532",
     "owner": "wife",
     "source": "sber_loan_pdf",
-    "currentBalance": 41114.29,
+    "currentBalance": null,
     "currency": "RUB",
     "isCredit": true,
     "virtual": false
