@@ -146,7 +146,7 @@
     "name": "СБ Счет дебетовый *8369 / Карта *1424",
     "owner": "wife",
     "source": "sber_pdf",
-    "currentBalance": 1,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "40817810990189542073": {
@@ -156,7 +156,7 @@
     "name": "ВТБ Счет кредитный*2073 / Карта *5153, *0285",
     "owner": "wife",
     "source": "vtb_credit_pdf",
-    "currentBalance": 24699.43,
+    "currentBalance": null,
     "currency": "RUB",
     "isCredit": true
   },
