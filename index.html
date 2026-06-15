@@ -3455,9 +3455,18 @@ function pageEmpty(){
 }
 
 // ── Category modal ──
+function findTxAndPeriod(txId){
+  for(const p of Object.keys(DB.periods)){
+    const t=(DB.periods[p]?.transactions||[]).find(t=>t.id===txId);
+    if(t)return{tx:t,period:p};
+  }
+  return null;
+}
+
 function openCatModal(txId){
   editTxId=txId;
-  const tx=getTxns(currentPeriod).find(t=>t.id===txId);if(!tx)return;
+  const found=findTxAndPeriod(txId);if(!found)return;
+  const tx=found.tx;
   const gs=document.getElementById('catGroup');
   gs.innerHTML=getAllGroups().map(g=>'<option value="'+g+'">'+g+'</option>').join('');
   gs.value=tx.group;onCatGroupChange();
@@ -3481,18 +3490,17 @@ function onCatGroupChange(){
   document.getElementById('catSub').innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
 }
 function saveCatModal(applyToAll){
-  const txns=getTxns(currentPeriod),tx=txns.find(t=>t.id===editTxId);
-  if(!tx)return closeCatModal();
+  const found=findTxAndPeriod(editTxId);if(!found)return closeCatModal();
+  const{tx,period}=found;
   const newGroup=document.getElementById('catGroup').value;
   const newSub=document.getElementById('catSub').value;
   const newType=document.getElementById('catType').value;
   tx.group=newGroup;tx.sub=newSub;tx.type=newType;tx.manualCategory=true;
-  DB.periods[currentPeriod].transactions=txns;
   if(applyToAll&&tx.counterpartyINN&&tx.counterpartyINN!==OWN_INN){
     const changed=addRule({type:'inn',value:tx.counterpartyINN,group:newGroup,sub:newSub,txType:newType});
     toast('Правило по ИНН создано · обновлено '+changed+' операций во всех месяцах','ok');
   }else{
-    savePeriod(currentPeriod,'Edit category').then(ok=>toast(ok?'Категория сохранена ✓':'Категория сохранена локально','ok'));
+    savePeriod(period,'Edit category').then(ok=>toast(ok?'Категория сохранена ✓':'Категория сохранена локально','ok'));
   }
   closeCatModal();filterTxns();
 }
