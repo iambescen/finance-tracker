@@ -167,7 +167,7 @@
     "name": "ТБ Счет кредитный *0004 / Карта *0149",
     "owner": "me",
     "source": "tinkoff",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "RUB",
     "isCredit": true
   },
