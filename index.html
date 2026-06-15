@@ -3201,6 +3201,35 @@ function showLinkCandidates(txId, period){
   modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
 }
 
+function updateEtLinkedFlow(){
+  const sel=document.getElementById('etLinked');if(!sel)return;
+  const amt=parseFloat(sel.dataset.txAmt||0);
+  const txAcc=sel.dataset.txAcc||'';
+  const linkedAcc=sel.value;
+  const isOutgoing=amt<0; // negative = sending money
+  const txName=accLabel(txAcc)||txAcc.slice(-8)||'Этот счёт';
+  const linkedName=linkedAcc?(accLabel(linkedAcc)||linkedAcc.slice(-8)):'???';
+  const fromEl=document.getElementById('etFromLabel');
+  const toEl=document.getElementById('etToLabel');
+  const lbl=document.getElementById('etLinkedLabel');
+  const arrow=document.getElementById('etFlowArrow');
+  if(!fromEl||!toEl)return;
+  if(isOutgoing){
+    // Money leaves this account → goes to linked
+    fromEl.textContent=txName;fromEl.style.fontWeight='600';fromEl.style.color='var(--text)';
+    toEl.textContent=linkedAcc?linkedName:'выберите ↓';toEl.style.fontWeight=linkedAcc?'600':'400';toEl.style.color=linkedAcc?'var(--accent)':'var(--muted)';
+    if(lbl)lbl.textContent='Куда отправлены деньги';
+    if(arrow)arrow.textContent='→';
+  }else{
+    // Money comes from linked → into this account
+    fromEl.textContent=linkedAcc?linkedName:'выберите ↓';fromEl.style.fontWeight=linkedAcc?'600':'400';fromEl.style.color=linkedAcc?'var(--accent)':'var(--muted)';
+    toEl.textContent=txName;toEl.style.fontWeight='600';toEl.style.color='var(--text)';
+    if(lbl)lbl.textContent='Откуда пришли деньги';
+    if(arrow)arrow.textContent='→';
+  }
+}
+
+
 function selectLinkCandidate(pairId,txId){
   const allTx=Object.values(DB.periods).flatMap(p=>p.transactions||[]);
   const tx=allTx.find(t=>t.id===txId);
@@ -3245,6 +3274,10 @@ function openEditTx(txId, period){
   const accSel=document.getElementById('etLinked');
   accSel.innerHTML='<option value="">— не указан —</option>'+
     Object.values(DB.accounts).map(a=>'<option value="'+a.number+'"'+(tx.linkedAccount===a.number?' selected':'')+'>'+a.name+'</option>').join('');
+  // Store tx data for direction indicator
+  accSel.dataset.txAmt=tx.amtRub;
+  accSel.dataset.txAcc=tx.account||'';
+  updateEtLinkedFlow();
   // Show apply-to-all checkbox only for transfers with counterpartyAcc
   const applyRow=document.getElementById('etApplyAllRow');
   const ctgAcc=tx.counterpartyAcc?String(tx.counterpartyAcc).slice(-4):'';
@@ -4958,8 +4991,14 @@ function updateBottomNav(page){
       <select id="etType" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
         <option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option>
       </select></div>
-    <div class="field" id="etLinkedRow"><label>Связанный счёт (куда/откуда перевод)</label>
-      <select id="etLinked" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+    <div class="field" id="etLinkedRow">
+      <label id="etLinkedLabel">Связанный счёт</label>
+      <div id="etLinkedFlow" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;color:var(--muted2)">
+        <span id="etFromLabel" style="flex:1;padding:6px 8px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)"></span>
+        <span id="etFlowArrow" style="color:var(--accent);font-size:16px;flex-shrink:0">→</span>
+        <span id="etToLabel" style="flex:1;padding:6px 8px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)"></span>
+      </div>
+      <select id="etLinked" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)" onchange="updateEtLinkedFlow()">
         <option value="">— не указан —</option>
       </select></div>
     <div id="etApplyAllRow" style="display:none;margin-top:-4px;margin-bottom:8px">
