@@ -202,7 +202,7 @@
     "name": "ББ Счет дебетовый *0273 / Карта *6293",
     "owner": "me",
     "source": "bakay_xlsx",
-    "currentBalance": 1.77,
+    "currentBalance": null,
     "currency": "KGS"
   },
   "1242080005127466": {
