@@ -4109,10 +4109,12 @@ async function loadFromGithub(){
       const files=await lr.json();
       const ghPeriods=new Set(files.filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)).map(f=>f.name.replace('.json','')));
       for(const p of Object.keys(DB.periods)){if(!ghPeriods.has(p))delete DB.periods[p];}
-      // Load via Git Blobs API (content-addressed by SHA = never cached, always fresh)
+      // Load from GitHub ONLY periods we don't have locally.
+      // Prevents stale GitHub cache from overwriting fresh local data.
+      // Deletions still sync via ghPeriods check above.
       const blobBase='https://api.github.com/repos/'+user+'/'+repo+'/git/blobs/';
       await Promise.all(files
-        .filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)&&f.sha)
+        .filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)&&f.sha&&!DB.periods[f.name.replace('.json','')])
         .map(async f=>{
           const dr=await fetch(blobBase+f.sha,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.raw+json'}});
           if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();
