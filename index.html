@@ -3975,6 +3975,10 @@ async function ghPut(path,content,msg){
     if(recheck.ok){const rj=await recheck.json();body.sha=rj.sha;body.content=btoa(unescape(encodeURIComponent(content)));}
     return fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
   }
+  if(res.status===422){
+    // 422 = content identical to what's already on GitHub — treat as success
+    return new Response('{}',{status:200,headers:{'Content-Type':'application/json'}});
+  }
   return res;
 }
 
