@@ -3514,7 +3514,25 @@ async function ghPut(path,content,msg){
   const check=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
   const body={message:msg,content:b64};
   if(check.ok){const j=await check.json();body.sha=j.sha;}
-  return fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+  const res=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(res.status===409){
+    // SHA conflict: re-fetch sha and retry once
+    const recheck=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
+    if(recheck.ok){const rj=await recheck.json();body.sha=rj.sha;body.content=btoa(unescape(encodeURIComponent(content)));}
+    return fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+  }
+  return res;
+}
+
+async function ghDeleteFile(path,msg){
+  const{user,repo,token}=ghCfg();
+  if(!token)return;
+  try{
+    const check=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
+    if(!check.ok)return; // файл уже не существует — ок
+    const j=await check.json();
+    await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'DELETE',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify({message:msg,sha:j.sha})});
+  }catch(e){console.warn('ghDeleteFile error:',e);}
 }
 
 // ════════════════════════════════════════════════
@@ -3525,12 +3543,29 @@ async function ghPut(path,content,msg){
 function _ghDate(){return new Date().toLocaleDateString('ru-RU');}
 
 // Save one period's transactions to GitHub
-function savePeriod(period, msg){
-  saveLocal();
+// Debounced per-period to prevent SHA conflicts on rapid deletions
+const _periodSaveTimers={};
+const _periodSaveResolvers={};
+function savePeriod(period,msg){
+  saveLocal(); // Always immediate local save
   const{token}=ghCfg();
-  if(!token||!DB.periods[period])return Promise.resolve();
-  return ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),(msg||'Update '+period)+' — '+_ghDate())
-    .then(()=>true).catch(()=>false);
+  if(!token||!DB.periods[period])return Promise.resolve(false);
+  // Cancel any pending save for this period — latest state wins
+  if(_periodSaveTimers[period]){
+    clearTimeout(_periodSaveTimers[period]);
+    const prev=_periodSaveResolvers[period];
+    if(prev)prev(false);
+  }
+  return new Promise(resolve=>{
+    _periodSaveResolvers[period]=resolve;
+    _periodSaveTimers[period]=setTimeout(()=>{
+      delete _periodSaveTimers[period];
+      delete _periodSaveResolvers[period];
+      // Read FRESH state at save time (all pending deletes already applied)
+      ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),(msg||'Update '+period)+' — '+_ghDate())
+        .then(r=>resolve(r&&r.ok!==false)).catch(()=>resolve(false));
+    },600);
+  });
 }
 
 // Save rules + customGroups (ALWAYS together, single format)
@@ -3621,7 +3656,20 @@ function refreshUI(){
 }
 function onPeriodChange(){const s=document.getElementById('periodSelect');if(s)currentPeriod=s.value;refreshUI();}
 function selectPeriod(p){currentPeriod=p;const s=document.getElementById('periodSelect');if(s)s.value=p;refreshUI();}
-function delPeriod(p){if(!confirm('Удалить '+fmtMonth(p)+'?'))return;delete DB.periods[p];const ps=Object.keys(DB.periods).sort().reverse();currentPeriod=ps[0]||null;saveLocal();refreshUI();}
+function delPeriod(p){
+  if(!confirm('Удалить '+fmtMonth(p)+'?'))return;
+  delete DB.periods[p];
+  const ps=Object.keys(DB.periods).sort().reverse();
+  currentPeriod=ps[0]||null;
+  saveLocal();refreshUI();
+  const{token}=ghCfg();
+  if(token){
+    toast('Удаляем из GitHub...','info');
+    ghDeleteFile('data/'+p+'.json','Delete period '+p+' — '+_ghDate())
+      .then(()=>toast('Период '+fmtMonth(p)+' удалён ✓','ok'))
+      .catch(()=>toast('Удалено локально (нет сети)','ok'));
+  }
+}
 
 // ── Storage ──
 function saveLocal(){try{localStorage.setItem('ff_db',JSON.stringify(DB));}catch(e){}}
