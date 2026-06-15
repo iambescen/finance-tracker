@@ -232,7 +232,7 @@
     "name": "ЦБ Счет брокерский *1037",
     "owner": "me",
     "source": "cifra_broker_xlsx",
-    "currentBalance": 2.05,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "tinkoff_broker_2074432923": {
