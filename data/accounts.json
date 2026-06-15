@@ -136,7 +136,7 @@
     "name": "ВТБ Счет дебетовый *2810 / Карта *0412",
     "owner": "wife",
     "source": "vtb_pdf",
-    "currentBalance": 195,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "40817810747005528369": {
