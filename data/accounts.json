@@ -28,7 +28,7 @@
     "name": "ТБ Счет дебетовый *1363 / Карта *4129",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "7513": {
@@ -38,7 +38,7 @@
     "name": "ТБ Счет дебетовый *1363 / Карта *7513",
     "owner": "me",
     "source": "tinkoff",
-    "currentBalance": 0
+    "currentBalance": null
   },
   "8555": {
     "number": "8555",
