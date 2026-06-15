@@ -3169,26 +3169,53 @@ function showLinkCandidates(txId, period){
   if(!tx)return;
   const amt=Math.abs(tx.amtRub);
   const txDate=new Date(tx.date);
-  // Find candidates: same amount ±50₽, within 7 days, different account
+  // Find candidates: same amount ±500₽, within 14 days, different account
+  // Include already-linked transfers (auto-link may have paired wrong ones)
   const candidates=allTx.filter(t=>
-    t.id!==txId&&t.type==='transfer'&&!t.linkedTo&&
-    Math.abs(Math.abs(t.amtRub)-amt)<200&&
-    Math.abs(new Date(t.date)-txDate)<=7*86400000
+    t.id!==txId&&t.type==='transfer'&&t.id!==tx.linkedTo&&
+    Math.abs(Math.abs(t.amtRub)-amt)<500&&
+    Math.abs(new Date(t.date)-txDate)<=14*86400000
   );
-  if(!candidates.length){toast('Парных переводов не найдено (±200₽, 7 дней)','info');return;}
-  // Show in alert for now
-  const msg='Найдено '+candidates.length+' кандидатов:\n'+
-    candidates.map((c,i)=>i+': '+c.dateDisplay+' '+c.desc?.slice(0,30)+' '+Math.abs(c.amtRub)+'₽ ('+c.account?.slice(-8)+')').join('\n')+
-    '\n\nВведите номер для связывания:';
-  const idx=prompt(msg);
-  if(idx===null||idx==='')return;
-  const pair=candidates[+idx];
-  if(!pair){toast('Неверный номер','err');return;}
-  // Link them (mark as manual so reapply won't break it)
+  if(!candidates.length){toast('Парных переводов не найдено (±500₽, 14 дней)','info');return;}
+  // Build modal with candidates list
+  const sel='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);width:100%;box-sizing:border-box';
+  const rows=candidates.map((c,i)=>{
+    const alreadyLinked=c.linkedTo?'<span style="color:var(--expense);font-size:11px"> · уже связана</span>':'';
+    return '<div onclick="selectLinkCandidate(\'' +c.id+ '\',\'' +txId+ '\')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);border-radius:4px;margin-bottom:4px;background:var(--bg3)" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'var(--bg3)\'">'
+      +'<div style="font-size:13px;font-weight:500">'+c.dateDisplay+' · '+Math.abs(c.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽'+alreadyLinked+'</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+accLabel(c.account)+' · '+(c.desc||'').slice(0,50)+'</div>'
+      +'</div>';
+  }).join('');
+  const modal=document.createElement('div');
+  modal.id='linkCandModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center';
+  const closeBtn='<button onclick="document.getElementById(\'linkCandModal\').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">✕</button>';
+  modal.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:20px;width:440px;max-width:95vw;max-height:80vh;overflow-y:auto">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+    +'<h3 style="margin:0;font-size:16px">Выбери парный перевод</h3>'
+    +closeBtn
+    +'</div>'
+    +'<div style="font-size:12px;color:var(--muted2);margin-bottom:12px">Транзакция: '+tx.dateDisplay+' · '+Math.abs(tx.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽ · '+(tx.desc||'').slice(0,40)+'</div>'
+    +rows+'</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+}
+
+function selectLinkCandidate(pairId,txId){
+  const allTx=Object.values(DB.periods).flatMap(p=>p.transactions||[]);
+  const tx=allTx.find(t=>t.id===txId);
+  const pair=allTx.find(t=>t.id===pairId);
+  if(!tx||!pair)return;
+  // Unlink old partners if any
+  if(tx.linkedTo){const old=allTx.find(t=>t.id===tx.linkedTo);if(old){old.linkedTo=null;old.linkedAccount=null;}}
+  if(pair.linkedTo){const old=allTx.find(t=>t.id===pair.linkedTo);if(old){old.linkedTo=null;old.linkedAccount=null;}}
+  // Link the new pair
   tx.linkedTo=pair.id;tx.linkedAccount=pair.account;tx.manualLink=true;tx.type='transfer';
   pair.linkedTo=tx.id;pair.linkedAccount=tx.account;pair.manualLink=true;pair.type='transfer';
-  const p1=tx.month,p2=pair.month;
-  savePeriod(p1,'Link transfer').then(()=>{if(p2!==p1)savePeriod(p2,'Link transfer');});
+  // Save all affected periods
+  const periods=new Set([tx.month,pair.month]);
+  for(const p of periods)savePeriod(p,'Link transfer');
+  document.getElementById('linkCandModal')?.remove();
   toast('Переводы связаны ✓','ok');
   filterTxns();
 }
