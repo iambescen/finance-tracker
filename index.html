@@ -2329,30 +2329,39 @@ async function saveAllNow(){
   if(btn){btn.disabled=true;btn.textContent='⏳ Сохраняем...';}
   const{token}=ghCfg();
   if(!token){toast('Настройте GitHub токен (⚙)','err');if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}return;}
+  const errors=[];
   try{
     const date=_ghDate();
     const periods=Object.entries(DB.periods);
-    let saved=0,failed=0;
-    // Use ghPutQueued to avoid SHA conflicts with in-flight savePeriod calls
-    const saves=periods.map(([period,data])=>
-      ghPutQueued('data/'+period+'.json',
-        ()=>JSON.stringify(DB.periods[period],null,2), // fresh content at exec time
-        'Save '+period+' — '+date
-      ).then(r=>{if(r&&r.ok){saved++;}else{failed++;}if(btn)btn.textContent='⏳ '+(saved+failed)+'/'+periods.length+'...';}
-      ).catch(()=>{failed++;})
-    );
-    await Promise.all(saves);
-    // Save accounts and rules sequentially
-    const aOk=await ghPutQueued('data/accounts.json',()=>JSON.stringify(DB.accounts,null,2),'Save accounts — '+date).then(r=>r&&r.ok).catch(()=>false);
-    const rOk=await ghPutQueued('data/rules.json',()=>JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Save rules — '+date).then(r=>r&&r.ok).catch(()=>false);
-    if(failed>0){
-      toast('Сохранено '+saved+' из '+periods.length+' периодов ('+failed+' ошибок)','err');
-    }else{
-      toast('✓ Всё сохранено в GitHub ('+periods.length+' периодов)','ok');
+    let i=0;
+    // Sequential — no SHA races, clear progress
+    for(const[period]of periods){
+      i++;
+      if(btn)btn.textContent='⏳ '+i+'/'+periods.length+'...';
+      try{
+        const r=await ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),'Save '+period+' — '+date);
+        if(!r.ok){const t=await r.text();errors.push(period+' ('+r.status+'): '+t.slice(0,80));}
+      }catch(e){errors.push(period+': '+e.message);}
     }
-    if(btn){btn.textContent=failed?'⚠ Ошибки':'✓ Сохранено';setTimeout(()=>{if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}},2500);}
+    if(btn)btn.textContent='⏳ счета...';
+    try{
+      const r=await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Save accounts — '+date);
+      if(!r.ok)errors.push('accounts ('+r.status+')');
+    }catch(e){errors.push('accounts: '+e.message);}
+    try{
+      const r=await ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Save rules — '+date);
+      if(!r.ok)errors.push('rules ('+r.status+')');
+    }catch(e){errors.push('rules: '+e.message);}
+    if(errors.length){
+      console.error('saveAllNow errors:',errors);
+      toast('Ошибки: '+errors.join(' | '),'err');
+      if(btn){btn.textContent='⚠ Ошибка';setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Сохранить';},3000);}
+    }else{
+      toast('✓ Всё сохранено ('+periods.length+' периодов)','ok');
+      if(btn){btn.textContent='✓ Готово';setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Сохранить';},2000);}
+    }
   }catch(e){
-    toast('Ошибка: '+e.message,'err');
+    toast('Критическая ошибка: '+e.message,'err');
     if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}
   }
 }
@@ -2367,12 +2376,12 @@ async function autoSaveToGithub(){
     const date=new Date().toLocaleDateString('ru-RU');
     // Save periods sequentially to avoid 409 conflicts
     const periods=Object.entries(DB.periods);
-    for(const[period,data]of periods){
-      await ghPut('data/'+period+'.json',JSON.stringify(data,null,2),'Auto-save '+period+' — '+date);
+    for(const[period]of periods){
+      await ghPutQueued('data/'+period+'.json',()=>JSON.stringify(DB.periods[period],null,2),'Auto-save '+period+' — '+date);
     }
-    await ghPut('data/assets.json',JSON.stringify(DB.assets,null,2),'Auto-save assets — '+date);
-    await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Auto-save accounts — '+date);
-    await ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Auto-save rules — '+date);
+    await ghPutQueued('data/assets.json',()=>JSON.stringify(DB.assets,null,2),'Auto-save assets — '+date);
+    await ghPutQueued('data/accounts.json',()=>JSON.stringify(DB.accounts,null,2),'Auto-save accounts — '+date);
+    await ghPutQueued('data/rules.json',()=>JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Auto-save rules — '+date);
     toast('✓ Сохранено в GitHub','ok');
   }catch(e){
     toast('Ошибка сохранения: '+e.message,'err');
