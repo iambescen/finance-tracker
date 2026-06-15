@@ -3522,14 +3522,22 @@ function pageAssets(){
   // Vehicles — use market cost for assets
   const vehiclesTotal=a.vehicles.reduce((s,v)=>s+(v.marketCost||0),0);
 
-  // Auto-calculate cash from computed account balances (via balanceAnchor + transactions)
-  let autoCash=0,hasCashAccounts=false;
+  // Auto-calculate cash and credit debt from account balances
+  let autoCash=0,hasCashAccounts=false,creditDebt=0;
+  const creditAccRows=[];
   for(const acc of Object.values(DB.accounts)){
     if(acc.virtual||acc.source==='vtb_mortgage_pdf'||acc.source==='sber_loan_pdf')continue;
     const bal=computeCurrentBalance(acc.number);
     if(bal==null)continue;
     hasCashAccounts=true;
-    if(!acc.isCredit&&!acc.isCreditCard)autoCash+=bal;
+    if(acc.isCredit||acc.isCreditCard){
+      // Credit card: negative balance = debt owed
+      const debt=bal<0?Math.abs(bal):0;
+      creditDebt+=debt;
+      creditAccRows.push({name:acc.name||acc.display,bal,debt});
+    }else{
+      autoCash+=bal;
+    }
   }
   const cashVal=hasCashAccounts?autoCash:(a.cash||0);
   // Add broker account value from investments
@@ -3540,7 +3548,7 @@ function pageAssets(){
   const tA=realtyBase+vehiclesTotal+other;
   const tAmin=realtyMin+vehiclesTotal+other;
   const tAmax=realtyMax+vehiclesTotal+other;
-  const tL=vtbMortgage+sberLoan+(a.eduLoan||0);
+  const tL=vtbMortgage+sberLoan+(a.eduLoan||0)+creditDebt;
   const equity=tA-tL, equityMin=tAmin-tL, equityMax=tAmax-tL;
 
   // Realty rows
@@ -3588,13 +3596,15 @@ function pageAssets(){
     +(a.broker||a.trading||a.cash?'<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin:12px 0 6px">Финансовые активы</div>':'')
     +(a.broker?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Брокерский счёт</span><span style="color:var(--income)">'+fmtMoney(a.broker)+'</span></div>':'')
     +(a.trading?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Торговый счёт</span><span style="color:var(--income)">'+fmtMoney(a.trading)+'</span></div>':'')
-    +(a.cash?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Кэш на счетах</span><span style="color:var(--income)">'+fmtMoney(a.cash)+'</span></div>':'')
+    +(cashVal?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Кэш на счетах</span><span style="color:var(--income)">'+fmtMoney(cashVal)+'</span></div>':'')
     +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600"><span>Итого</span><span style="color:var(--income)">'+fmtMoney(tA)+'</span></div></div>'
     // Liabilities card
     +'<div class="card"><div class="card-title">Обязательства</div>'
     +'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="color:var(--text-muted)">Ипотека ВТБ</div><div style="font-size:11px;color:var(--text-muted)">выплачено '+Math.round(vtbPaid).toLocaleString('ru-RU')+' ₽</div></div><span style="color:var(--expense)">'+fmtMoney(vtbMortgage)+'</span></div>'
     +(sberLoan>0?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="color:var(--text-muted)">Кредит Сбер</div><div style="font-size:11px;color:var(--text-muted)">выплачено '+Math.round(sberPaid).toLocaleString('ru-RU')+' ₽</div></div><span style="color:var(--expense)">'+fmtMoney(sberLoan)+'</span></div>':'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Кредит Сбер</span><span style="color:var(--income)">✓ Закрыт</span></div>')
     +(a.eduLoan?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Рассрочка на обучение</span><span style="color:var(--expense)">'+fmtMoney(a.eduLoan)+'</span></div>':'')
+    +(creditAccRows.length?'<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin:12px 0 6px">Кредитные карты</div>'
+      +creditAccRows.map(r=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'        +'<div><div style="color:var(--text-muted)">'+r.name+'</div>'        +'<div style="font-size:11px;color:var(--muted)">баланс: '+r.bal.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</div></div>'        +'<span style="color:'+(r.debt>0?'var(--expense)':'var(--income)')+'">'        +(r.debt>0?'−'+fmtMoney(r.debt):'✓ 0')+'</span></div>').join(''):'')
     +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:700;border-bottom:1px solid var(--border)"><span>Итого долги</span><span style="color:var(--expense)">'+fmtMoney(tL)+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:700;border-bottom:1px solid var(--border)"><span>Собственный капитал</span><span style="color:var(--income)">'+fmtMoney(equity)+'</span></div>'
     +'<div style="padding:10px 0">'
