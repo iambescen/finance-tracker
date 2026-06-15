@@ -3700,27 +3700,46 @@ async function saveToGithub(){
 
 async function loadFromGithub(){
   const{user,repo,token}=ghCfg();if(!token)return;
+  // Always use authenticated API — raw.githubusercontent.com is CDN-cached (stale up to minutes)
+  const apiBase='https://api.github.com/repos/'+user+'/'+repo+'/contents/';
+  const apiHdr={Authorization:'token '+token,Accept:'application/vnd.github.raw+json'};
+  const apiLoad=async(path)=>{
+    const r=await fetch(apiBase+path,{headers:apiHdr});
+    return r.ok?r.json():null;
+  };
   try{
-    const load=async(path)=>{const r=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/'+path+'?t='+Date.now());return r.ok?r.json():null;};
-    const[assets,accounts,rules]=await Promise.all([load('data/assets.json'),load('data/accounts.json'),load('data/rules.json')]);
+    const[assets,accounts,rules]=await Promise.all([
+      apiLoad('data/assets.json'),
+      apiLoad('data/accounts.json'),
+      apiLoad('data/rules.json')
+    ]);
     if(assets)DB.assets=assets;
     if(accounts)DB.accounts=accounts;
     if(rules){if(rules.rules)DB.rules=rules.rules;else if(Array.isArray(rules))DB.rules=rules;if(rules.customGroups)DB.customGroups=rules.customGroups;}
-    const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',{headers:{Authorization:'token '+token}});
+    // Get directory listing (standard JSON, not raw)
+    const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',
+      {headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
     if(lr.ok){
       const files=await lr.json();
-      // Sync: remove local periods that no longer exist on GitHub (e.g. deleted via delPeriod)
       const ghPeriods=new Set(files.filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)).map(f=>f.name.replace('.json','')));
       for(const p of Object.keys(DB.periods)){if(!ghPeriods.has(p))delete DB.periods[p];}
-      // Load periods from GitHub
-      for(const f of files){if(f.name.match(/^\d{4}-\d{2}\.json$/)){const dr=await fetch(f.download_url+'?t='+Date.now());if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();}}
+      // Load all periods in parallel via API (fresh, no CDN cache)
+      await Promise.all(files
+        .filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/))
+        .map(async f=>{
+          const dr=await fetch(apiBase+'data/'+f.name,{headers:apiHdr});
+          if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();
+        })
+      );
     }
     const p=Object.keys(DB.periods).sort().reverse();if(p.length)currentPeriod=p[0];
     ensureCashAccounts();
     // Load investments — create file if missing (first run)
-    try{const ri=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/data/investments.json?t='+Date.now());
+    try{
+      const ri=await fetch(apiBase+'data/investments.json',{headers:apiHdr});
       if(ri.ok){const inv=await ri.json();if(inv.prices)DB.investPrices=inv.prices;if(inv.holdings)DB.investments=inv.holdings;}
-      else if(ri.status===404){ghPut('data/investments.json',JSON.stringify({prices:{},holdings:{}},null,2),'Init investments.json').catch(()=>{});}}catch(e){}
+      else if(ri.status===404){ghPut('data/investments.json',JSON.stringify({prices:{},holdings:{}},null,2),'Init investments.json').catch(()=>{});}
+    }catch(e){}
     saveLocal();refreshUI();toast('Данные загружены из GitHub','info');
   }catch(e){console.error(e);}
 }
