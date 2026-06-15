@@ -265,6 +265,7 @@ tr:hover td{background:var(--bg3)}
 <div class="topbar">
   <div class="logo">Семейный<em> портфель</em></div>
   <div class="topbar-right">
+    <button id="saveAllBtn" class="btn sm" onclick="saveAllNow()" title="Сохранить всё в GitHub" style="gap:5px;display:inline-flex;align-items:center">💾 Сохранить</button>
     <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub">⚙</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
@@ -2323,6 +2324,30 @@ function ingest(newTxns){
 }
 
 let _ghSaving=false;
+async function saveAllNow(){
+  const btn=document.getElementById('saveAllBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Сохраняем...';}
+  const{token}=ghCfg();
+  if(!token){toast('Настройте GitHub токен (⚙)','err');if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}return;}
+  try{
+    const date=_ghDate();
+    const periods=Object.entries(DB.periods);
+    let saved=0;
+    for(const[period,data]of periods){
+      await ghPut('data/'+period+'.json',JSON.stringify(data,null,2),'Save '+period+' — '+date);
+      saved++;
+      if(btn)btn.textContent='⏳ '+saved+'/'+periods.length+'...';
+    }
+    await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Save accounts — '+date);
+    await ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Save rules — '+date);
+    toast('✓ Всё сохранено в GitHub ('+periods.length+' периодов)','ok');
+    if(btn){btn.textContent='✓ Сохранено';setTimeout(()=>{if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}},2000);}
+  }catch(e){
+    toast('Ошибка: '+e.message,'err');
+    if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}
+  }
+}
+
 async function autoSaveToGithub(){
   if(_ghSaving){console.log('GitHub save already in progress, skipping');return;}
   const{token}=ghCfg();
