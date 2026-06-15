@@ -22,8 +22,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "ftjs3t1c",
@@ -72,8 +72,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "c6rfdc0c",
@@ -247,8 +247,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "fhltq1l2",
@@ -447,8 +447,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "hfa1mhav",
