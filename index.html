@@ -147,6 +147,21 @@ tr:hover td{background:var(--bg3)}
 .cat-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;font-size:12px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all 0.12s;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted2)}
 .cat-pill:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .cat-pill.transfer{color:var(--muted);background:var(--bg3)}
+.act-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 4px;border-radius:3px;transition:color .15s}
+.act-btn:hover{color:var(--text)}
+.confirm-btn{color:var(--muted2)}
+.confirm-btn.confirmed{color:var(--income);font-weight:700}
+.needs-attn td{background:color-mix(in srgb,var(--expense) 4%,transparent)}
+.tx-selected td{background:color-mix(in srgb,var(--accent) 7%,transparent)!important}
+.group-hdr{background:var(--bg3);cursor:pointer;user-select:none}
+.group-hdr:hover td{background:var(--bg2)}
+.group-hdr td{font-weight:600;font-size:13px;padding:7px 12px}
+#txBulkBar{display:none;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid var(--accent);border-radius:var(--r);padding:7px 12px;gap:8px;align-items:center;flex-wrap:wrap}
+.ctg-link{cursor:pointer}
+.ctg-link:hover{color:var(--accent);text-decoration:underline}
+.tx-cb{cursor:pointer;width:14px;height:14px}
+.unconf-btn{padding:5px 10px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:12px;white-space:nowrap}
+.unconf-btn.active{background:color-mix(in srgb,var(--expense) 15%,var(--bg3));border-color:var(--expense);color:var(--expense)}
 
 /* ── Type tag — minimal ── */
 .type-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
@@ -517,7 +532,7 @@ let DB={
   rules:[],
   customGroups:{}
 };
-let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all';
+let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set();
 
 function uid(){return Math.random().toString(36).slice(2,10);}
 function parseAmt(s){if(!s) return 0;return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
@@ -2633,18 +2648,37 @@ function pageTxns(){
   const srcTxns=txAllPeriods?allTxns:getTxns(currentPeriod);
   const groups=[...new Set(srcTxns.map(t=>t.group))].sort();
   const accOpts=Object.values(DB.accounts).map(a=>'<option value="'+a.number+'">'+a.name+'</option>').join('');
-  const txPeriods=allPKeys;
-  const txSelStyle='padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)';
+  const sel='padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--font)';
   const txPeriodOpts='<option value="all"'+(txAllPeriods?' selected':'')+'>Все периоды</option>'
-    +txPeriods.map(p=>'<option value="'+p+'"'+(!txAllPeriods&&p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
-  return '<div class="page-header"><div class="page-title">Операции</div><div class="page-actions"><select onchange="setTxPeriod(this.value)" style="'+txSelStyle+'">'+txPeriodOpts+'</select></div></div>'
-    +'<div class="tbl-wrap sticky-header"><div class="tbl-toolbar">'
-    +'<input type="text" id="txSearch" placeholder="Поиск..." oninput="filterTxns()">'
-    +'<select id="txGroup" onchange="filterTxns()"><option value="">Все категории</option>'+groups.map(g=>'<option>'+g+'</option>').join('')+'</select>'
-    +'<select id="txType" onchange="filterTxns()"><option value="">Все типы</option><option value="income">Доходы</option><option value="expense">Расходы</option><option value="transfer">Переводы</option></select>'
-    +'<select id="txAccount" onchange="filterTxns()"><option value="">Все счета</option>'+accOpts+'</select>'
-    +'<span class="tbl-count" id="txCount"></span></div>'
-    +'<table><thead><tr><th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th>Подкатегория</th><th style="text-align:right">Сумма</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>';
+    +allPKeys.map(p=>'<option value="'+p+'"'+(!txAllPeriods&&p===currentPeriod?' selected':'')+'>'+fmtMonth(p)+'</option>').join('');
+  const unconfTotal=allTxns.filter(t=>!t.confirmed).length;
+  const bulkGrpOpts=getAllGroups().map(g=>'<option value="'+g+'">'+g+'</option>').join('');
+  return '<div class="page-header"><div class="page-title">Операции</div>'
+    +'<div class="page-actions"><select onchange="setTxPeriod(this.value)" style="'+sel+'">'+txPeriodOpts+'</select></div></div>'
+    +'<div class="tbl-wrap sticky-header">'
+    +'<div class="tbl-toolbar" style="flex-wrap:wrap;gap:6px">'
+    +'<input type="text" id="txSearch" placeholder="Поиск..." value="'+txFilterSearch+'" oninput="filterTxns()" style="width:150px">'
+    +'<select id="txGroup" onchange="filterTxns()" style="'+sel+'"><option value="">Все категории</option>'+groups.map(g=>'<option'+(txFilterGroup===g?' selected':'')+'>'+g+'</option>').join('')+'</select>'
+    +'<select id="txType" onchange="filterTxns()" style="'+sel+'"><option value="">Все типы</option><option value="income"'+(txFilterType==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(txFilterType==='expense'?' selected':'')+'>Расходы</option><option value="transfer"'+(txFilterType==='transfer'?' selected':'')+'>Переводы</option></select>'
+    +'<select id="txAccount" onchange="filterTxns()" style="'+sel+'"><option value="">Все счета</option>'+accOpts+'</select>'
+    +'<input type="text" id="txCounterparty" placeholder="Контрагент..." value="'+txFilterCounterparty+'" oninput="txFilterCounterparty=this.value;filterTxns()" style="width:130px">'
+    +'<button class="unconf-btn'+(txShowUnconfirmed?' active':'')+'" onclick="txShowUnconfirmed=!txShowUnconfirmed;this.classList.toggle(\'active\');filterTxns()" title="Только неподтверждённые">⚠ Не разобрано'+(unconfTotal?' ('+unconfTotal+')':' ✓')+' </button>'
+    +'<select id="txGroupSel" onchange="txGroupBy=this.value;txExpandedGroups.clear();filterTxns()" style="'+sel+'"><option value="none">Список</option><option value="counterparty"'+(txGroupBy==='counterparty'?' selected':'')+'>По контрагенту</option><option value="desc"'+(txGroupBy==='desc'?' selected':'')+'>По описанию</option></select>'
+    +'<span class="tbl-count" id="txCount"></span>'
+    +'</div>'
+    +'<div id="txBulkBar" style="display:none;padding:7px 12px;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)">'
+    +'<span id="txBulkCount" style="font-size:13px;font-weight:600;color:var(--accent)"></span>'
+    +'<select id="bulkGroup" onchange="onBulkGroupChange()" style="'+sel+'"><option value="">— Категория —</option>'+bulkGrpOpts+'</select>'
+    +'<select id="bulkSub" style="'+sel+'"></select>'
+    +'<select id="bulkType" style="'+sel+'"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option></select>'
+    +'<button class="btn primary" style="padding:4px 12px;font-size:12px" onclick="applyBulkCategory()">Применить</button>'
+    +'<button class="btn" style="padding:4px 12px;font-size:12px" onclick="bulkConfirmVisible()">✓ Подтвердить всё</button>'
+    +'<button class="btn" style="padding:4px 8px;font-size:12px;opacity:0.6" onclick="clearBulkSelect()">✕ Снять</button>'
+    +'</div>'
+    +'<table><thead><tr>'
+    +'<th style="width:24px"><input type="checkbox" id="txSelectAll" class="tx-cb" onchange="toggleSelectAll(this.checked)" title="Выбрать всё"></th>'
+    +'<th>Дата</th><th>Описание / Контрагент</th><th>Счёт</th><th>Тип</th><th>Категория</th><th>Подкатегория</th><th style="text-align:right">Сумма</th><th style="min-width:120px"></th>'
+    +'</tr></thead><tbody id="txBody"></tbody></table></div>';
 }
 
 function bindTxnEvents(){
@@ -2666,76 +2700,109 @@ function saveTxFilters(){
   txFilterAccount=document.getElementById('txAccount')?.value||'';
 }
 function filterTxns(){
+  saveTxFilters();
   const search=(document.getElementById('txSearch')?.value||'').toLowerCase();
   const group=document.getElementById('txGroup')?.value||'';
   const type=document.getElementById('txType')?.value||'';
   const account=document.getElementById('txAccount')?.value||'';
+  const ctgF=txFilterCounterparty.toLowerCase();
   const allPArr=Object.keys(DB.periods).sort().reverse();
+
   const txns=(txAllPeriods?allPArr.flatMap(p=>getTxns(p)):getTxns(currentPeriod)).filter(t=>{
     if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search))return false;
     if(group&&t.group!==group)return false;
     if(type&&t.type!==type)return false;
     if(account&&t.account!==account&&t.linkedAccount!==account)return false;
+    if(ctgF&&!(t.counterparty||'').toLowerCase().includes(ctgF)&&!(t.counterpartyINN||'').includes(ctgF)&&!t.desc.toLowerCase().includes(ctgF))return false;
+    if(txShowUnconfirmed&&t.confirmed)return false;
     return true;
   });
+
   const body=document.getElementById('txBody');if(!body)return;
 
-  // When no account filter — merge paired transfers into one row
+  // ── Bulk bar ──────────────────────────────────────────────────────────────
+  const bulkBar=document.getElementById('txBulkBar');
+  if(bulkBar)bulkBar.style.display=txBulkSelected.size>0?'flex':'none';
+  const bcnt=document.getElementById('txBulkCount');
+  if(bcnt)bcnt.textContent=txBulkSelected.size+' выбрано';
+  const saEl=document.getElementById('txSelectAll');
+  if(saEl){const ids=txns.map(t=>t.id);saEl.checked=ids.length>0&&ids.every(id=>txBulkSelected.has(id));saEl.indeterminate=txBulkSelected.size>0&&!saEl.checked;}
+
+  // ── Counter ───────────────────────────────────────────────────────────────
+  const cnt=document.getElementById('txCount');
+  if(cnt){
+    const total=txAllPeriods?Object.keys(DB.periods).reduce((s,p)=>s+getTxns(p).length,0):getTxns(currentPeriod).length;
+    cnt.textContent=txns.length+(txns.length!==total?' из '+total:'')+(txAllPeriods?' · все периоды':'');
+  }
+
+  // ── Group mode ────────────────────────────────────────────────────────────
+  if(txGroupBy!=='none'){renderGrouped(txns);return;}
+
+  // ── Flat list ─────────────────────────────────────────────────────────────
   const shownIds=new Set();
   let _lastDate='';
   const rows=[];
+
   for(const t of txns){
     if(shownIds.has(t.id))continue;
     const isI=t.type==='income',isT=t.type==='transfer';
     const cls=isT?'amt-transfer':isI?'amt-income':'amt-expense';
     const sign=isI?'+':'';
     const manualIcon=t.manualCategory?'<span title="Изменено вручную" style="color:var(--accent);font-size:10px;margin-right:3px">●</span>':'';
-
-    // Check if this transfer has a linked pair also in txns
+    const isConf=t.confirmed===true;
+    const isSel=txBulkSelected.has(t.id);
     const noAccFilter=!account;
     const pair=isT&&t.linkedTo&&noAccFilter?txns.find(t2=>t2.id===t.linkedTo):null;
 
-    const _sep=t.dateDisplay!==_lastDate?'<tr class="date-sep"><td colspan="8" style="padding:4px 12px 2px;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg3);letter-spacing:0.3px;border-top:1px solid var(--border)">'+t.dateDisplay+'</td></tr>':'';
+    const _sep=t.dateDisplay!==_lastDate
+      ?'<tr class="date-sep"><td colspan="9" style="padding:4px 12px 2px;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg3);letter-spacing:0.3px;border-top:1px solid var(--border)">'+t.dateDisplay+'</td></tr>'
+      :'';
     _lastDate=t.dateDisplay;
 
+    const chk='<td style="width:24px;padding:4px 6px"><input type="checkbox" class="tx-cb"'+(isSel?' checked':'')
+      +' onchange="toggleBulkSelect(\''+t.id+'\')" onclick="event.stopPropagation()"></td>';
+
     let accCell,amtDisplay,actBtns;
+
     if(pair){
-      // Merged row: show FROM → TO
       shownIds.add(t.id);shownIds.add(pair.id);
-      const fromTx=t.amtRub<0?t:pair;
-      const toTx=t.amtRub<0?pair:t;
-      const fromName=accLabel(fromTx.account)||'?';
-      const toName=accLabel(toTx.account)||accLabel(toTx.linkedAccount)||'?';
+      const fromTx=t.amtRub<0?t:pair,toTx=t.amtRub<0?pair:t;
       accCell='<div style="font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:4px">'
-        +'<span style="font-weight:500;color:var(--text)">'+fromName+'</span>'
+        +'<span style="font-weight:500;color:var(--text)">'+accLabel(fromTx.account)+'</span>'
         +'<span style="color:var(--accent)">→</span>'
-        +'<span style="font-weight:500;color:var(--text)">'+toName+'</span>'
-        +'</div>';
+        +'<span style="font-weight:500;color:var(--text)">'+accLabel(toTx.account)+'</span></div>';
       amtDisplay='<span style="color:var(--muted2)">'+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span>';
-      actBtns='<button onclick="openEditTx(\''+t.id+'\',\''+t.month+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>';
+      actBtns='<button onclick="confirmTx(\''+t.id+'\')" class="act-btn confirm-btn'+(isConf?' confirmed':'')+'" title="'+(isConf?'Подтверждено — нажмите чтобы снять':'Подтвердить')+'">'+(isConf?'✓':'○')+'</button>'
+        +'<button onclick="openEditTx(\''+t.id+'\',\''+t.month+'\')" class="act-btn" title="Редактировать">✎</button>';
     } else {
       shownIds.add(t.id);
-      const fromAcc=accLabel(t.account);
       const _accOwner=DB.accounts[t.account]?.owner;
       const _ownerLabel=_accOwner==='me'?'Влад':_accOwner==='wife'?'Таня':_accOwner==='joint'?'Общий':'';
       if(isT&&t.linkedAccount){
-        const toAcc=accLabel(t.linkedAccount);
         const arrow=t.amtRub<0?' → ':' ← ';
-        accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+arrow+toAcc+'</div>'+(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
+        accCell='<div style="font-size:11px;color:var(--muted2)">'+accLabel(t.account)+arrow+accLabel(t.linkedAccount)+'</div>'
+          +(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
       }else if(isT&&t.counterpartyAcc){
-        accCell='<div style="font-size:11px;color:var(--muted2)">'+fromAcc+' → '+accLabel(t.counterpartyAcc)+'</div>';
+        accCell='<div style="font-size:11px;color:var(--muted2)">'+accLabel(t.account)+' → '+accLabel(t.counterpartyAcc)+'</div>';
       }else{
-        accCell='<div style="font-size:12px;color:var(--muted2)">'+fromAcc+'</div>'+(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
+        accCell='<div style="font-size:12px;color:var(--muted2)">'+accLabel(t.account)+'</div>'
+          +(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
       }
       amtDisplay='<span class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span>';
-      actBtns=(isT&&!t.linkedTo?'<button onclick="showLinkCandidates(\''+t.id+'\',\''+t.month+'\')" title="Найти пару" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;padding:2px 5px">⇄</button>':'')
-        +'<button onclick="openEditTx(\''+t.id+'\',\''+t.month+'\')" title="Редактировать" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 5px">✎</button>'
-        +'<button onclick="deleteTx(\''+t.id+'\',\''+t.month+'\')" title="Удалить" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:12px;padding:2px 5px;opacity:0.5">✕</button>';
+      const ctgSpan=t.counterparty&&!isT
+        ?'<span class="ctg-link" style="font-size:11px;color:var(--muted);display:block;margin-top:2px" onclick="setTxCounterpartyFilter(\''+encodeURIComponent(t.counterparty)+'\')" title="Фильтр по контрагенту">'+t.counterparty+'</span>'
+        :'';
+      actBtns=(isT&&!t.linkedTo?'<button onclick="showLinkCandidates(\''+t.id+'\',\''+t.month+'\')" class="act-btn" style="color:var(--accent)" title="Найти пару">⇄</button>':'')+
+        '<button onclick="openInlineRule(\''+t.id+'\')" class="act-btn" title="Создать правило">⊕</button>'+
+        '<button onclick="confirmTx(\''+t.id+'\')" class="act-btn confirm-btn'+(isConf?' confirmed':'')+'" title="'+(isConf?'Подтверждено':'Подтвердить')+'">'+(isConf?'✓':'○')+'</button>'+
+        '<button onclick="openEditTx(\''+t.id+'\',\''+t.month+'\')" class="act-btn" title="Редактировать">✎</button>'+
+        '<button onclick="deleteTx(\''+t.id+'\',\''+t.month+'\')" class="act-btn" style="color:var(--expense);opacity:0.5" title="Удалить">✕</button>';
     }
 
-    rows.push(_sep+'<tr>'
+    const rowCls=(isConf?'':'needs-attn')+(isSel?' tx-selected':'');
+    rows.push(_sep+'<tr class="'+rowCls+'">'+chk
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
-      +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+t.counterparty+'</div>':'')+'</td>'
+      +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?ctgSpan:'')+'</td>'
       +'<td style="min-width:120px">'+accCell+'</td>'
       +'<td><span class="type-tag '+(pair?'transfer':t.type)+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
@@ -2745,12 +2812,226 @@ function filterTxns(){
       +'</tr>');
   }
   body.innerHTML=rows.join('');
-  const cnt=document.getElementById('txCount');
-  if(cnt){
-    const total=txAllPeriods?Object.keys(DB.periods).reduce((s,p)=>s+getTxns(p).length,0):getTxns(currentPeriod).length;
-    cnt.textContent=txns.length+(txns.length!==total?' из '+total:'')+(txAllPeriods?' · все периоды':'');
-  }
 }
+
+// ── Grouped rendering ──────────────────────────────────────────────────────
+function renderGrouped(txns){
+  const body=document.getElementById('txBody');if(!body)return;
+  const mode=txGroupBy;
+  const groups=new Map();
+  for(const t of txns){
+    const key=mode==='counterparty'
+      ?(t.counterparty||t.counterpartyINN||'Без контрагента')
+      :(t.desc||'Без описания');
+    if(!groups.has(key))groups.set(key,{txns:[],totalIn:0,totalOut:0,cats:new Set()});
+    const g=groups.get(key);
+    g.txns.push(t);
+    if(t.type!=='transfer'){if(t.amtRub>0)g.totalIn+=t.amtRub;else g.totalOut+=Math.abs(t.amtRub);}
+    if(t.type!=='transfer')g.cats.add(t.group);
+  }
+  const sorted=[...groups.entries()].sort((a,b)=>(b[1].totalIn+b[1].totalOut)-(a[1].totalIn+a[1].totalOut));
+  const rows=[];
+  for(const[key,{txns:gt,totalIn,totalOut,cats}] of sorted){
+    const safeKey=btoa(unescape(encodeURIComponent(key))).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+    const expanded=txExpandedGroups.has(safeKey);
+    const catStr=[...cats].join(', ')||'Переводы';
+    rows.push('<tr class="group-hdr" onclick="toggleGroupExpand(\''+safeKey+'\')">'
+      +'<td style="width:24px;text-align:center;color:var(--muted)">'+(expanded?'▾':'▸')+'</td>'
+      +'<td colspan="4" style="font-weight:600;font-size:13px">'+key
+        +'<span style="font-weight:400;color:var(--muted);font-size:12px;margin-left:8px">'+gt.length+' опер. · '+catStr+'</span></td>'
+      +'<td colspan="2">'
+        +(totalIn?'<span class="amt-income" style="font-size:12px">+'+Math.round(totalIn).toLocaleString('ru-RU')+'</span> ':'')
+        +(totalOut?'<span class="amt-expense" style="font-size:12px">−'+Math.round(totalOut).toLocaleString('ru-RU')+'</span>':'')
+      +'</td>'
+      +'<td colspan="2" style="text-align:right">'
+        +'<button onclick="event.stopPropagation();bulkCategoryForGroup(\''+safeKey+'\')" class="act-btn" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:3px" title="Задать категорию всей группе">Категория</button>'
+        +'<button onclick="event.stopPropagation();confirmGroup(\''+safeKey+'\')" class="act-btn" style="color:var(--income);font-size:11px" title="Подтвердить всю группу">✓ все</button>'
+      +'</td></tr>');
+    if(expanded){
+      for(const t of gt){
+        const isI=t.type==='income',isT=t.type==='transfer';
+        const cls=isT?'amt-transfer':isI?'amt-income':'amt-expense';
+        const isConf=t.confirmed===true;
+        rows.push('<tr style="background:var(--bg)">'
+          +'<td></td>'
+          +'<td style="color:var(--muted);font-size:11px;padding-left:20px">'+t.dateDisplay+'</td>'
+          +'<td style="font-size:12px">'+t.desc+'</td>'
+          +'<td style="font-size:11px;color:var(--muted2)">'+accLabel(t.account)+'</td>'
+          +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
+          +'<td><span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'">'+t.group+'</span></td>'
+          +'<td style="font-size:11px;color:var(--muted)">'+t.sub+'</td>'
+          +'<td style="text-align:right"><span class="'+cls+'">'+(isI?'+':'')+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span></td>'
+          +'<td style="text-align:right">'
+            +'<button onclick="openInlineRule(\''+t.id+'\')" class="act-btn" title="Правило">⊕</button>'
+            +'<button onclick="confirmTx(\''+t.id+'\')" class="act-btn confirm-btn'+(isConf?' confirmed':'')+'" title="'+(isConf?'Подтверждено':'Подтвердить')+'">'+(isConf?'✓':'○')+'</button>'
+            +'<button onclick="openEditTx(\''+t.id+'\',\''+t.month+'\')" class="act-btn">✎</button>'
+          +'</td></tr>');
+      }
+    }
+  }
+  body.innerHTML=rows.join('');
+}
+
+
+// ── Confirm / bulk / group helpers ──────────────────────────────────────────
+function confirmTx(txId){
+  const found=findTxAndPeriod(txId);if(!found)return;
+  found.tx.confirmed=!found.tx.confirmed;
+  savePeriod(found.period,'Confirm tx');
+  filterTxns();
+}
+
+function toggleBulkSelect(txId){
+  if(txBulkSelected.has(txId))txBulkSelected.delete(txId);
+  else txBulkSelected.add(txId);
+  filterTxns();
+}
+
+function toggleSelectAll(checked){
+  const allPArr=Object.keys(DB.periods).sort().reverse();
+  const txns=(txAllPeriods?allPArr.flatMap(p=>getTxns(p)):getTxns(currentPeriod));
+  if(checked)txns.forEach(t=>txBulkSelected.add(t.id));
+  else txns.forEach(t=>txBulkSelected.delete(t.id));
+  filterTxns();
+}
+
+function clearBulkSelect(){txBulkSelected.clear();filterTxns();}
+
+function onBulkGroupChange(){
+  const g=document.getElementById('bulkGroup')?.value||'';
+  if(!g)return;
+  const _incomeSubs=(DB.customGroups||{})['__income__']||(CAT_TREE.income.subs||[]);
+  const subs=g==='Доход'?_incomeSubs:g==='Перевод'?['Внутренний перевод','Снятие наличных','Пополнение брокерского счёта','Вывод с брокерского счёта']:getExpenseGroups()[g]||['Прочее'];
+  const el=document.getElementById('bulkSub');
+  if(el)el.innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
+}
+
+function applyBulkCategory(){
+  const g=document.getElementById('bulkGroup')?.value||'';
+  const s=document.getElementById('bulkSub')?.value||g;
+  const tp=document.getElementById('bulkType')?.value||'expense';
+  if(!g){toast('Выберите категорию','err');return;}
+  const periods=new Set();
+  for(const txId of txBulkSelected){
+    const found=findTxAndPeriod(txId);if(!found)continue;
+    Object.assign(found.tx,{group:g,sub:s,type:tp,manualCategory:true});
+    periods.add(found.period);
+  }
+  for(const p of periods)savePeriod(p,'Bulk category');
+  toast('Категория применена к '+txBulkSelected.size+' операциям','ok');
+  txBulkSelected.clear();filterTxns();
+}
+
+function bulkConfirmVisible(){
+  const allPArr=Object.keys(DB.periods).sort().reverse();
+  const ctgF=txFilterCounterparty.toLowerCase();
+  const search=(document.getElementById('txSearch')?.value||'').toLowerCase();
+  const group=document.getElementById('txGroup')?.value||'';
+  const type=document.getElementById('txType')?.value||'';
+  const account=document.getElementById('txAccount')?.value||'';
+  const txns=(txAllPeriods?allPArr.flatMap(p=>getTxns(p)):getTxns(currentPeriod)).filter(t=>{
+    if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search))return false;
+    if(group&&t.group!==group)return false;
+    if(type&&t.type!==type)return false;
+    if(account&&t.account!==account&&t.linkedAccount!==account)return false;
+    if(ctgF&&!(t.counterparty||'').toLowerCase().includes(ctgF)&&!(t.counterpartyINN||'').includes(ctgF)&&!t.desc.toLowerCase().includes(ctgF))return false;
+    if(txShowUnconfirmed&&t.confirmed)return false;
+    return true;
+  });
+  const periods=new Set();
+  txns.forEach(t=>{t.confirmed=true;periods.add(t.month);});
+  for(const p of periods)savePeriod(p,'Bulk confirm');
+  toast('Подтверждено '+txns.length+' операций ✓','ok');
+  filterTxns();
+}
+
+function setTxCounterpartyFilter(val){
+  txFilterCounterparty=decodeURIComponent(val||'');
+  const el=document.getElementById('txCounterparty');
+  if(el)el.value=txFilterCounterparty;
+  filterTxns();
+}
+
+function toggleGroupExpand(key){
+  if(txExpandedGroups.has(key))txExpandedGroups.delete(key);
+  else txExpandedGroups.add(key);
+  filterTxns();
+}
+
+function confirmGroup(safeKey){
+  const periods=new Set();
+  for(const period of Object.keys(DB.periods)){
+    for(const t of getTxns(period)){
+      const k=btoa(unescape(encodeURIComponent(txGroupBy==='counterparty'
+        ?(t.counterparty||t.counterpartyINN||'Без контрагента')
+        :(t.desc||'Без описания')))).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+      if(k===safeKey){t.confirmed=true;periods.add(period);}
+    }
+  }
+  for(const p of periods)savePeriod(p,'Confirm group');
+  toast('Группа подтверждена ✓','ok');filterTxns();
+}
+
+function bulkCategoryForGroup(safeKey){
+  // Select all txns in this group, open bulk bar
+  txBulkSelected.clear();
+  for(const period of Object.keys(DB.periods)){
+    for(const t of getTxns(period)){
+      const k=btoa(unescape(encodeURIComponent(txGroupBy==='counterparty'
+        ?(t.counterparty||t.counterpartyINN||'Без контрагента')
+        :(t.desc||'Без описания')))).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+      if(k===safeKey)txBulkSelected.add(t.id);
+    }
+  }
+  // Switch to flat list to show bulk bar
+  txGroupBy='none';
+  const sel=document.getElementById('txGroupSel');if(sel)sel.value='none';
+  filterTxns();
+}
+
+// ── Inline rule modal ─────────────────────────────────────────────────────
+function openInlineRule(txId){
+  const found=findTxAndPeriod(txId);if(!found)return;
+  const tx=found.tx;
+  document.getElementById('irTxId').value=txId;
+  const hasINN=tx.counterpartyINN&&!OWN_INNS.has(tx.counterpartyINN)&&tx.counterpartyINN!==OWN_INN;
+  const typeEl=document.getElementById('irType');
+  typeEl.value=hasINN?'inn':'keyword';
+  document.getElementById('irValue').value=hasINN?tx.counterpartyINN:(tx.desc||'').slice(0,40);
+  document.getElementById('irPreview').textContent=hasINN?(tx.counterparty||tx.counterpartyINN):tx.desc;
+  const gs=document.getElementById('irGroup');
+  gs.innerHTML=getAllGroups().map(g=>'<option value="'+g+'">'+g+'</option>').join('');
+  gs.value=tx.group;onIrGroupChange();
+  document.getElementById('irSub').value=tx.sub;
+  document.getElementById('irTxType').value=tx.type||'expense';
+  document.getElementById('inlineRuleModal').classList.add('open');
+}
+
+function onIrGroupChange(){
+  const g=document.getElementById('irGroup')?.value||'';
+  const _incomeSubs=(DB.customGroups||{})['__income__']||(CAT_TREE.income.subs||[]);
+  const subs=g==='Доход'?_incomeSubs:g==='Перевод'?['Внутренний перевод','Снятие наличных','Пополнение брокерского счёта','Вывод с брокерского счёта']:getExpenseGroups()[g]||['Прочее'];
+  const el=document.getElementById('irSub');
+  if(el)el.innerHTML=subs.map(s=>'<option>'+s+'</option>').join('');
+}
+
+function saveInlineRule(){
+  const txId=document.getElementById('irTxId').value;
+  const rType=document.getElementById('irType').value;
+  const rVal=(document.getElementById('irValue').value||'').trim();
+  const grp=document.getElementById('irGroup').value;
+  const sub=document.getElementById('irSub').value;
+  const tp=document.getElementById('irTxType').value;
+  if(!rVal){toast('Укажите значение правила','err');return;}
+  const changed=addRule({type:rType,value:rVal,group:grp,sub:sub,txType:tp});
+  // Also update this specific tx
+  const found=findTxAndPeriod(txId);
+  if(found){Object.assign(found.tx,{group:grp,sub:sub,type:tp,manualCategory:true});savePeriod(found.period,'Inline rule');}
+  toast('Правило создано · обновлено '+changed+' операций','ok');
+  document.getElementById('inlineRuleModal').classList.remove('open');
+  filterTxns();
+}
+
 
 function markAsExpense(txId,period){
   const p=period||currentPeriod;
@@ -4528,5 +4809,34 @@ function updateBottomNav(page){
   </div>
 </div>
 
+
+<!-- Inline Rule Modal -->
+<div id="inlineRuleModal" class="modal-overlay">
+  <div class="modal" style="max-width:380px">
+    <h3 style="margin-bottom:4px">Создать правило</h3>
+    <div id="irPreview" style="font-size:12px;color:var(--muted2);background:var(--bg3);padding:6px 10px;border-radius:var(--r);margin-bottom:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    <input type="hidden" id="irTxId">
+    <div class="form-group">
+      <label>Тип правила</label>
+      <select id="irType" style="width:100%"><option value="inn">По ИНН контрагента</option><option value="keyword">По ключевому слову</option></select>
+    </div>
+    <div class="form-group">
+      <label>Значение</label>
+      <input type="text" id="irValue" style="width:100%">
+    </div>
+    <div class="form-group" style="display:flex;gap:8px">
+      <div style="flex:1"><label>Категория</label><select id="irGroup" style="width:100%" onchange="onIrGroupChange()"></select></div>
+      <div style="flex:1"><label>Подкатегория</label><select id="irSub" style="width:100%"></select></div>
+    </div>
+    <div class="form-group">
+      <label>Тип операции</label>
+      <select id="irTxType" style="width:100%"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option></select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn primary" onclick="saveInlineRule()">Сохранить правило</button>
+      <button class="btn" onclick="document.getElementById('inlineRuleModal').classList.remove('open')">Отмена</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
