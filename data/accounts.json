@@ -47,7 +47,7 @@
     "name": "ТБ Счет кредитный *0004 / Карта *8555",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": 19571.18,
+    "currentBalance": 0,
     "currency": "RUB",
     "isCredit": true
   },
@@ -58,7 +58,7 @@
     "name": "ТБ Счет ИП Копилка *6488",
     "owner": "me",
     "source": "tinkoff_business",
-    "currentBalance": 48387.7
+    "currentBalance": 0
   },
   "40802810100000077444": {
     "number": "40802810100000077444",
@@ -67,7 +67,7 @@
     "name": "ТБ Счет ИП *7444 / Карта *5900, *9967",
     "owner": "me",
     "source": "tinkoff_business",
-    "currentBalance": 10153
+    "currentBalance": null
   },
   "cash_me": {
     "number": "cash_me",
