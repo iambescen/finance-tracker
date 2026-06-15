@@ -2332,6 +2332,12 @@ async function saveAllNow(){
   const errors=[];
   try{
     const date=_ghDate();
+    // Wait for any in-flight savePeriod queue writes to finish first
+    const pending=Object.values(_ghQueues).filter(Boolean);
+    if(pending.length){
+      if(btn)btn.textContent='⏳ ждём...';
+      await Promise.allSettled(pending);
+    }
     const periods=Object.entries(DB.periods);
     let i=0;
     // Sequential — no SHA races, clear progress
@@ -3969,15 +3975,20 @@ async function ghPut(path,content,msg){
   const body={message:msg,content:b64};
   if(check.ok){const j=await check.json();body.sha=j.sha;}
   const res=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(res.status===409){
-    // SHA conflict: re-fetch sha and retry once
+  // On conflict or missing SHA: fetch fresh SHA and retry once
+  if(res.status===409||res.status===422){
     const recheck=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
-    if(recheck.ok){const rj=await recheck.json();body.sha=rj.sha;body.content=btoa(unescape(encodeURIComponent(content)));}
-    return fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
-  }
-  if(res.status===422){
-    // 422 = content identical to what's already on GitHub — treat as success
-    return new Response('{}',{status:200,headers:{'Content-Type':'application/json'}});
+    if(!recheck.ok){
+      // File likely doesn't exist or not accessible; return synthetic ok (nothing to update)
+      return new Response('{}',{status:200,headers:{'Content-Type':'application/json'}});
+    }
+    const rj=await recheck.json();
+    body.sha=rj.sha;
+    body.content=btoa(unescape(encodeURIComponent(content)));
+    const retry=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+    // 422 on retry = content identical, treat as success
+    if(retry.status===422)return new Response('{}',{status:200,headers:{'Content-Type':'application/json'}});
+    return retry;
   }
   return res;
 }
