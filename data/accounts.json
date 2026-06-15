@@ -18,7 +18,7 @@
     "name": "ТБ Счет дебетовый *7972 / Карта *4029",
     "owner": "me",
     "source": "tinkoff",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "RUB"
   },
   "4129": {
@@ -28,7 +28,7 @@
     "name": "ТБ Счет дебетовый *1363 / Карта *4129",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "RUB"
   },
   "7513": {
@@ -38,7 +38,7 @@
     "name": "ТБ Счет дебетовый *1363 / Карта *7513",
     "owner": "me",
     "source": "tinkoff",
-    "currentBalance": null
+    "currentBalance": 300
   },
   "8555": {
     "number": "8555",
@@ -47,7 +47,7 @@
     "name": "ТБ Счет кредитный *0004 / Карта *8555",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": null,
+    "currentBalance": 19571.18,
     "currency": "RUB",
     "isCredit": true
   },
@@ -58,7 +58,7 @@
     "name": "ТБ Счет ИП Копилка *6488",
     "owner": "me",
     "source": "tinkoff_business",
-    "currentBalance": null
+    "currentBalance": 48387.7
   },
   "40802810100000077444": {
     "number": "40802810100000077444",
@@ -67,7 +67,7 @@
     "name": "ТБ Счет ИП *7444 / Карта *5900, *9967",
     "owner": "me",
     "source": "tinkoff_business",
-    "currentBalance": null
+    "currentBalance": 10153
   },
   "cash_me": {
     "number": "cash_me",
@@ -96,7 +96,7 @@
     "name": "ТБ Счет дебетовый *7972 / Карта *0829",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": null,
+    "currentBalance": 1,
     "currency": "RUB"
   },
   "0993": {
@@ -106,7 +106,7 @@
     "name": "ТБ Счет дебетовый *7972 / Карта *0993",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "RUB"
   },
   "40817810947008058607": {
@@ -116,7 +116,7 @@
     "name": "СБ Счет дебетовый *8607 / Карта *0557",
     "owner": "me",
     "source": "sber_pdf",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "RUB"
   },
   "40817810720414002560": {
@@ -126,7 +126,7 @@
     "name": "ВТБ Счет дебетовый *2560 / Карта *4862",
     "owner": "me",
     "source": "vtb_pdf",
-    "currentBalance": null,
+    "currentBalance": 20387,
     "currency": "RUB"
   },
   "40817810690179282810": {
@@ -136,7 +136,7 @@
     "name": "ВТБ Счет дебетовый *2810 / Карта *0412",
     "owner": "wife",
     "source": "vtb_pdf",
-    "currentBalance": null,
+    "currentBalance": 195,
     "currency": "RUB"
   },
   "40817810747005528369": {
@@ -146,7 +146,7 @@
     "name": "СБ Счет дебетовый *8369 / Карта *1424",
     "owner": "wife",
     "source": "sber_pdf",
-    "currentBalance": null,
+    "currentBalance": 1,
     "currency": "RUB"
   },
   "40817810990189542073": {
@@ -156,7 +156,7 @@
     "name": "ВТБ Счет кредитный*2073 / Карта *5153, *0285",
     "owner": "wife",
     "source": "vtb_credit_pdf",
-    "currentBalance": null,
+    "currentBalance": 24699.43,
     "currency": "RUB",
     "isCredit": true
   },
@@ -167,7 +167,7 @@
     "name": "ТБ Счет кредитный *0004 / Карта *0149",
     "owner": "me",
     "source": "tinkoff",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "RUB",
     "isCredit": true
   },
@@ -178,7 +178,7 @@
     "name": "ВТБ Счет ипотечный *3464",
     "owner": "me",
     "source": "vtb_mortgage_pdf",
-    "currentBalance": null,
+    "currentBalance": 1581007.97,
     "currency": "RUB",
     "isCredit": true,
     "virtual": false
@@ -190,7 +190,7 @@
     "name": "СБ Счет кредитный *8532",
     "owner": "wife",
     "source": "sber_loan_pdf",
-    "currentBalance": null,
+    "currentBalance": 41114.29,
     "currency": "RUB",
     "isCredit": true,
     "virtual": false
@@ -202,7 +202,7 @@
     "name": "ББ Счет дебетовый *0273 / Карта *6293",
     "owner": "me",
     "source": "bakay_xlsx",
-    "currentBalance": null,
+    "currentBalance": 1.77,
     "currency": "KGS"
   },
   "1242080005127466": {
@@ -212,7 +212,7 @@
     "name": "ББ Счет дебетовый *7466 / Карта *0564",
     "owner": "me",
     "source": "bakay_xlsx",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "USD"
   },
   "40914810800007588136": {
@@ -222,7 +222,7 @@
     "name": "ЦБ Счет дебетовый *8136 / Карта *8473, *2991",
     "owner": "me",
     "source": "cifra_pdf",
-    "currentBalance": null,
+    "currentBalance": 0,
     "currency": "RUB"
   },
   "broker_cifra_1861037": {
@@ -232,7 +232,7 @@
     "name": "ЦБ Счет брокерский *1037",
     "owner": "me",
     "source": "cifra_broker_xlsx",
-    "currentBalance": null,
+    "currentBalance": 2.05,
     "currency": "RUB"
   },
   "tinkoff_broker_2074432923": {
