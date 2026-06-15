@@ -212,7 +212,7 @@
     "name": "ББ Счет дебетовый *7466 / Карта *0564",
     "owner": "me",
     "source": "bakay_xlsx",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "USD"
   },
   "40914810800007588136": {
@@ -222,7 +222,7 @@
     "name": "ЦБ Счет дебетовый *8136 / Карта *8473, *2991",
     "owner": "me",
     "source": "cifra_pdf",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "broker_cifra_1861037": {
