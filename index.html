@@ -3621,8 +3621,14 @@ async function loadFromGithub(){
   try{
     const load=async(path)=>{const r=await fetch('https://raw.githubusercontent.com/'+user+'/'+repo+'/main/'+path+'?t='+Date.now());return r.ok?r.json():null;};
     const[assets,accounts,rules]=await Promise.all([load('data/assets.json'),load('data/accounts.json'),load('data/rules.json')]);
-    if(assets)DB.assets=assets;if(accounts)DB.accounts=accounts;if(rules){if(rules.rules)DB.rules=rules.rules;else if(Array.isArray(rules))DB.rules=rules;if(rules.customGroups)DB.customGroups=rules.customGroups;}
+    // GitHub is authoritative: reset if file deleted (null = 404, not network error)
+    if(assets)DB.assets=assets;
+    DB.accounts=accounts||{};
+    if(rules){if(rules.rules)DB.rules=rules.rules;else if(Array.isArray(rules))DB.rules=rules;if(rules.customGroups)DB.customGroups=rules.customGroups;}
+    else{DB.rules=[];DB.customGroups={};}
     const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',{headers:{Authorization:'token '+token}});
+    // Reset periods — GitHub is authoritative. Prevents stale localStorage data surviving deletion.
+    DB.periods={};currentPeriod=null;
     if(lr.ok){
       const files=await lr.json();
       for(const f of files){if(f.name.match(/^\d{4}-\d{2}\.json$/)){const dr=await fetch(f.download_url+'?t='+Date.now());if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();}}
