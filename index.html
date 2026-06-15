@@ -4135,8 +4135,18 @@ async function loadFromGithub(){
       apiLoad('data/rules.json')
     ]);
     if(assets)DB.assets=assets;
-    if(accounts)DB.accounts=accounts;
-    if(rules){if(rules.rules)DB.rules=rules.rules;else if(Array.isArray(rules))DB.rules=rules;if(rules.customGroups)DB.customGroups=rules.customGroups;}
+    // Merge accounts: add from GitHub only what we don't have locally.
+    // Prevents stale GitHub cache from overwriting local edits (balanceAnchor, names etc.)
+    if(accounts){
+      for(const[key,acc]of Object.entries(accounts)){
+        if(!DB.accounts[key])DB.accounts[key]=acc;
+      }
+    }
+    // Rules: only load from GitHub if we have no local rules
+    if(rules&&DB.rules.length===0){
+      if(rules.rules)DB.rules=rules.rules;else if(Array.isArray(rules))DB.rules=rules;
+      if(rules.customGroups)DB.customGroups=rules.customGroups;
+    }
     // Get directory listing (standard JSON, not raw)
     const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',
       {headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
