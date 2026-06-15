@@ -18,7 +18,7 @@
     "name": "ТБ Счет дебетовый *7972 / Карта *4029",
     "owner": "me",
     "source": "tinkoff",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "4129": {
@@ -96,7 +96,7 @@
     "name": "ТБ Счет дебетовый *7972 / Карта *0829",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": 1,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "0993": {
@@ -106,7 +106,7 @@
     "name": "ТБ Счет дебетовый *7972 / Карта *0993",
     "owner": "wife",
     "source": "tinkoff",
-    "currentBalance": 0,
+    "currentBalance": null,
     "currency": "RUB"
   },
   "40817810947008058607": {
