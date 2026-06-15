@@ -38,7 +38,7 @@
     "name": "ТБ Счет дебетовый *1363 / Карта *7513",
     "owner": "me",
     "source": "tinkoff",
-    "currentBalance": 300
+    "currentBalance": 0
   },
   "8555": {
     "number": "8555",
