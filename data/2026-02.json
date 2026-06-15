@@ -521,11 +521,11 @@
       "counterparty": "ПРОФЭС",
       "counterpartyINN": "7707456672",
       "counterpartyAcc": "40703810400810000248",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Прочие доходы",
+      "sub": "Выручка от услуг/курсов/товаров",
       "type": "income"
     },
     {
