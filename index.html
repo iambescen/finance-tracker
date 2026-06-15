@@ -2233,7 +2233,6 @@ async function processPDFFile(file) {
 
 function processFile(file){
   const ext=file.name.split('.').pop().toLowerCase();
-  toast('Читаем: '+file.name,'info');
   if(ext==='pdf'){
     processPDFFile(file);
     return;
@@ -2277,16 +2276,7 @@ function processFile(file){
     fr.onload=e=>{
       try{
         let res=Papa.parse(e.target.result,{header:true,delimiter:';',skipEmptyLines:true});
-        const hdrs=Object.keys(res.data[0]||{}).join('|');
-        console.log('[upload] CSV headers:',hdrs);
-        console.log('[upload] rows:',res.data.length);
-        if(!res.data?.length){
-          res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});
-          console.log('[upload] retry auto-delim, rows:',res.data.length);
-        }
-        const bank=res.data.length?detectBank(Object.keys(res.data[0]||{})):'none';
-        console.log('[upload] detected bank:',bank);
-        toast('Файл: '+res.data.length+' строк · '+bank,'info');
+        if(!res.data?.length)res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});
         ingest(processRows(res.data));
       }catch(err){toast('Ошибка CSV: '+err.message,'err');console.error(err);}
     };
@@ -2358,10 +2348,58 @@ async function autoSaveToGithub(){
 }
 
 // ── Balance history ──
+function computeCurrentBalance(accNum){
+  const acc=DB.accounts[accNum];if(!acc)return null;
+  const anchor=acc.balanceAnchor;
+  let anchorVal,anchorDate;
+  if(anchor?.value!=null&&anchor?.date){
+    anchorVal=parseFloat(anchor.value);anchorDate=anchor.date;
+  }else if(acc.currentBalance!=null&&acc.currentBalance!==''){
+    anchorVal=parseFloat(acc.currentBalance);
+    anchorDate=new Date().toISOString().slice(0,10);
+  }else return null;
+  let delta=0;
+  for(const period of Object.keys(DB.periods))
+    for(const tx of getTxns(period))
+      if(tx.account===accNum&&tx.date>anchorDate)delta+=tx.amtRub;
+  return Math.round((anchorVal+delta)*100)/100;
+}
+
+function computeBalance(accNum,targetDate){
+  const acc=DB.accounts[accNum];if(!acc)return null;
+  const anchor=acc.balanceAnchor;
+  let anchorVal,anchorDate;
+  if(anchor?.value!=null&&anchor?.date){
+    anchorVal=parseFloat(anchor.value);anchorDate=anchor.date;
+  }else if(acc.currentBalance!=null&&acc.currentBalance!==''){
+    anchorVal=parseFloat(acc.currentBalance);
+    anchorDate=new Date().toISOString().slice(0,10);
+  }else return null;
+  let delta=0;
+  for(const period of Object.keys(DB.periods)){
+    for(const tx of getTxns(period)){
+      if(tx.account!==accNum)continue;
+      if(anchorDate<=targetDate){if(tx.date>anchorDate&&tx.date<=targetDate)delta+=tx.amtRub;}
+      else{if(tx.date>targetDate&&tx.date<=anchorDate)delta-=tx.amtRub;}
+    }
+  }
+  return Math.round((anchorVal+delta)*100)/100;
+}
+
+function syncAssetsCash(){
+  const accsWithBal=Object.values(DB.accounts).filter(a=>{
+    if(a.isCredit)return false;
+    return(a.balanceAnchor?.value!=null&&a.balanceAnchor?.date)||(a.currentBalance!=null&&a.currentBalance!=='');
+  });
+  if(!accsWithBal.length)return;
+  const total=accsWithBal.reduce((s,acc)=>s+(computeCurrentBalance(acc.number)||0),0);
+  DB.assets.cash=Math.round(total);
+}
+
 function calcAccountHistory(accNum){
-  const acc=DB.accounts[accNum];
-  if(!acc||acc.currentBalance==null||acc.currentBalance==='')return null;
-  let balance=parseFloat(acc.currentBalance)||0;
+  const currentBal=computeCurrentBalance(accNum);
+  if(currentBal===null)return null;
+  let balance=currentBal;
   const periods=Object.keys(DB.periods).sort().reverse();
   const history=[];
   for(const period of periods){
@@ -2375,7 +2413,7 @@ function calcAccountHistory(accNum){
 }
 
 function calcTotalBalanceHistory(){
-  const accs=Object.values(DB.accounts).filter(a=>a.currentBalance!=null&&a.currentBalance!=='');
+  const accs=Object.values(DB.accounts).filter(a=>computeCurrentBalance(a.number)!==null);
   if(!accs.length)return null;
   const byPeriod={};
   for(const acc of accs){
@@ -2599,13 +2637,13 @@ function pageBalance(){
   const curSymbolMap={'RUB':'₽','USD':'$','EUR':'€','KGS':'с'};
   function fmtCur(n,cur){const s=Math.abs(n).toLocaleString('ru-RU',{maximumFractionDigits:2,minimumFractionDigits:0});const sym=curSymbolMap[cur||'RUB']||cur||'₽';return (n<0?'−':'')+s+' '+sym;}
   // For balance: use parent accounts (child balances already included via calcAccountHistory)
-  const accsWithBalance=Object.values(DB.accounts).filter(a=>a.currentBalance!=null&&a.currentBalance!==''&&!a.virtual);
+  const accsWithBalance=Object.values(DB.accounts).filter(a=>computeCurrentBalance(a.number)!=null&&!a.virtual);
   const accRows=accsWithBalance.map(acc=>{
     const hist=calcAccountHistory(acc.number);
     const oldest=hist&&hist.length?hist[0]:null;
     const cur=acc.currency||'RUB';
     const isRub=cur==='RUB';
-    const balVal = parseFloat(acc.currentBalance)||0;
+    const balVal = computeCurrentBalance(acc.number)||0;
     const isCr = acc.isCredit;
     const balColor = isCr ? 'var(--expense)' : 'var(--accent)';
     const balLabel = isCr ? '(долг)' : '';
@@ -2621,9 +2659,9 @@ function pageBalance(){
     +(accsWithBalance.length
       ?'<div class="card"><div class="card-title">Остатки по счетам — сейчас</div>'+accRows
         +'<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:600;font-size:14px;border-top:1px solid var(--border);margin-top:4px">'
-        +'<span>Кэш на счетах</span><span style="color:var(--income)">'+fmtMoney(accsWithBalance.filter(a=>!a.isCredit).reduce((s,a)=>s+(parseFloat(a.currentBalance)||0),0))+'</span></div>'
+        +'<span>Кэш на счетах</span><span style="color:var(--income)">'+fmtMoney(accsWithBalance.filter(a=>!a.isCredit).reduce((s,a)=>s+(computeCurrentBalance(a.number)||0),0))+'</span></div>'
         +'<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:600;font-size:14px">'
-        +'<span>Долг по кредитным картам</span><span style="color:var(--expense)">'+fmtMoney(accsWithBalance.filter(a=>a.isCredit).reduce((s,a)=>s+(parseFloat(a.currentBalance)||0),0))+'</span></div>'
+        +'<span>Долг по кредитным картам</span><span style="color:var(--expense)">'+fmtMoney(accsWithBalance.filter(a=>a.isCredit).reduce((s,a)=>s+(computeCurrentBalance(a.number)||0),0))+'</span></div>'
         +'</div>'
       :'<div class="card" style="border:1.5px dashed var(--border2);text-align:center;padding:32px">'
         +'<div style="font-size:28px;margin-bottom:10px">💳</div>'
@@ -3246,7 +3284,7 @@ function pageAccounts(){
           +'<input type="checkbox" data-acc="'+acc.number+'" data-field="isCredit" onchange="updateAccCheck(this)" '+(acc.isCredit?'checked':'')+' style="cursor:pointer;accent-color:var(--expense)"> Кредитная'
         +'</label>'
         +'<div style="display:flex;align-items:center;gap:6px">'
-          +'<input type="number" placeholder="Остаток сейчас" value="'+(acc.currentBalance!=null&&acc.currentBalance!==''?acc.currentBalance:'')+'" data-acc="'+acc.number+'" data-field="currentBalance" onchange="updateAcc(this)" style="'+inputStyle+';width:120px">'
+          +'<div>'+'<input type="number" placeholder="Остаток" value="'+(acc.balanceAnchor?.value??acc.currentBalance??'')+'" data-acc="'+acc.number+'" data-field="currentBalance" onchange="updateAccBalance(this)" style="'+inputStyle+';width:110px">'+'</div>'+(computeCurrentBalance(acc.number)!=null&&acc.balanceAnchor?.date?'<div style="font-size:11px;color:var(--accent);margin-top:2px">~'+computeCurrentBalance(acc.number).toLocaleString('ru-RU',{maximumFractionDigits:0})+' '+sym+' сейчас</div>':'')  
           +'<span style="font-size:13px;color:var(--muted2);font-weight:500">'+sym+'</span>'
         +'</div>'
         +'<div style="display:flex;gap:6px;justify-content:flex-end">'          +'<button onclick="openEditAccount(\''+acc.number+'\')" title="Редактировать счёт" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px 6px">✎</button>'          +(acc.manual?'<button onclick="deleteAccount(\''+acc.number+'\')" title="Удалить счёт" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:13px;padding:4px 8px;border-radius:var(--r);border:1px solid var(--border)">✕</button>':'')        +'</div>'        +'</div>';    }).join('')
@@ -3254,10 +3292,21 @@ function pageAccounts(){
     +'</div>';
 }
 
+function updateAccBalance(el){
+  updateAcc(el);
+  // Refresh the computed balance hint
+  const wrapper=el.closest('[class]');
+  if(wrapper)renderPage(); // rerender to show updated computed balance
+}
 function updateAcc(el){
   const acc=el.dataset.acc,field=el.dataset.field;
   if(DB.accounts[acc]){
-    DB.accounts[acc][field]=field==='currentBalance'?(el.value!==''?parseFloat(el.value):null):el.value;
+    if(field==='currentBalance'){
+      const val=el.value!==''?parseFloat(el.value):null;
+      DB.accounts[acc].currentBalance=val;
+      if(val!=null){DB.accounts[acc].balanceAnchor={value:val,date:new Date().toISOString().slice(0,10)};}
+      else{delete DB.accounts[acc].balanceAnchor;}
+    }else{DB.accounts[acc][field]=el.value;}
     saveLocal();
     saveAccounts();
     if(currentPage==='balance')renderPage();
@@ -3299,15 +3348,14 @@ function pageAssets(){
   // Vehicles — use market cost for assets
   const vehiclesTotal=a.vehicles.reduce((s,v)=>s+(v.marketCost||0),0);
 
-  // Auto-calculate cash from account balances
+  // Auto-calculate cash from computed account balances (via balanceAnchor + transactions)
   let autoCash=0,hasCashAccounts=false;
   for(const acc of Object.values(DB.accounts)){
     if(acc.virtual||acc.source==='vtb_mortgage_pdf'||acc.source==='sber_loan_pdf')continue;
-    if(acc.currentBalance==null)continue;
+    const bal=computeCurrentBalance(acc.number);
+    if(bal==null)continue;
     hasCashAccounts=true;
-    if(!acc.isCredit&&!acc.isCreditCard){
-      autoCash+=parseFloat(acc.currentBalance)||0;
-    }
+    if(!acc.isCredit&&!acc.isCreditCard)autoCash+=bal;
   }
   const cashVal=hasCashAccounts?autoCash:(a.cash||0);
   // Add broker account value from investments
@@ -4027,6 +4075,7 @@ async function loadFromGithub(){
 
 // ── Periods ──
 function refreshUI(){
+  syncAssetsCash(); // auto-update assets.cash from account balances
   const periods=Object.keys(DB.periods).sort().reverse();
   // Update period dropdown if it exists (may be removed from topbar)
   const sel=document.getElementById('periodSelect');
@@ -4166,7 +4215,11 @@ function openEditAccount(accNum){
   document.getElementById('eaDisplay').value=acc.display||'';
   document.getElementById('eaOwner').value=acc.owner||'me';
   document.getElementById('eaCurrency').value=acc.currency||'RUB';
-  document.getElementById('eaBalance').value=acc.currentBalance!=null?acc.currentBalance:'';
+  document.getElementById('eaBalance').value=acc.balanceAnchor?.value??acc.currentBalance??'';
+  document.getElementById('eaBalDate').value=acc.balanceAnchor?.date||'';
+  const _cb=computeCurrentBalance(acc.number);
+  const _cbEl=document.getElementById('eaComputedBal');
+  if(_cbEl)_cbEl.textContent=_cb!=null?'Сейчас: ~'+_cb.toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽ (расчётно)'  :'';
   document.getElementById('eaIsCredit').checked=!!acc.isCredit;
   document.getElementById('editAccountModal').classList.add('open');
 }
@@ -4180,7 +4233,11 @@ function saveEditAccount(){
   acc.owner=document.getElementById('eaOwner').value;
   acc.currency=document.getElementById('eaCurrency').value;
   const bal=document.getElementById('eaBalance').value;
-  acc.currentBalance=bal!==''?parseFloat(bal):null;
+  const balDate=document.getElementById('eaBalDate').value;
+  acc.currentBalance=bal!==''?parseFloat(bal):null; // legacy compat
+  if(bal!==''&&balDate){acc.balanceAnchor={value:parseFloat(bal),date:balDate};}
+  else if(bal!==''){acc.balanceAnchor={value:parseFloat(bal),date:new Date().toISOString().slice(0,10)};}
+  else{delete acc.balanceAnchor;}
   acc.isCredit=document.getElementById('eaIsCredit').checked;
   saveLocal();
   saveAccounts();
@@ -4800,7 +4857,14 @@ function updateBottomNav(page){
       <select id="eaCurrency" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
         <option value="RUB">RUB ₽</option><option value="USD">USD $</option><option value="EUR">EUR €</option><option value="KGS">KGS с</option>
       </select></div>
-    <div class="field"><label>Текущий остаток</label><input type="number" id="eaBalance" placeholder="0" step="0.01"></div>
+    <div class="field">
+      <label>Остаток на дату</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="eaBalance" placeholder="0.00" step="0.01" style="flex:2">
+        <input type="date" id="eaBalDate" style="flex:1.5;padding:7px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)">
+      </div>
+      <div id="eaComputedBal" style="font-size:12px;color:var(--accent);margin-top:4px"></div>
+    </div>
     <div class="field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="eaIsCredit"> Кредитная карта</label></div>
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('editAccountModal').classList.remove('open')">Отмена</button>
