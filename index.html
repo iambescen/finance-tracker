@@ -606,7 +606,22 @@ function addRule(rule){
 
 function registerAccount(accNum,source,bankName,currency){
   const key=String(accNum).replace(/\*/g,'').trim();if(!key)return;
-  if(!DB.accounts[key])DB.accounts[key]={number:key,display:'***'+key.slice(-4),bank:bankName,name:bankName+' ***'+key.slice(-4),owner:'me',source,currentBalance:null,currency:currency||'RUB'};
+  const isNew=!DB.accounts[key];
+  if(isNew)DB.accounts[key]={number:key,display:'***'+key.slice(-4),bank:bankName,name:bankName+' ***'+key.slice(-4),owner:'me',source,currentBalance:null,currency:currency||'RUB'};
+  // Retroactively fix existing txns that pointed to this account as counterparty
+  // (loaded before this account was registered)
+  if(isNew&&DB.periods){
+    for(const period of Object.keys(DB.periods)){
+      for(const tx of (DB.periods[period]?.transactions||[])){
+        if(tx.manualCategory||tx.linkedTo)continue;
+        const ctg=String(tx.counterpartyAcc||'').replace(/[*\s]/g,'');
+        if(ctg!==key)continue;
+        // Upgrade to transfer with known target
+        if(tx.type!=='transfer'){tx.type='transfer';tx.group='Перевод';tx.sub='Внутренний перевод';}
+        if(!tx.linkedAccount)tx.linkedAccount=key;
+      }
+    }
+  }
 }
 
 function parseTinkoff(rows){
@@ -1478,7 +1493,40 @@ function processRows(rows){
 
 function linkTransferPairs(){
   let linked=0;
-  // Collect ALL unlinked transfers across all periods into one pool
+
+  // ── Level 2: account-number match (high confidence) ────────────────────
+  // Uses counterpartyAcc directly from bank data — no guessing needed.
+  // Sets linkedAccount even when counterparty period isn't loaded yet.
+  for(const period of Object.keys(DB.periods)){
+    for(const tx of getTxns(period)){
+      if(tx.linkedTo||tx.type!=='transfer')continue;
+      const ctgKey=String(tx.counterpartyAcc||'').replace(/[*\s]/g,'');
+      if(!ctgKey||!isOwnAccount(ctgKey))continue;
+      if(!tx.linkedAccount)tx.linkedAccount=ctgKey; // single-sided: at least mark the target
+      // Try to find matching tx FROM the counterparty account
+      let best=null,bestScore=Infinity;
+      for(const p2 of Object.keys(DB.periods)){
+        for(const t2 of getTxns(p2)){
+          if(t2.linkedTo||t2.id===tx.id||t2.type!=='transfer')continue;
+          const t2Acc=String(t2.account||'').replace(/[*\s]/g,'');
+          if(t2Acc!==ctgKey)continue; // must come FROM the counterparty account
+          const amtDiff=Math.abs(Math.abs(t2.amtRub)-Math.abs(tx.amtRub));
+          if(amtDiff>100)continue;
+          const days=Math.abs(new Date(t2.date)-new Date(tx.date))/86400000;
+          if(days>7)continue;
+          const score=days+amtDiff/100;
+          if(score<bestScore){best=t2;bestScore=score;}
+        }
+      }
+      if(best){
+        tx.linkedTo=best.id;tx.linkedAccount=best.account;
+        best.linkedTo=tx.id;best.linkedAccount=tx.account;
+        linked++;
+      }
+    }
+  }
+
+  // ── Level 3: fuzzy match (amount ±100, date ±7d) — for remaining ────────
   const pool=[];
   for(const period of Object.keys(DB.periods))
     for(const t of getTxns(period))
@@ -1487,18 +1535,16 @@ function linkTransferPairs(){
   for(const tx of pool){
     if(tx.linkedTo)continue;
     const amt=Math.abs(tx.amtRub),txDate=new Date(tx.date),txSign=Math.sign(tx.amtRub);
-    // Find the best opposite-direction partner: closest date, amount within tolerance
     let best=null,bestScore=Infinity;
     for(const t2 of pool){
       if(t2.linkedTo||t2.id===tx.id)continue;
-      if(Math.sign(t2.amtRub)===txSign)continue;            // must be opposite direction
+      if(Math.sign(t2.amtRub)===txSign)continue;
       const amtDiff=Math.abs(Math.abs(t2.amtRub)-amt);
-      if(amtDiff>100)continue;                               // amount within ±100₽ (covers transfer fees)
+      if(amtDiff>100)continue;
       const days=Math.abs(new Date(t2.date)-txDate)/86400000;
-      if(days>7)continue;                                    // within 7 days
-      // Prefer different account (real transfer) over same account
+      if(days>7)continue;
       const sameAcc=tx.account&&t2.account&&tx.account===t2.account?1:0;
-      const score=days+amtDiff/100+sameAcc*3;                // lower is better
+      const score=days+amtDiff/100+sameAcc*3;
       if(score<bestScore){best=t2;bestScore=score;}
     }
     if(best){
@@ -1507,6 +1553,7 @@ function linkTransferPairs(){
       linked++;
     }
   }
+
   if(linked>0)saveLocal();
   return linked;
 }
@@ -2256,6 +2303,11 @@ function ingest(newTxns){
       if(tx.manualCategory||PROTECTED.includes(tx.source))continue;
       const c=applyCategForTx(tx);
       tx.group=c.g;tx.sub=c.s;tx.type=c.t;
+      // Resolve linkedAccount from counterpartyAcc when we can confirm it's our account
+      if(tx.type==='transfer'&&!tx.linkedAccount&&tx.counterpartyAcc){
+        const ctgKey=String(tx.counterpartyAcc).replace(/[*\s]/g,'');
+        if(ctgKey&&isOwnAccount(ctgKey))tx.linkedAccount=ctgKey;
+      }
     }
   }
   const pairs=linkTransferPairs();
