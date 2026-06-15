@@ -3954,29 +3954,28 @@ async function ghDeleteFile(path,msg){
 function _ghDate(){return new Date().toLocaleDateString('ru-RU');}
 
 // Save one period's transactions to GitHub
-// Debounced per-period to prevent SHA conflicts on rapid deletions
-const _periodSaveTimers={};
-const _periodSaveResolvers={};
+// Queue-based: serialises writes per file → no SHA conflicts, no debounce delay
+const _ghQueues={};
+function ghPutQueued(path,getContent,msg){
+  if(!_ghQueues[path])_ghQueues[path]=Promise.resolve();
+  const p=_ghQueues[path].then(async()=>{
+    const content=typeof getContent==='function'?getContent():getContent;
+    return ghPut(path,content,msg);
+  });
+  _ghQueues[path]=p.catch(()=>{}); // keep chain alive even on error
+  return p;
+}
+
 function savePeriod(period,msg){
-  saveLocal(); // Always immediate local save
+  saveLocal(); // always immediate to localStorage
   const{token}=ghCfg();
   if(!token||!DB.periods[period])return Promise.resolve(false);
-  // Cancel any pending save for this period — latest state wins
-  if(_periodSaveTimers[period]){
-    clearTimeout(_periodSaveTimers[period]);
-    const prev=_periodSaveResolvers[period];
-    if(prev)prev(false);
-  }
-  return new Promise(resolve=>{
-    _periodSaveResolvers[period]=resolve;
-    _periodSaveTimers[period]=setTimeout(()=>{
-      delete _periodSaveTimers[period];
-      delete _periodSaveResolvers[period];
-      // Read FRESH state at save time (all pending deletes already applied)
-      ghPut('data/'+period+'.json',JSON.stringify(DB.periods[period],null,2),(msg||'Update '+period)+' — '+_ghDate())
-        .then(r=>resolve(r&&r.ok!==false)).catch(()=>resolve(false));
-    },600);
-  });
+  // getContent is a function → called at execution time = always latest state
+  return ghPutQueued(
+    'data/'+period+'.json',
+    ()=>JSON.stringify(DB.periods[period],null,2),
+    (msg||'Update '+period)+' — '+_ghDate()
+  ).then(r=>!!(r&&r.ok)).catch(()=>false);
 }
 
 // Save rules + customGroups (ALWAYS together, single format)
