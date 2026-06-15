@@ -1,7 +1,7 @@
 {
   "transactions": [
     {
-      "id": "6lg9x596",
+      "id": "6qrf3nmg",
       "date": "2025-11-15",
       "month": "2025-11",
       "dateDisplay": "15.11.2025",
@@ -25,7 +25,7 @@
       "sub": "Аренда/Ипотека (платёж)"
     },
     {
-      "id": "vvazo1dq",
+      "id": "uav2t0ie",
       "date": "2025-11-15",
       "month": "2025-11",
       "dateDisplay": "15.11.2025",
@@ -47,54 +47,6 @@
       "type": "transfer",
       "group": "Перевод",
       "sub": "Погашение тела ипотеки"
-    },
-    {
-      "id": "bvjw7zi2",
-      "date": "2025-11-04",
-      "month": "2025-11",
-      "dateDisplay": "04.11.2025",
-      "desc": "Тело кредита (погашение долга)",
-      "card": "Сбер кредит",
-      "account": "sber_loan_120526437178532",
-      "bankCat": "Кредит",
-      "amtOp": -12629.64,
-      "curOp": "RUB",
-      "amtRub": -12629.64,
-      "status": "OK",
-      "source": "sber_loan_pdf",
-      "counterparty": "ПАО Сбербанк",
-      "counterpartyINN": "",
-      "counterpartyAcc": "",
-      "manualCategory": false,
-      "linkedTo": null,
-      "linkedAccount": null,
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Погашение тела кредита"
-    },
-    {
-      "id": "oqpdeyk0",
-      "date": "2025-11-04",
-      "month": "2025-11",
-      "dateDisplay": "04.11.2025",
-      "desc": "Проценты по кредиту Сбер",
-      "card": "Сбер кредит",
-      "account": "sber_loan_120526437178532",
-      "bankCat": "Кредит",
-      "amtOp": -1282.85,
-      "curOp": "RUB",
-      "amtRub": -1282.85,
-      "status": "OK",
-      "source": "sber_loan_pdf",
-      "counterparty": "ПАО Сбербанк",
-      "counterpartyINN": "",
-      "counterpartyAcc": "",
-      "manualCategory": false,
-      "linkedTo": null,
-      "linkedAccount": null,
-      "type": "expense",
-      "group": "Жильё",
-      "sub": "Аренда/Ипотека (платёж)"
     }
   ]
 }
