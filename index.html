@@ -2762,7 +2762,7 @@ function filterTxns(){
     const chk='<td style="width:24px;padding:4px 6px"><input type="checkbox" class="tx-cb"'+(isSel?' checked':'')
       +' onchange="toggleBulkSelect(\''+t.id+'\')" onclick="event.stopPropagation()"></td>';
 
-    let accCell,amtDisplay,actBtns;
+    let accCell,amtDisplay,actBtns,ctgSpan='';
 
     if(pair){
       shownIds.add(t.id);shownIds.add(pair.id);
