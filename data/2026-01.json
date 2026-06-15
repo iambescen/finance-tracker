@@ -65,11 +65,11 @@
       "counterparty": "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ \"АЙТИКОМ\"",
       "counterpartyINN": "7714407563",
       "counterpartyAcc": "40702810226020004054",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Прочие доходы",
+      "sub": "Выручка от услуг/курсов/товаров",
       "type": "income"
     },
     {
