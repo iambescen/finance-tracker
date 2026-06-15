@@ -2332,16 +2332,25 @@ async function saveAllNow(){
   try{
     const date=_ghDate();
     const periods=Object.entries(DB.periods);
-    let saved=0;
-    for(const[period,data]of periods){
-      await ghPut('data/'+period+'.json',JSON.stringify(data,null,2),'Save '+period+' — '+date);
-      saved++;
-      if(btn)btn.textContent='⏳ '+saved+'/'+periods.length+'...';
+    let saved=0,failed=0;
+    // Use ghPutQueued to avoid SHA conflicts with in-flight savePeriod calls
+    const saves=periods.map(([period,data])=>
+      ghPutQueued('data/'+period+'.json',
+        ()=>JSON.stringify(DB.periods[period],null,2), // fresh content at exec time
+        'Save '+period+' — '+date
+      ).then(r=>{if(r&&r.ok){saved++;}else{failed++;}if(btn)btn.textContent='⏳ '+(saved+failed)+'/'+periods.length+'...';}
+      ).catch(()=>{failed++;})
+    );
+    await Promise.all(saves);
+    // Save accounts and rules sequentially
+    const aOk=await ghPutQueued('data/accounts.json',()=>JSON.stringify(DB.accounts,null,2),'Save accounts — '+date).then(r=>r&&r.ok).catch(()=>false);
+    const rOk=await ghPutQueued('data/rules.json',()=>JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Save rules — '+date).then(r=>r&&r.ok).catch(()=>false);
+    if(failed>0){
+      toast('Сохранено '+saved+' из '+periods.length+' периодов ('+failed+' ошибок)','err');
+    }else{
+      toast('✓ Всё сохранено в GitHub ('+periods.length+' периодов)','ok');
     }
-    await ghPut('data/accounts.json',JSON.stringify(DB.accounts,null,2),'Save accounts — '+date);
-    await ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Save rules — '+date);
-    toast('✓ Всё сохранено в GitHub ('+periods.length+' периодов)','ok');
-    if(btn){btn.textContent='✓ Сохранено';setTimeout(()=>{if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}},2000);}
+    if(btn){btn.textContent=failed?'⚠ Ошибки':'✓ Сохранено';setTimeout(()=>{if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}},2500);}
   }catch(e){
     toast('Ошибка: '+e.message,'err');
     if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}
@@ -4076,11 +4085,12 @@ async function loadFromGithub(){
       const files=await lr.json();
       const ghPeriods=new Set(files.filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)).map(f=>f.name.replace('.json','')));
       for(const p of Object.keys(DB.periods)){if(!ghPeriods.has(p))delete DB.periods[p];}
-      // Load all periods in parallel via API (fresh, no CDN cache)
+      // Load via Git Blobs API (content-addressed by SHA = never cached, always fresh)
+      const blobBase='https://api.github.com/repos/'+user+'/'+repo+'/git/blobs/';
       await Promise.all(files
-        .filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/))
+        .filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)&&f.sha)
         .map(async f=>{
-          const dr=await fetch(apiBase+'data/'+f.name,{headers:apiHdr});
+          const dr=await fetch(blobBase+f.sha,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.raw+json'}});
           if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();
         })
       );
