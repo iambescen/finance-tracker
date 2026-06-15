@@ -2171,6 +2171,7 @@ async function processPDFFile(file) {
 
 function processFile(file){
   const ext=file.name.split('.').pop().toLowerCase();
+  toast('Читаем: '+file.name,'info');
   if(ext==='pdf'){
     processPDFFile(file);
     return;
@@ -2178,43 +2179,56 @@ function processFile(file){
   if(['xlsx','xls'].includes(ext)){
     const fr=new FileReader();
     fr.onload=e=>{
-      const wb=XLSX.read(e.target.result,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      // Detect Bakay Bank by sheet content
-      const cell=ws['A4']||ws['B6']||{};
-      const isBakay=(ws['A4']&&ws['A4'].v==='Сводная выписка по счету')||(ws['B6']&&String(ws['B6'].v||'').includes('Безценных'));
-      // Detect Cifra Broker by sheet names
-      const isVTBBroker=wb.SheetNames.some(n=>n==='brokerage_report');
-      const isTinkoffBroker=wb.SheetNames.some(n=>n==='broker_rep');
-      const isCifraBroker=wb.SheetNames.some(n=>n.startsWith('Cash In Out')||n.startsWith('Trades 2'));
-      if(isVTBBroker){
-        const txns=parseVTBBrokerXLSX(wb);
-        if(txns.length){ingest(txns);}
-        else{toast('ВТБ Брокер: не найдены операции','err');}
-      } else if(isTinkoffBroker){
-        const txns=parseTinkoffBrokerXLSX(wb);
-        if(txns.length){ingest(txns);}
-        else{toast('Тинькофф Брокер: не найдены операции','err');}
-      } else if(isCifraBroker){
-        const txns=parseCifraBrokerXLSX(wb);
-        if(txns.length){ingest(txns);}
-        else{toast('Цифра Брокер: не найдены операции','err');}
-      } else if(isBakay){
-        const txns=processBakayRows(ws);
-        if(txns.length){ingest(txns);}
-        else{toast('Бакай Банк: не найдены операции','err');}
-      } else {
-        ingest(processRows(XLSX.utils.sheet_to_json(ws)));
-      }
+      try{
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const cell=ws['A4']||ws['B6']||{};
+        const isBakay=(ws['A4']&&ws['A4'].v==='Сводная выписка по счету')||(ws['B6']&&String(ws['B6'].v||'').includes('Безценных'));
+        const isVTBBroker=wb.SheetNames.some(n=>n==='brokerage_report');
+        const isTinkoffBroker=wb.SheetNames.some(n=>n==='broker_rep');
+        const isCifraBroker=wb.SheetNames.some(n=>n.startsWith('Cash In Out')||n.startsWith('Trades 2'));
+        if(isVTBBroker){
+          const txns=parseVTBBrokerXLSX(wb);
+          if(txns.length){ingest(txns);}
+          else{toast('ВТБ Брокер: не найдены операции','err');}
+        } else if(isTinkoffBroker){
+          const txns=parseTinkoffBrokerXLSX(wb);
+          if(txns.length){ingest(txns);}
+          else{toast('Тинькофф Брокер: не найдены операции','err');}
+        } else if(isCifraBroker){
+          const txns=parseCifraBrokerXLSX(wb);
+          if(txns.length){ingest(txns);}
+          else{toast('Цифра Брокер: не найдены операции','err');}
+        } else if(isBakay){
+          const txns=processBakayRows(ws);
+          if(txns.length){ingest(txns);}
+          else{toast('Бакай Банк: не найдены операции','err');}
+        } else {
+          ingest(processRows(XLSX.utils.sheet_to_json(ws)));
+        }
+      }catch(err){toast('Ошибка XLSX: '+err.message,'err');console.error(err);}
     };
+    fr.onerror=()=>toast('Ошибка чтения файла','err');
     fr.readAsArrayBuffer(file);
   }else{
     const fr=new FileReader();
     fr.onload=e=>{
-      let res=Papa.parse(e.target.result,{header:true,delimiter:';',skipEmptyLines:true,encoding:'UTF-8'});
-      if(!res.data?.length)res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});
-      ingest(processRows(res.data));
+      try{
+        let res=Papa.parse(e.target.result,{header:true,delimiter:';',skipEmptyLines:true});
+        const hdrs=Object.keys(res.data[0]||{}).join('|');
+        console.log('[upload] CSV headers:',hdrs);
+        console.log('[upload] rows:',res.data.length);
+        if(!res.data?.length){
+          res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});
+          console.log('[upload] retry auto-delim, rows:',res.data.length);
+        }
+        const bank=res.data.length?detectBank(Object.keys(res.data[0]||{})):'none';
+        console.log('[upload] detected bank:',bank);
+        toast('Файл: '+res.data.length+' строк · '+bank,'info');
+        ingest(processRows(res.data));
+      }catch(err){toast('Ошибка CSV: '+err.message,'err');console.error(err);}
     };
+    fr.onerror=()=>toast('Ошибка чтения файла','err');
     fr.readAsText(file,'UTF-8');
   }
 }
