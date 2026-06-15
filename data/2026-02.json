@@ -497,11 +497,11 @@
       "counterparty": "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ \"НОУРУТС\"",
       "counterpartyINN": "9731135070",
       "counterpartyAcc": "40702810901360000190",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Прочие доходы",
+      "sub": "Выручка от услуг/курсов/товаров",
       "type": "income"
     },
     {
