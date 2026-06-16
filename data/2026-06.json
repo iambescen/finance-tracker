@@ -4619,7 +4619,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Здоровье",
-      "sub": "Визиты врача/платные услуги"
+      "sub": "Визиты врача/платные услуги",
+      "confirmed": true
     }
   ]
 }
