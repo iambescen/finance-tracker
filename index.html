@@ -1567,6 +1567,106 @@ function parseBakayBank(rows) {
   return rows; // handled separately in processBakayRows
 }
 
+function parseTraderNetXLSX(wb){
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+  if(!rows.length) return [];
+
+  // Extract client code from comments
+  let accNum = 'tradernet_cifra';
+  for(const row of rows.slice(1,10)){
+    const comment = String(row[3]||'');
+    const m = comment.match(/[Кк]од клиента\s+(\d+)/);
+    if(m){ accNum = 'tradernet_'+m[1]; break; }
+  }
+
+  registerAccount(accNum, 'tradernet_xlsx', 'Цифра Брокер (TraderNet)', 'RUR');
+  if(DB.accounts[accNum]) DB.accounts[accNum].isBroker = true;
+
+  const USDT_TO_RUB = 90; // approximate rate
+  const txns = [];
+
+  for(const row of rows.slice(1)){
+    if(!row[0] || !row[1]) continue;
+    const opNum = String(row[0]);
+    let dateRaw = row[1];
+    const op = String(row[2]||'').trim();
+    const comment = String(row[3]||'').trim();
+    const amt = parseFloat(String(row[4]||0)) || 0;
+    const currency = String(row[5]||'RUR').trim();
+
+    if(amt === 0) continue;
+
+    // Skip internal locking/unlocking operations
+    if(op === 'Блокировка' || op === 'Разблокировка') continue;
+
+    // Parse date
+    let date, dateDisplay;
+    if(dateRaw instanceof Date || (dateRaw && typeof dateRaw === 'object' && dateRaw.getFullYear)){
+      const d = new Date(dateRaw);
+      const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
+      date = `${y}-${mo}-${dy}`;
+      dateDisplay = `${dy}.${mo}.${y}`;
+    } else {
+      const s = String(dateRaw||'');
+      const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if(!m) continue;
+      date = `${m[1]}-${m[2]}-${m[3]}`;
+      dateDisplay = `${m[3]}.${m[2]}.${m[1]}`;
+    }
+    const month = date.slice(0,7);
+
+    // Convert to RUB
+    const amtRub = currency === 'USDT' ? amt * USDT_TO_RUB :
+                   currency === 'RUR' ? amt : amt;
+
+    let type, group, sub, desc = op + (comment ? ': ' + comment.slice(0,80) : '');
+    const opLow = op.toLowerCase();
+    const commentLow = comment.toLowerCase();
+
+    if(op === 'Банковский перевод'){
+      type = 'transfer'; group = 'Перевод';
+      sub = amt > 0 ? 'Пополнение брокерского счёта' : 'Вывод с брокерского счёта';
+      desc = amt > 0 ? 'Пополнение брокерского счёта TraderNet' : 'Вывод с TraderNet';
+    } else if(opLow.includes('комиссия')){
+      type = 'expense'; group = 'Инвестиции'; sub = 'Комиссии брокера';
+      // Extract trade details from comment
+      const tradeM = comment.match(/Trade (\d+) (\w+) (\S+)/);
+      desc = tradeM ? `Комиссия: ${tradeM[2]} ${tradeM[3]}` : 'Комиссия за сделки';
+    } else if(op === 'Вывод криптовалюты'){
+      type = 'investment'; group = 'Инвестиции'; sub = 'Вывод криптовалюты';
+      desc = `Вывод USDT (${Math.abs(amt)} USDT)`;
+    } else if(op === 'Пополнение счёта через Wallet'){
+      type = 'investment'; group = 'Инвестиции'; sub = 'Пополнение крипто кошелька';
+      desc = `Пополнение USDT (${amt} USDT)`;
+    } else {
+      const c = applyCategForTx({desc, amtRub});
+      type = amt > 0 ? 'income' : 'expense';
+      group = c.g; sub = c.s;
+    }
+
+    txns.push({
+      id: uid(), date, month, dateDisplay,
+      desc: desc.slice(0, 150),
+      card: 'TraderNet', account: accNum,
+      bankCat: op,
+      amtOp: currency === 'USDT' ? amt : amtRub,
+      curOp: currency === 'USDT' ? 'USDT' : 'RUR',
+      amtRub: Math.round(amtRub * 100) / 100,
+      status: 'OK', source: 'tradernet_xlsx',
+      counterparty: 'Цифра Брокер',
+      counterpartyINN: '6506000327',
+      counterpartyAcc: '',
+      manualCategory: false, linkedTo: null, linkedAccount: null,
+      type, group, sub
+    });
+  }
+
+  console.log('[TraderNet] parsed:', txns.length, 'txns from', rows.length-1, 'rows');
+  return txns;
+}
+
+
 function processBakayRows(worksheet) {
   // Parse raw worksheet data
   const txns = [];
@@ -2675,6 +2775,7 @@ function processFile(file){
         const ws=wb.Sheets[wb.SheetNames[0]];
         const cell=ws['A4']||ws['B6']||{};
         const isBakay=String(ws['A4']?.v||'').trim()==='Сводная выписка по счету'||String(ws['A4']?.v||'').includes('Сводная выписка');
+        const isTraderNet=(ws['A1']&&String(ws['A1'].v||'').includes('Операция №'))&&(wb.SheetNames[0]==='sheet');
         const isVTBBroker=wb.SheetNames.some(n=>n==='brokerage_report');
         const isTinkoffBroker=wb.SheetNames.some(n=>n==='broker_rep');
         const isCifraBroker=wb.SheetNames.some(n=>n.startsWith('Cash In Out')||n.startsWith('Trades 2'));
@@ -2690,6 +2791,10 @@ function processFile(file){
           const txns=parseCifraBrokerXLSX(wb);
           if(txns.length){ingest(txns);}
           else{toast('Цифра Брокер: не найдены операции','err');}
+        } else if(isTraderNet){
+          const txns=parseTraderNetXLSX(wb);
+          if(txns.length){ingest(txns);}
+          else{toast('TraderNet: не найдены операции','err');}
         } else if(isBakay){
           const txns=processBakayRows(ws);
           if(txns.length){ingest(txns);}
