@@ -3988,7 +3988,8 @@
       "linkedAccount": "40817810990189542073",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "0xprwo7x",
