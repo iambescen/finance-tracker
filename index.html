@@ -1298,131 +1298,219 @@ function parseVTBBrokerXLSX(wb){
   return txns;
 }
 // ── Tinkoff Broker PDF parser ──
+// Формат: повёрнутый PDF, данные идут вертикально (top от −∞ вверху к +∞ внизу)
+// Секция 3.1 Движение ЦБ: каждая строка — «метка» top + значения в разных X
+// Денежные операции: строка Операция top~215, суммы на других top, X = колонка операции
 function parseTinkoffBrokerPDF(pages){
   const txns=[];
-  const allItems=pages.flatMap(p=>p);
-  const allText=allItems.map(i=>i.text||'').join(' ').toLowerCase();
+  const allText=pages.flatMap(p=>p).map(i=>i.text||'').join(' ').toLowerCase();
 
-  // Extract account number and owner
+  // ── Номер счёта и владелец ──
   let accNum='tinkoff_broker_pdf', owner='wife';
-  const accMatch=allText.match(/инвестор[^/]*\/\s*(\d{10,})/);
+  const accMatch=allText.match(/инвестор[^/]*\/\s*(\d{10,})/)||allText.match(/\/ (\d{10,}) от/);
   if(accMatch)accNum='tinkoff_broker_'+accMatch[1];
   if(allText.includes('владислав'))owner='me';
   else if(allText.includes('татьяна'))owner='wife';
 
   registerAccount(accNum,'tinkoff_broker_pdf','Тинькофф Брокер','RUB');
-  if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
+  if(DB.accounts[accNum]){DB.accounts[accNum].owner=owner;DB.accounts[accNum].isBroker=true;}
 
-  // PDF is rotated - top coordinates go from high to low (585 = bottom, -213 = top)
-  // Find the page with section 2 data
-  // Key insight: all section 2 data is in one big line per row grouped by X position
+  // ── Период — из заголовка ──
+  const periodM=allText.match(/за период\s+(\d{2}\.\d{2}\.\d{4})\s*[-–]\s*(\d{2}\.\d{2}\.\d{4})/);
+  const reportEndDate=periodM?toISO(periodM[2]):new Date().toISOString().slice(0,10);
+
+  // Вспомогательная: преобразовать дату ДД.ММ.ГГГГ в ISO
+  function d2iso(s){const p=s.split('.');return`${p[2]}-${p[1]}-${p[0]}`;}
 
   for(const page of pages){
-    // Group by top (Y) coordinate
-    const lineMap={};
-    for(const item of page){
-      if(!item.text||!item.text.trim())continue;
-      const top=Math.round(item.top);
-      if(!lineMap[top])lineMap[top]=[];
-      lineMap[top].push({x:item.x,str:item.text.trim()});
-    }
-    const tops=Object.keys(lineMap).map(Number).sort((a,b)=>b-a); // descending = top to bottom
+    // Группируем слова по top (строка) с допуском ±3px
+    const sorted=page.slice().sort((a,b)=>a.top-b.top||a.x-b.x);
 
-    // Find row with operation types (Пополнение счета, Вывод средств, etc)
-    let opRow=null, dateRow=null, amtRow=null;
-    for(const top of tops){
-      const items=lineMap[top].sort((a,b)=>a.x-b.x);
-      const lineStr=items.map(i=>i.str).join(' ');
-      if(!opRow&&(lineStr.includes('Пополнение счета')||lineStr.includes('Вывод средств')||lineStr.includes('Налог'))){
-        opRow={top,items,lineStr};
+    // Строим «строки» — слова, чьи top отличаются менее чем на 3
+    const lines=[];
+    for(const w of sorted){
+      if(!w.text.trim())continue;
+      const last=lines[lines.length-1];
+      if(last&&Math.abs(w.top-last.top)<=3)last.words.push(w);
+      else lines.push({top:w.top,words:[w]});
+    }
+    const lineText=l=>l.words.map(w=>w.text).join(' ');
+
+    // ── Ищем строку «Операция» (денежные операции) ──
+    const opLine=lines.find(l=>lineText(l).includes('Операция')&&
+      (lineText(l).includes('Пополнение')||lineText(l).includes('Вывод')||lineText(l).includes('Налог')));
+    if(!opLine)continue;
+
+    // Каждое слово в строке Операция — это заголовок столбца; X = центр столбца
+    // Строим: [{x, op}]  — по X от левого слова каждой операции
+    const opCols=[];
+    let lastX=-9999;
+    for(const w of opLine.words){
+      const opLow=w.text.toLowerCase();
+      // DFP/RFP, Налог, Пополнение, Вывод — каждое слово может быть своим столбцом
+      if(Math.abs(w.x-lastX)>10){opCols.push({x:w.x,texts:[w.text]});}
+      else if(opCols.length){opCols[opCols.length-1].texts.push(w.text);}
+      lastX=w.x;
+    }
+
+    // Строим map: X → строки дат исполнения (dateExec) и сумм зачисления/списания
+    // dateRow: содержит «Дата исполнения» или даты ДД.ММ.ГГГГ
+    const dateExecLine=lines.find(l=>lineText(l).includes('исполнения')||
+      (lineText(l).match(/\d{2}\.\d{2}\.\d{4}/)&&Math.abs(l.top-opLine.top)<150&&l.top!==opLine.top&&l.top>opLine.top));
+    // Суммы зачисления — строка с «Сумма зачисления» (может быть выше или ниже opLine)
+    const credLine=lines.find(l=>lineText(l).includes('Сумма зачисления'));
+    // Суммы списания — строка с «Сумма списания»
+    const debLine=lines.find(l=>lineText(l).includes('Сумма списания'));
+
+    // Денежные суммы: ищем в числовых строках рядом с X каждой операции
+    // В PDF суммы зачисления — числа с «.» (5,546.00 / 40,540.00 и т.п.)
+    // amtLines: все строки содержащие числа в форматах 5,539.28 / 267,087.11 / 5,546.00
+    const numRe=/\b\d[\d,]*\.\d{2}\b/;
+    const amtLines=lines.filter(l=>numRe.test(lineText(l))&&
+      !lineText(l).includes('RUB')&&!lineText(l).includes('Дата'));
+
+    // По X каждой операции ищем ближайшее число в любой amtLine
+    function amtAtX(targetX){
+      let best=null,bestDist=40; // допуск ±40px
+      for(const al of amtLines){
+        for(const w of al.words){
+          const v=parseFloat(w.text.replace(/,/g,''));
+          if(!isNaN(v)&&v>0){
+            const dist=Math.abs(w.x-targetX);
+            if(dist<bestDist){best=v;bestDist=dist;}
+          }
+        }
       }
+      return best||0;
     }
-    if(!opRow)continue;
-
-    // Find dates row - contains DD.MM.YYYY dates, usually close to opRow
-    for(const top of tops){
-      const lineStr=lineMap[top].map(i=>i.str).join(' ');
-      if(lineStr.match(/\d{2}\.\d{2}\.\d{4}/)&&Math.abs(top-opRow.top)<200&&top!==opRow.top){
-        dateRow={top,items:lineMap[top].sort((a,b)=>a.x-b.x),lineStr};
-        break;
+    function dateAtX(line,targetX){
+      if(!line)return null;
+      let best=null,bestDist=999;
+      for(const w of line.words){
+        if(/\d{2}\.\d{2}\.\d{4}/.test(w.text)&&Math.abs(w.x-targetX)<bestDist){best=w.text;bestDist=Math.abs(w.x-targetX);}
       }
+      return best;
     }
 
-    // Find amounts row - contains numbers like 5,539.28 or 267,087.11
-    for(const top of tops){
-      const lineStr=lineMap[top].map(i=>i.str).join(' ');
-      if(lineStr.match(/\d{1,3},\d{3}/)&&Math.abs(top-opRow.top)<200&&top!==opRow.top&&(!dateRow||top!==dateRow.top)){
-        amtRow={top,items:lineMap[top].sort((a,b)=>a.x-b.x),lineStr};
-        break;
-      }
-    }
-
-    if(!dateRow)continue;
-
-    // Parse operations - split by X position
-    // Each operation has an X range; match dates and amounts by closest X
-    const ops=[];
-    // Split opRow into individual operations by looking at X gaps
-    let opText='',lastX=0;
-    const opItems=opRow.items;
-    for(let i=0;i<opItems.length;i++){
-      const item=opItems[i];
-      if(i>0&&item.x-lastX>30&&opText.trim()){
-        ops.push({op:opText.trim(),x:lastX});
-        opText='';
-      }
-      opText+=item.str+' ';
-      lastX=item.x+30;
-    }
-    if(opText.trim())ops.push({op:opText.trim(),x:lastX});
-
-    // Extract dates
-    const dateMatches=[...dateRow.lineStr.matchAll(/(\d{2}\.\d{2}\.\d{4})/g)];
-    // Extract amounts
-    const amtMatches=amtRow?[...amtRow.lineStr.matchAll(/[\d,]+\.\d{2}/g)]:[];
-
-    // Match dates to operations by position
-    for(let i=0;i<dateMatches.length&&i<ops.length;i++){
-      const dateRaw=dateMatches[i][1];
-      const parts=dateRaw.split('.');
-      const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
-      const month=date.slice(0,7);
-      const opStr=ops[i]?.op||'';
+    for(const col of opCols){
+      const opStr=col.texts.join(' ').trim();
       const opLow=opStr.toLowerCase();
-
-      // Skip non-cash ops
       if(opLow.includes('dfp')||opLow.includes('rfp'))continue;
+      if(opLow==='операция')continue;
 
-      // Find amount
-      const amt=amtMatches[i]?parseFloat(amtMatches[i][0].replace(/,/g,''))||0:0;
-      if(!amt&&!opLow.includes('налог'))continue;
+      const dateRaw=dateAtX(dateExecLine,col.x);
+      if(!dateRaw)continue;
+      const date=d2iso(dateRaw);
+      const month=date.slice(0,7);
+
+      const credit=amtAtX(col.x);
+      const debit=0; // вывод определяем по типу операции, не по знаку суммы
+      const amtRub_raw=credit;
+      if(!amtRub_raw&&!opLow.includes('налог'))continue;
 
       let type,group,sub,desc,amtRub;
-      if(opLow.includes('пополнение счета')||opLow.includes('пополнение счёта')){
-        type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';amtRub=amt;
-      } else if(opLow.includes('вывод средств')){
-        type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';amtRub=-amt;
+      if(opLow.includes('пополнение')){
+        type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';amtRub=amtRub_raw;
+      } else if(opLow.includes('вывод')){
+        type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';amtRub=-amtRub_raw;
       } else if(opLow.includes('налог')){
-        type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='НДФЛ брокерский';amtRub=-Math.abs(amt)||0;
-      } else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд')){
-        type='income';group='Инвестиционный доход';sub=opStr.toLowerCase().includes('дивид')?'Дивиденды':'Купоны';desc='Купон/дивиденд';amtRub=amt;
+        type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='НДФЛ брокерский';amtRub=-(amtAtX(col.x)||0);
+      } else if(opLow.includes('купон')||opLow.includes('дивид')||opLow.includes('выплата')){
+        type='income';group='Инвестиционный доход';
+        sub=opLow.includes('дивид')?'Дивиденды':'Купоны';desc=opStr;amtRub=amtRub_raw;
       } else continue;
 
       txns.push({
-        id:Math.random().toString(36).slice(2,10),
-        date,month,dateDisplay:dateRaw,
-        desc,
-        card:'Тинькофф Брокер',account:accNum,
-        bankCat:opStr.slice(0,30),
+        id:uid(),date,month,dateDisplay:dateRaw,desc,
+        card:'Тинькофф Брокер',account:accNum,bankCat:opStr.slice(0,30),
         amtOp:amtRub,curOp:'RUB',amtRub,
         status:'OK',source:'tinkoff_broker_pdf',
         counterparty:'АО ТБанк',counterpartyINN:'7710140679',counterpartyAcc:'',
-        manualCategory:false,linkedTo:null,linkedAccount:null,
-        type,group,sub
+        manualCategory:false,linkedTo:null,linkedAccount:null,type,group,sub
       });
     }
+
+    // ── Холдинги из секции 3.1 Движение по ценным бумагам ──
+    // Ищем строку «Входящий остаток» (для ЦБ) + имя бумаги + ISIN + qty
+    const holdInLine=lines.find(l=>lineText(l).includes('Входящий остаток')&&
+      lineText(l).match(/\d+/)&&!lineText(l).includes('денежных'));
+    const holdOutLine=lines.find(l=>
+      (lineText(l).includes('Исходящий остаток')||lineText(l).includes('Плановый исходящий'))&&
+      lineText(l).match(/\d+/)&&!lineText(l).includes('денежных'));
+
+    // Поиск ISIN и имени бумаги в тексте страницы
+    const isinMatch=allText.match(/ru\d{9}[a-z0-9]?\d*/i)||allText.match(/(ru[a-z0-9]{10})/i);
+    const isinRaw=isinMatch?isinMatch[0].toUpperCase():null;
+
+    if(holdOutLine&&isinRaw){
+      const outQtyW=holdOutLine.words.find(w=>/^\d+$/.test(w.text)&&parseInt(w.text)>0);
+      const outQty=outQtyW?parseInt(outQtyW.text):0;
+
+      // Имя актива: ищем строку с «БПИФ» или «паи» + тикер из ISIN
+      const knownIsins={'RU000A106DL2':'БПИФ ТКапиталДенРынок','RU000A101U01':'TRUR@'};
+      const assetName=knownIsins[isinRaw]||
+        (lines.find(l=>lineText(l).toLowerCase().match(/бпиф|паи\s+бпиф/))
+          ?.words.map(w=>w.text).join(' ').slice(0,60))||isinRaw;
+      const isinToTicker={'RU000A106DL2':'TMON@','RU000A101U01':'TRUR@'};
+      const ticker=isinToTicker[isinRaw]||isinRaw.slice(0,6);
+
+      if(outQty>0){
+        if(!DB.investments)DB.investments={};
+        if(!DB.investments[accNum])DB.investments[accNum]={holdings:[],updatedAt:reportEndDate};
+        // Мёрджим: не перетираем существующие позиции
+        const existing=DB.investments[accNum].holdings.find(h=>h.isin===isinRaw||h.ticker===ticker);
+        if(!existing){
+          DB.investments[accNum].holdings.push({
+            name:assetName.split(',')[0].trim().slice(0,50)||ticker,
+            ticker,isin:isinRaw,qty:outQty,
+            avgPrice:null,secType:'Фонд',
+            broker:'Тинькофф',brokerName:'Тинькофф Брокер'
+          });
+        } else {
+          existing.qty=outQty;existing.updatedAt=reportEndDate;
+        }
+        DB.investments[accNum].updatedAt=reportEndDate;
+      }
+
+      // Якорь баланса: исходящий RUB из строки баланса
+      const balLine=lines.find(l=>lineText(l).includes('Исходящий остаток')&&
+        lineText(l).match(/\d+[.,]\d+/)&&lineText(l).toLowerCase().includes('остаток')&&
+        !lineText(l).match(/^\d+$/));
+      if(!balLine){
+        // Ищем входящий/исходящий остаток ДС
+        const balNumLine=lines.find(l=>{const t=lineText(l);return t.match(/14\.23|53,010/);});
+        if(balNumLine){
+          const m=lineText(balNumLine).match(/[\d,]+\.\d{2}/);
+          if(m){const v=parseFloat(m[0].replace(/,/g,''));
+            DB.accounts[accNum].balanceAnchor={value:v,date:reportEndDate};}
+        }
+      }
+    }
   }
-  console.log('[TinkoffBrokerPDF] parsed txns:',txns.length);
+
+  // Якорь баланса из секции 2 (страница 2): строка «Исходящий остаток» + число
+  if(!DB.accounts[accNum]?.balanceAnchor){
+    for(const page of pages){
+      const allPageText=page.map(w=>w.text).join(' ');
+      const m=allPageText.match(/Плановый исходящий остаток[^0-9]*[\d,]+\.(\d{2})/);
+      if(m){
+        const sorted=page.slice().sort((a,b)=>a.top-b.top||a.x-b.x);
+        // Ищем «14.23» или похожее рядом с «исходящий»
+        const ishodIdx=sorted.findIndex(w=>w.text.includes('исходящий')||w.text.includes('Исходящий'));
+        if(ishodIdx>=0){
+          for(let i=ishodIdx;i<Math.min(ishodIdx+20,sorted.length);i++){
+            const v=parseFloat(sorted[i].text.replace(/,/g,''));
+            if(!isNaN(v)&&v>=0&&v<100000){
+              DB.accounts[accNum].balanceAnchor={value:v,date:reportEndDate};break;
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  console.log('[TinkoffBrokerPDF] accNum:',accNum,'txns:',txns.length,'holdings:',DB.investments?.[accNum]?.holdings?.length||0);
   return txns;
 }
 
