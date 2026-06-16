@@ -878,8 +878,22 @@ function parseCifraBankPDF(pages){
       const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
       const month=date.slice(0,7);
 
+      // Also collect description parts from the date row itself (x > 390)
+      const inlineDesc = row.items
+        .filter(it=>it.x>390&&!it.str.match(/^(\d|Без)/))
+        .map(it=>it.str).join(' ').trim();
+      const fullDesc = (desc + (inlineDesc?' '+inlineDesc:'')).trim();
+
+      // Extract correspondent account (x≈100-250)
+      let corrAcc = '';
+      for(const item of row.items){
+        if(item.x>=100&&item.x<280&&/^\d{2}\s+\d{9}\s+\d+/.test(item.str)){
+          corrAcc = item.str.split(/\s+/).slice(2).join('');
+          break;
+        }
+      }
+
       // Find amounts in the date row
-      // Debit: x around 200-310, Credit: x around 310-420
       let debit=0,credit=0;
       for(const item of row.items){
         const num=parseFloat(item.str.replace(/,/g,''));
@@ -889,10 +903,10 @@ function parseCifraBankPDF(pages){
       }
 
       if(debit===0&&credit===0)continue;
-      if(!desc)continue;
+      if(!fullDesc&&!desc)continue;
 
       const amtRub=credit>0?credit:-debit;
-      const descLow=desc.toLowerCase();
+      const descLow=(fullDesc||desc).toLowerCase();
 
       let type,group,sub;
       const isToBroker=descLow.includes('пополнение брокерского')||descLow.includes('vo99083');
@@ -900,11 +914,14 @@ function parseCifraBankPDF(pages){
       const isCommission=descLow.includes('комиссия банка')||descLow.includes('комиссия за смс');
       const isSBP=descLow.includes('зачисление по системе сбп')||descLow.includes('перевод по номеру телефона');
 
+      const isBrokerComm=isCommission&&(descLow.includes('vo99083')||descLow.includes('brokerage'));
       if(isToBroker||isFromBroker||isSBP){
         type='transfer';group='Перевод';
         sub=isToBroker?'Пополнение брокерского счёта':isFromBroker?'Вывод с брокерского счёта':'Перевод СБП';
+      } else if(isBrokerComm){
+        type='expense';group='Инвестиции';sub='Комиссии брокера';
       } else if(isCommission){
-        type='expense';group='Сервисы/Связь';sub='Банковские комиссии';
+        type='expense';group='Предпринимательство';sub='Банковские комиссии ИП';
       } else {
         const c=applyCategForTx({desc,amtRub});
         type=debit>0?'expense':'income';group=c.g;sub=c.s;
@@ -914,15 +931,15 @@ function parseCifraBankPDF(pages){
         id:Math.random().toString(36).slice(2,10),
         date,month,
         dateDisplay:`${parts[0]}.${parts[1]}.${parts[2]}`,
-        desc:desc.slice(0,150),
+        desc:(fullDesc||desc).slice(0,150),
         card:'Цифра банк',
         account:accountNum,
-        bankCat:isCommission?'Комиссия':isToBroker||isFromBroker?'Брокер':'Перевод',
+        bankCat:isBrokerComm?'Комиссия брокера':isCommission?'Комиссия':isToBroker||isFromBroker?'Брокер':'Перевод',
         amtOp:amtRub,curOp:'RUB',amtRub,
         status:'OK',source:'cifra_pdf',
-        counterparty:'Цифра банк',
+        counterparty:(isToBroker||isFromBroker)?'Цифра Брокер':'Цифра банк',
         counterpartyINN:'6506000327',
-        counterpartyAcc:'',
+        counterpartyAcc:corrAcc,
         manualCategory:false,linkedTo:null,linkedAccount:null,
         type,group,sub
       });
