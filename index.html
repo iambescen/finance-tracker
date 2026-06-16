@@ -1028,11 +1028,15 @@ function parseVTBBrokerXLSX(wb){
   // ── Мета: субсчёт, владелец, период ──
   let accNum='vtb_broker', owner='wife', subNum='';
   for(let r=0;r<15;r++){
-    if(cvs(7,r).includes('Владислав')||cvs(8,r).includes('Владислав'))owner='me';
+    // Имя клиента и субсчёт могут быть в разных колонках в зависимости от шаблона (col 6, 7 или 8)
+    for(let c=2;c<=15;c++){const v=cvs(c,r);if(v.includes('Владислав'))owner='me';}
     const b=cvs(1,r);
     if(b==='№ субсчета:'){
-      const sub=(cvs(7,r)||cvs(8,r)).trim();
-      if(sub&&/^[A-Z0-9]+$/.test(sub)){subNum=sub;accNum='vtb_broker_'+subNum;}
+      // Ищем значение субсчёта в любой колонке строки
+      for(let c=2;c<=15;c++){
+        const sub=cvs(c,r);
+        if(sub&&/^[A-Z0-9]{3,10}$/.test(sub)){subNum=sub;accNum='vtb_broker_'+subNum;break;}
+      }
     }
   }
   const titleText=cvs(3,0)||cvs(1,0)||'';
@@ -1276,17 +1280,17 @@ function parseVTBBrokerXLSX(wb){
     }
 
     DB.investments[accNum].holdings=holdings;
+  }
 
-    // Оценка активов → balanceAnchor
-    for(let r=0;r<35;r++){
-      const b=cvs(1,r);
-      if(b.includes('ОЦЕНКА активов по Курсу')&&!b.includes('незавершен')){
-        // Значение в разных субсчётах стоит в разных колонках (10, 11, ...) — берём первое числовое
-        let val=null;
-        for(let c=8;c<=20;c++){const v=cv(c,r);if(v!=null&&typeof v==='number'){val=v;break;}}
-        if(val!=null)DB.accounts[accNum].balanceAnchor={value:val,date:reportEndDate};
-        break;
-      }
+  // Оценка активов → balanceAnchor (всегда, даже если нет холдингов)
+  for(let r=0;r<35;r++){
+    const b=cvs(1,r);
+    if(b.includes('ОЦЕНКА активов по Курсу')&&!b.includes('незавершен')){
+      // Значение в разных субсчётах стоит в разных колонках (8, 10, 11...) — берём первое числовое
+      let val=null;
+      for(let c=5;c<=20;c++){const v=cv(c,r);if(v!=null&&typeof v==='number'){val=v;break;}}
+      if(val!=null)DB.accounts[accNum].balanceAnchor={value:val,date:reportEndDate};
+      break;
     }
   }
 
