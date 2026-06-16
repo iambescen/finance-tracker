@@ -2404,10 +2404,20 @@ async function saveAllNow(){
         if(btn)btn.textContent='⏳ удаляем...';
         for(const p of dp){
           await ghDeleteFile('data/'+p+'.json','Delete period '+p+' — '+date);
+          // Don't clear list here — loadFromGithub will verify and clean on next load
         }
-        localStorage.removeItem('ff_deleted_periods');
+        // Try to force-verify by fetching directory listing
+        const{user:u,repo:rp,token:tk}=ghCfg();
+        const lr=await fetch('https://api.github.com/repos/'+u+'/'+rp+'/contents/data',
+          {headers:{Authorization:'token '+tk,Accept:'application/vnd.github.v3+json'}}).catch(()=>null);
+        if(lr&&lr.ok){
+          const remaining=new Set((await lr.json()).map(f=>f.name.replace('.json','')));
+          const stillNeeded=dp.filter(p=>remaining.has(p));
+          if(stillNeeded.length)localStorage.setItem('ff_deleted_periods',JSON.stringify(stillNeeded));
+          else localStorage.removeItem('ff_deleted_periods');
+        }
       }
-    }catch(e){}
+    }catch(e){console.warn('delete cleanup:',e);}
     if(errors.length){
       console.error('saveAllNow errors:',errors);
       toast('Ошибки: '+errors.join(' | '),'err');
@@ -4239,6 +4249,11 @@ function ghPutQueued(path,getContent,msg){
 
 function savePeriod(period,msg){
   saveLocal(); // always immediate to localStorage
+  // If re-saving a period that was in deleted list, remove it
+  try{
+    const dp=JSON.parse(localStorage.getItem('ff_deleted_periods')||'[]');
+    if(dp.includes(period))localStorage.setItem('ff_deleted_periods',JSON.stringify(dp.filter(p=>p!==period)));
+  }catch(e){}
   const{token}=ghCfg();
   if(!token||!DB.periods[period])return Promise.resolve(false);
   // getContent is a function → called at execution time = always latest state
@@ -4332,6 +4347,15 @@ async function loadFromGithub(){
       const files=await lr.json();
       const ghPeriods=new Set(files.filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)).map(f=>f.name.replace('.json','')));
       for(const p of Object.keys(DB.periods)){if(!ghPeriods.has(p))delete DB.periods[p];}
+      // Auto-clean deleted list: if file is confirmed gone from GitHub, remove from list
+      try{
+        const dp=JSON.parse(localStorage.getItem('ff_deleted_periods')||'[]');
+        const stillOnGH=dp.filter(p=>ghPeriods.has(p)); // still exists on GitHub
+        if(stillOnGH.length!==dp.length){
+          if(stillOnGH.length)localStorage.setItem('ff_deleted_periods',JSON.stringify(stillOnGH));
+          else localStorage.removeItem('ff_deleted_periods');
+        }
+      }catch(e){}
       // Load from GitHub ONLY periods we don't have locally
       // AND that weren't explicitly deleted by the user.
       const blobBase='https://api.github.com/repos/'+user+'/'+repo+'/git/blobs/';
