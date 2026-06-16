@@ -2121,21 +2121,16 @@ function parseVTBPDF(pages) {
   let accountNum = '';
 
   for(const pageWords of pages) {
-    // Find account number once
     if(!accountNum) {
       for(const w of pageWords) {
-        if(w.text.startsWith('40817') && w.text.length >= 18) {
-          accountNum = w.text;
-          break;
-        }
+        if(/^408\d{17}/.test(w.text)&&w.text.length>=18){accountNum=w.text;break;}
       }
     }
 
-    // Find Y positions of transaction starts (x<40, date format DD.MM.YYYY)
+    // Date at x<40, time at x<40 matching HH:MM:SS
     const dateYs = pageWords
       .filter(w => w.x < 40 && /^\d{2}\.\d{2}\.\d{4}$/.test(w.text))
-      .map(w => w.top)
-      .sort((a,b) => a-b);
+      .map(w => w.top).sort((a,b) => a-b);
 
     if(!dateYs.length) continue;
     const pageHeight = Math.max(...pageWords.map(w=>w.top)) + 100;
@@ -2143,81 +2138,77 @@ function parseVTBPDF(pages) {
 
     for(let i=0; i<dateYs.length-1; i++) {
       const yStart = dateYs[i], yEnd = dateYs[i+1];
-      const band = pageWords.filter(w => w.top >= yStart && w.top < yEnd);
+      // Extend band 10px upward — description column may start above date
+      const band = pageWords.filter(w => w.top >= yStart-10 && w.top < yEnd);
 
-      let opDate=null, signedAmt=null, isCredit=null;
+      let opDate=null, txTime='', signedAmt=null, isCredit=null;
       const descWords = [];
 
       for(const w of band) {
         const {x, text, top} = w;
-        // Op date
-        if(x < 40 && /^\d{2}\.\d{2}\.\d{4}$/.test(text)) {
-          if(!opDate) opDate = text;
+        if(x < 40 && /^\d{2}\.\d{2}\.\d{4}$/.test(text)){if(!opDate)opDate=text;}
+        else if(x < 40 && /^\d{2}:\d{2}:\d{2}$/.test(text)){txTime=text;}
+        // Signed amount col x≈128-215 (contains "216,000.00 RUB" or "-20,386.00 RUB")
+        else if(x >= 128 && x <= 215){
+          const clean=text.replace(/,/g,'').replace('RUB','').trim();
+          const val=parseFloat(clean);
+          if(!isNaN(val)&&Math.abs(val)>0.5){signedAmt=Math.abs(val);isCredit=val>=0;}
         }
-        // Signed amount: x 128-205, numeric
-        else if(x >= 128 && x <= 205) {
-          const clean = text.replace(/[,]/g,'');
-          const val = parseFloat(clean);
-          if(!isNaN(val) && Math.abs(val) > 0.5) {
-            signedAmt = Math.abs(val);
-            isCredit = val >= 0;
+        // Description: x>=330; commission+desc may be merged like "0.00 Переводы..."
+        else if(x >= 330 && text.length > 1){
+          let t=text.replace(/^0\.00\s+/,'').replace(/^0\s+/,'').trim();
+          if(t&&!['RUB','Приход','Расход','Комиссия','0','0.00'].includes(t)&&!/^[\d.,]+$/.test(t)){
+            descWords.push({top, x, text:t});
           }
         }
-        // Description: x>360, skip noise
-        else if(x > 360 && text.length > 1 && !['RUB','Приход','Расход','Комиссия','0','0.00'].includes(text)) {
-          if(!/^[\d.,]+$/.test(text)) descWords.push({top, x, text});
-        }
       }
 
-      if(!opDate || signedAmt === null) continue;
+      if(!opDate||signedAmt===null) continue;
+      descWords.sort((a,b)=>a.top!==b.top?a.top-b.top:a.x-b.x);
+      let desc=descWords.map(w=>w.text).join(' ').trim();
 
-      // Sort desc by Y then X for natural reading order
-      descWords.sort((a,b) => a.top!==b.top ? a.top-b.top : a.x-b.x);
-      let desc = descWords.map(w=>w.text).join(' ').trim();
+      // Clean mortgage boilerplate
+      desc=desc.replace(/обязательств по кредитному договору N?\s*/gi,'Погашение ипотеки ')
+               .replace(/634\/4151-0003464 от [\d.]+\s*/g,'')
+               .replace(/Клиент Безценных Владислав Константинович со счета платежной банковской карты\.?\s*/gi,'')
+               .replace(/ФИЛИАЛ № \d+ БАНКА ВТБ \(ПАО\)\.?/gi,'')
+               .replace(/\s+/g,' ').trim();
 
-      // Clean up mortgage boilerplate
-      desc = desc.replace(/обязательств по кредитному договору N?\s*/gi, 'Погашение ипотеки ')
-                 .replace(/634\/4151-0003464 от \d+\.\d+\.\d+\s*/g, '')
-                 .replace(/Клиент Безценных Владислав Константинович со счета платежной банковской карты\.?\s*/gi, '')
-                 .replace(/ФИЛИАЛ № \d+ БАНКА ВТБ \(ПАО\)\.?/gi, '')
-                 .replace(/\s+/g, ' ').trim();
+      // Extract counterparty name: "Тип. Имя Фамилия." → "Имя Фамилия"
+      const cpM = desc.match(/^[^.]+\.\s+(.+?)(?:\.|$)/);
+      const counterparty = cpM ? cpM[1].trim() : desc;
 
-      const dateISO = toISO(opDate);
-      const month = dateISO.slice(0,7);
-      const amtRub = isCredit ? signedAmt : -signedAmt;
+      const dateISO=toISO(opDate);
+      const month=dateISO.slice(0,7);
+      const amtRub=isCredit?signedAmt:-signedAmt;
+      const descLow=desc.toLowerCase();
 
-      const descLow = desc.toLowerCase();
-      const isOwnTransfer =
-        descLow.includes('безценных татьяна') || descLow.includes('безценных владислав') ||
-        descLow.includes('внутри втб. безценных') ||
-        (descLow.includes('переводы через сбп') && descLow.includes('безценных'));
-      const isMortgage = descLow.includes('погашение ипотеки') || descLow.includes('операции по кредитам');
+      const isOwnTransfer=descLow.includes('безценных татьяна')||descLow.includes('безценных владислав')||
+        (descLow.includes('переводы через сбп')&&descLow.includes('безценных'));
+      const isMortgage=descLow.includes('погашение ипотеки')||descLow.includes('операции по кредитам');
 
-      const tx = {
-        id: uid(), date: dateISO, month, dateDisplay: opDate,
-        desc: desc.slice(0,200),
-        card: accountNum ? '***'+accountNum.slice(-4) : '',
-        account: accountNum,
-        bankCat: isCredit ? 'Приход' : 'Расход',
-        amtOp: amtRub, curOp: 'RUB', amtRub,
-        status: 'OK', source: 'vtb_pdf',
-        counterparty: desc, counterpartyINN: '', counterpartyAcc: '',
-        manualCategory: false, linkedTo: null, linkedAccount: null
+      const tx={
+        id:uid(),date:dateISO,month,dateDisplay:opDate,time:txTime,
+        desc:desc.slice(0,200),
+        card:accountNum?'***'+accountNum.slice(-4):'',
+        account:accountNum,bankCat:isCredit?'Приход':'Расход',
+        amtOp:amtRub,curOp:'RUB',amtRub,
+        status:'OK',source:'vtb_pdf',
+        counterparty,counterpartyINN:'',counterpartyAcc:'',
+        manualCategory:false,linkedTo:null,linkedAccount:null
       };
 
-      if(isOwnTransfer) {
-        tx.type='transfer'; tx.group='Перевод'; tx.sub='Внутренний перевод';
-      } else if(isMortgage) {
-        tx.type='expense'; tx.group='Жильё'; tx.sub='Аренда/Ипотека (платёж)';
-      } else {
-        const c = applyCategForTx(tx);
-        tx.type=c.t; tx.group=c.g; tx.sub=c.s;
-      }
+      if(isOwnTransfer){tx.type='transfer';tx.group='Перевод';tx.sub='Внутренний перевод';}
+      else if(isMortgage){tx.type='expense';tx.group='Жильё';tx.sub='Аренда/Ипотека (платёж)';}
+      else{const c=applyCategForTx(tx);tx.type=c.t;tx.group=c.g;tx.sub=c.s;}
       transactions.push(tx);
     }
   }
 
-  if(accountNum) registerAccount(accountNum, 'vtb_pdf', 'ВТБ');
+  if(accountNum){
+    registerAccount(accountNum,'vtb_pdf','ВТБ Счет дебетовый *'+accountNum.slice(-4),'RUB');
+    if(DB.accounts[accountNum])DB.accounts[accountNum].owner='me';
+  }
   return transactions;
 }
 
