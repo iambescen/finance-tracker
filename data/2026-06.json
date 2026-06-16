@@ -1519,7 +1519,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Транспорт",
-      "sub": "Такси/Общественный транспорт"
+      "sub": "Такси/Общественный транспорт",
+      "confirmed": true
     },
     {
       "id": "esj6i67z",
@@ -1544,7 +1545,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Питание",
-      "sub": "Продукты/супермаркеты"
+      "sub": "Продукты/супермаркеты",
+      "confirmed": true
     },
     {
       "id": "56pgkrnr",
