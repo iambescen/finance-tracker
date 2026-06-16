@@ -2971,11 +2971,26 @@ function parseSberLoanPDF(flatLines, pages) {
           status: 'OK', source: 'sber_loan_pdf',
           counterparty: 'ПАО Сбербанк', counterpartyINN: '', counterpartyAcc: '',
           manualCategory: false, linkedTo: null, linkedAccount: null,
-          type: 'expense', group: 'Жильё', sub: 'Аренда/Ипотека (платёж)'
+          type: 'expense', group: 'Жильё', sub: 'Проценты по кредиту'
         });
       }
     }
   }
+
+  // Compute total principal paid to estimate remaining balance
+  const totalPrincipalPaid = transactions
+    .filter(t => t.sub === 'Погашение тела кредита')
+    .reduce((s,t) => s + Math.abs(t.amtRub), 0);
+
+  // Extract original loan amount from flat text
+  const loanAmtM = flatLines.join(' ').match(/на сумму\s+([\d\s]+[.,]\d{2})\s*рублей/i);
+  const loanAmount = loanAmtM ? parseFloat(loanAmtM[1].replace(/\s/g,'').replace(',','.')) : null;
+
+  // Extract period end date for anchor
+  const periodM = flatLines.join(' ').match(/по\s+(\d{2}\.\d{2}\.\d{4})\s+сообщает/);
+  const anchorDate = periodM ? toISO(periodM[1]) : new Date().toISOString().slice(0,10);
+
+  const remainingBalance = loanAmount != null ? Math.max(0, Math.round((loanAmount - totalPrincipalPaid)*100)/100) : null;
 
   // Register loan account
   if(contractNum && !DB.accounts[accountId]) {
@@ -2986,11 +3001,20 @@ function parseSberLoanPDF(flatLines, pages) {
       name: 'Кредит Сбер №' + contractNum,
       owner,
       source: 'sber_loan_pdf',
-      currentBalance: null,
+      currentBalance: remainingBalance != null ? -remainingBalance : null,
       currency: 'RUB',
       isCredit: true,
-      virtual: false
+      virtual: false,
+      loanAmount,
+      contractNum
     };
+  } else if(contractNum && DB.accounts[accountId]) {
+    // Обновляем остаток при повторной загрузке
+    if(remainingBalance != null) {
+      DB.accounts[accountId].currentBalance = -remainingBalance;
+      DB.accounts[accountId].balanceAnchor = {value: -remainingBalance, date: anchorDate};
+    }
+    if(loanAmount) DB.accounts[accountId].loanAmount = loanAmount;
   }
 
   return transactions;
@@ -4450,7 +4474,12 @@ function pageAssets(){
   const vtbPaid=allTxns.filter(t=>t.source==='vtb_mortgage_pdf'&&(t.sub==='Погашение тела ипотеки'||t.type==='transfer')).reduce((s,t)=>s+Math.abs(t.amtRub),0);
   const sberPaid=allTxns.filter(t=>t.source==='sber_loan_pdf'&&(t.sub==='Погашение тела кредита'||t.desc==='Тело кредита (погашение долга)')).reduce((s,t)=>s+Math.abs(t.amtRub),0);
   const vtbMortgage=Math.max(0,3436983.50-vtbPaid);
-  const sberLoan=Math.max(0,148585.50-sberPaid);
+  // Сумма кредита: берём из account если есть (загружается из справки), иначе жёстко
+  const sberLoanAcct=Object.values(DB.accounts).find(ac=>ac.source==='sber_loan_pdf');
+  const sberLoanOriginal=sberLoanAcct?.loanAmount||148585.50;
+  // Если есть balanceAnchor (из справки) — используем его как остаток напрямую
+  const sberLoanFromAnchor=sberLoanAcct?.balanceAnchor?.value!=null?Math.abs(sberLoanAcct.balanceAnchor.value):null;
+  const sberLoan=sberLoanFromAnchor!=null?sberLoanFromAnchor:Math.max(0,sberLoanOriginal-sberPaid);
 
   // Realty totals
   const realtyBase=a.realty.reduce((s,r)=>s+Math.round((r.sqm||0)*(r.ppm||0)),0);
@@ -5824,12 +5853,15 @@ function pageLoans(){
     {date:"04.09.2026",month:"2026-09",principal:13788.51,interest:121.68,balance:0},
   ];
   const sberAllPaid = sberSchedule.every(r => sberPaid[r.month] && sberPaid[r.month] > 0);
-  let sberBalance = 41090.93;
+  // Остаток: из якоря справки если есть, иначе жёсткий
+  const _sberAcct=Object.values(DB.accounts).find(ac=>ac.source==='sber_loan_pdf');
+  let sberBalance = _sberAcct?.balanceAnchor?.value!=null ? Math.abs(_sberAcct.balanceAnchor.value) : 41090.93;
+  const _sberOriginal = _sberAcct?.loanAmount || 148585.50;
   sberSchedule.forEach(r => {
     r.paid = !!(sberPaid[r.month] && sberPaid[r.month] > 0);
     if(r.paid) sberBalance -= r.principal;
   });
-  const sberPct = Math.round((1 - sberBalance/148585.50)*100);
+  const sberPct = Math.round((1 - sberBalance/_sberOriginal)*100);
   const sberLeft = sberSchedule.filter(r => !r.paid).length;
 
   const sberRows = sberSchedule.map(r => {
