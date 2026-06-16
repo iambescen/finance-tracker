@@ -1644,13 +1644,39 @@ function processBakayRows(worksheet) {
     }
 
     // Detect if it's a conversion between own accounts
-    const isConversion = desc.toLowerCase().includes('конвертация');
-    const isTopup = desc.toLowerCase().includes('пополнение карты');
+    const descLow = desc.toLowerCase();
+    const isConversion = descLow.includes('конвертация');
+    const isTopup = descLow.includes('пополнение карты');
+    // Well-known merchant patterns
+    const isSubscription = descLow.includes('subscription') || descLow.includes('подписк');
+    const isDigitalService =
+      descLow.includes('anthropic') || descLow.includes('claude') ||
+      descLow.includes('openai') || descLow.includes('chatgpt') ||
+      descLow.includes('google') || descLow.includes('apple') || descLow.includes('netflix') ||
+      descLow.includes('spotify') || descLow.includes('youtube') || descLow.includes('amazon');
+    const isPayment = descLow.includes('оплата товаров и услуг') || descLow.includes('торговая точка');
+
+    // Extract merchant name from "Торговая точка другого банка MERCHANT NAME"
+    let merchantName = '';
+    const merchantM = desc.match(/Торговая точка[^\n]*?банка\s+([A-Z][\w*. ]+?)(?:\s{2,}|$)/);
+    if (merchantM) merchantName = merchantM[1].trim();
+
+    // Link counterpartyAcc for conversions (correspondent account = partner KGS/USD acc)
+    const linkedAcc = correspondent && DB.accounts[correspondent] ? correspondent : null;
 
     // Categorize
     let type, group, sub;
-    if (isConversion || isTopup) {
-      type = 'transfer'; group = 'Перевод'; sub = isConversion ? 'Конвертация валюты' : 'Пополнение карты';
+    if (isConversion) {
+      type = 'transfer'; group = 'Перевод'; sub = 'Конвертация валюты';
+    } else if (isTopup) {
+      type = 'transfer'; group = 'Перевод'; sub = 'Пополнение карты';
+    } else if (isPayment && (isSubscription || isDigitalService)) {
+      type = 'expense'; group = 'Сервисы/Связь'; sub = 'Подписки на сервисы';
+      if (merchantName) desc = merchantName + ' · ' + desc.slice(0, 60);
+    } else if (isPayment) {
+      const c = applyCategForTx({desc, amtRub});
+      type = 'expense'; group = c.g||'Покупки'; sub = c.s||'Прочие покупки';
+      if (merchantName) desc = merchantName + ' · ' + desc.slice(0, 60);
     } else {
       const c = applyCategForTx({desc, amtRub});
       type = isExpense ? 'expense' : 'income';
@@ -1671,9 +1697,9 @@ function processBakayRows(worksheet) {
       amtRub: Math.round(amtRub * 100) / 100,
       status: 'OK',
       source: 'bakay_xlsx',
-      counterparty: correspondent,
+      counterparty: merchantName || correspondent,
       counterpartyINN: '',
-      counterpartyAcc: '',
+      counterpartyAcc: linkedAcc || correspondent,
       manualCategory: false,
       linkedTo: null,
       linkedAccount: null,
