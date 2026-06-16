@@ -2424,7 +2424,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Прочее",
-      "sub": "Подарки"
+      "sub": "Подарки",
+      "confirmed": true
     },
     {
       "id": "yw08tbeo",
