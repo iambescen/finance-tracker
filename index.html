@@ -415,20 +415,7 @@ tr:hover td{background:var(--bg3)}
 <script>
 const OWN_INN='570701153846';
 const OWN_INNS=new Set(['570701153846','463234158982']); // Влад + Таня
-const OWN_ACCOUNTS=new Set([
-  // Business
-  '40802810100000077444','40802810500004846488','40802810600000071861',
-  '40817810400000461363','42109810600000071861',
-  // Vlad personal
-  '40817810947008058607', // Sber debit *8607
-  '42307810747008067348', // Sber savings *7348
-  '40817810720414002560', // VTB debit *2560
-  '1242080005060273',     // Bakay KGS
-  '1242080005127466',     // Bakay USD
-  '40914810800007588136', // Cifra Bank
-  'tradernet_1861037',    // TraderNet
-  'mortgage_vtb',         // VTB mortgage
-]);
+const OWN_ACCOUNTS=new Set(['40802810100000077444','40802810500004846488','40817810400000461363','42109810600000071861','40802810600000071861']);
 const CASH_ACCOUNTS={me:'cash_me',wife:'cash_wife'};
 
 // Dynamic: is this counterparty account one of OUR accounts?
@@ -551,7 +538,7 @@ let DB={
   rules:[],
   customGroups:{}
 };
-let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,reportRange='month',reportYear=null,reportQuarter=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',filterUnlinked=false,txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set();
+let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,reportRange='month',reportYear=null,reportQuarter=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set();
 
 function uid(){return Math.random().toString(36).slice(2,10);}
 function parseAmt(s){if(!s) return 0;return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
@@ -2046,27 +2033,6 @@ function linkTransferPairs(){
         tx.linkedTo=best.id;tx.linkedAccount=best.account;
         best.linkedTo=tx.id;best.linkedAccount=tx.account;
         linked++;
-      } else {
-        // Bilateral check: if the other side also points back to us → link regardless of amount
-        // This handles cross-currency pairs (Bakay KGS↔USD, RUB↔KGS)
-        for(const p2 of Object.keys(DB.periods)){
-          for(const t2 of getTxns(p2)){
-            if(t2.linkedTo||t2.id===tx.id||t2.type!=='transfer')continue;
-            const t2Acc=String(t2.account||'').replace(/[*\s]/g,'');
-            const t2CpAcc=String(t2.counterpartyAcc||'').replace(/[*\s]/g,'');
-            const txAcc=String(tx.account||'').replace(/[*\s]/g,'');
-            if(t2Acc!==ctgKey)continue; // must be FROM the counterparty
-            if(!t2CpAcc||t2CpAcc.slice(-8)!==txAcc.slice(-8))continue; // t2 must point back to tx
-            const days=Math.abs(new Date(t2.date)-new Date(tx.date))/86400000;
-            if(days>3)continue; // stricter date for bilateral (3 days)
-            // This is a high-confidence bilateral match — link regardless of currency difference
-            tx.linkedTo=t2.id;tx.linkedAccount=t2.account;
-            t2.linkedTo=tx.id;t2.linkedAccount=tx.account;
-            linked++;
-            break;
-          }
-          if(tx.linkedTo)break;
-        }
       }
     }
   }
@@ -2085,13 +2051,11 @@ function linkTransferPairs(){
       if(t2.linkedTo||t2.id===tx.id)continue;
       if(Math.sign(t2.amtRub)===txSign)continue;
       const amtDiff=Math.abs(Math.abs(t2.amtRub)-amt);
+      if(amtDiff>100)continue;
       const days=Math.abs(new Date(t2.date)-txDate)/86400000;
       if(days>7)continue;
-      const bothOwn=isOwnAccount(tx.account)&&isOwnAccount(t2.account);
-      const pctTol=bothOwn?Math.max(Math.abs(tx.amtRub)*0.08,100):100;
-      if(amtDiff>pctTol)continue;
       const sameAcc=tx.account&&t2.account&&tx.account===t2.account?1:0;
-      const score=days*2+amtDiff/Math.max(Math.abs(tx.amtRub)*0.01,10)+sameAcc*5;
+      const score=days+amtDiff/100+sameAcc*3;
       if(score<bestScore){best=t2;bestScore=score;}
     }
     if(best){
@@ -2613,13 +2577,17 @@ function parseVTBCreditPDF(pages) {
         const {x, text, top} = w;
         if(x < 55 && /^\d{2}\.\d{2}\.\d{4}$/.test(text)) {
           if(!opDate) opDate = text;
-        } else if(text==='обработке' && x > 90) {
+        } else if(x > 90 && x < 170 && text.includes('обработке')) {
           isProcessing = true;
         } else if(KNOWN_CURRENCIES.includes(text) && x < 500) {
           curCodes.push({x, cur:text, top});
-        } else if(x >= 100 && x <= 460 && /^-?[\d]+[,.]?[\d]*$/.test(text.replace(/\s/g,''))) {
-          const val = parseFloat(text.replace(/,/g,'.').replace(/\s/g,''));
-          if(!isNaN(val) && Math.abs(val) > 0) allAmts.push({x, val, top});
+        } else if(x >= 120 && x <= 455) {
+          // ВТБ: запятая = разделитель тысяч, точка = десятичная (напр. "100,961.77")
+          const clean = text.replace(/\s/g,'').replace(/,/g,'');
+          if(/^-?\d+(\.\d{1,2})?$/.test(clean)) {
+            const val = parseFloat(clean);
+            if(!isNaN(val) && Math.abs(val) > 0) allAmts.push({x, val, top});
+          }
         } else if(x > 460 && text.length > 1 &&
           !KNOWN_CURRENCIES.includes(text) &&
           !['0.00','0','Задолженность','Описание','Расход','Приход','Поступление','Комиссия'].includes(text) &&
@@ -2631,7 +2599,14 @@ function parseVTBCreditPDF(pages) {
       if(!opDate || !allAmts.length) continue;
 
       // Find primary (billing) amount: leftmost in 175-280 range
-      const primaryAmts = allAmts.filter(a => a.x >= 150 && a.x <= 290);
+      let primaryAmts = allAmts.filter(a => a.x >= 150 && a.x <= 290);
+      if(!primaryAmts.length){
+        // fallback: нет колонки «В валюте» — берём Расход (340-360) или Поступление (240-290)
+        const expA=allAmts.filter(a=>a.x>=300&&a.x<=370);
+        const incA=allAmts.filter(a=>a.x>=240&&a.x<=300);
+        if(expA.length){expA.sort((a,b)=>a.x-b.x);primaryAmts=[{x:expA[0].x,val:-Math.abs(expA[0].val),top:expA[0].top}];}
+        else if(incA.length){incA.sort((a,b)=>a.x-b.x);primaryAmts=[incA[0]];}
+      }
       if(!primaryAmts.length) continue;
       primaryAmts.sort((a,b)=>a.x-b.x);
       const primaryAmt = primaryAmts[0];
@@ -2645,8 +2620,8 @@ function parseVTBCreditPDF(pages) {
       if(foreignCurEntry) {
         curOp = foreignCurEntry.cur;
         amtOpRaw = signedAmt; // this is the foreign currency amount
-        // RUB amount: look for a larger amount in the band (RUB is usually bigger)
-        const rubAmts = allAmts.filter(a => a.x > primaryAmt.x + 30 && a.val > signedAmt * 0.5);
+        // RUB-эквивалент в колонках Поступление/Расход (240-400), не задевая Задолженность
+        const rubAmts = allAmts.filter(a => a.x >= 240 && a.x <= 400 && a.val >= signedAmt * 0.5);
         if(rubAmts.length) {
           rubAmts.sort((a,b)=>a.x-b.x);
           amtRubFinal = rubAmts[0].val;
@@ -2704,6 +2679,19 @@ function parseVTBCreditPDF(pages) {
     registerAccount(accountNum, 'vtb_credit_pdf', 'ВТБ Кредитная');
     // Mark as credit account
     if(DB.accounts[accountNum]) DB.accounts[accountNum].isCredit = true;
+    // Якорь баланса: «Баланс на конец периода» + дата периода (для долга по карте в Активах)
+    if(pages[0] && DB.accounts[accountNum]) {
+      let endBalance=null, endDate=null;
+      for(const w of pages[0]) {
+        if(w.text.includes('Баланс на конец периода')) {
+          const v=pages[0].find(x=>Math.abs(x.top-w.top)<3 && x.x>150 && x.x<280 && /-?\d[\d,]*\.\d{2}/.test(x.text));
+          if(v){const m=v.text.match(/-?\d[\d,]*\.\d{2}/);if(m)endBalance=parseFloat(m[0].replace(/,/g,''));}
+        }
+        const dm=w.text.match(/на (\d{2})\.(\d{2})\.(\d{4})/);
+        if(dm)endDate=dm[3]+'-'+dm[2]+'-'+dm[1];
+      }
+      if(endBalance!=null) DB.accounts[accountNum].balanceAnchor={value:endBalance, date:endDate||transactions[0]?.date};
+    }
   }
   return transactions;
 }
@@ -3242,6 +3230,24 @@ function computeBalance(accNum,targetDate){
   return Math.round((anchorVal+delta)*100)/100;
 }
 
+// Свободный кэш на брокерском счёте: пополнения/выводы (transfer), сделки (investment),
+// дивиденды/купоны (income), комиссии/налоги (expense) — всё проходит через amtRub.
+function computeBrokerCash(accNum){
+  const acc=DB.accounts[accNum];if(!acc)return null;
+  const txAll=[];
+  for(const period of Object.keys(DB.periods))
+    for(const tx of getTxns(period))
+      if(tx.account===accNum)txAll.push(tx);
+  const anchor=acc.balanceAnchor;
+  if(anchor?.value!=null&&anchor?.date){
+    let val=parseFloat(anchor.value);
+    for(const tx of txAll)if(tx.date>anchor.date)val+=tx.amtRub;
+    return Math.round(val*100)/100;
+  }
+  if(!txAll.length)return null;
+  return Math.round(txAll.reduce((s,tx)=>s+tx.amtRub,0)*100)/100;
+}
+
 function syncAssetsCash(){
   const accsWithBal=Object.values(DB.accounts).filter(a=>{
     if(a.isCredit)return false;
@@ -3383,6 +3389,7 @@ function pageDash(){
     +'<div class="card-sm"><div class="metric-label">Операций</div><div class="metric-value accent">'+txns.length+'</div></div></div>'
     +'<div class="grid-2"><div class="card" style="margin-bottom:0"><div class="card-title">По категориям</div><div class="chart-wrap"><canvas id="chartCats"></canvas></div></div>'
     +'<div class="card" style="margin-bottom:0"><div class="card-title">'+(selP.length>1?'По месяцам':'По дням')+'</div><div class="chart-wrap"><canvas id="chartDays"></canvas></div></div></div>'
+    +'<div class="card"><div class="card-title">Капитал по месяцам</div><div class="chart-wrap"><canvas id="chartCapital"></canvas></div></div>'
     +(topCats.length?'<div class="card"><div class="card-title">Топ расходов</div>'+topCats.map(([cat,amt])=>'<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>'+cat+'</span><span style="color:var(--expense)">'+fmtMoney(amt)+'</span></div><div class="progress"><div class="progress-bar" style="width:'+Math.min(100,expense?amt/expense*100:0).toFixed(0)+'%"></div></div></div></div>').join('')+'</div>':'')
     +(monthlyRows?'<div class="card"><div class="card-title">По месяцам</div><table><thead><tr><th>Месяц</th><th style="text-align:right">Доходы</th><th style="text-align:right">Расходы</th><th style="text-align:right">Результат</th></tr></thead><tbody>'+monthlyRows+'</tbody></table></div>':'');
 }
@@ -3417,6 +3424,24 @@ function renderDashCharts(){
     const byDay={};txns.forEach(t=>{if(!byDay[t.date])byDay[t.date]={inc:0,exp:0};if(t.type==='income')byDay[t.date].inc+=t.amtRub;else byDay[t.date].exp+=Math.abs(t.amtRub);});
     const days=Object.keys(byDay).sort();
     if(days.length)charts.days=new Chart(cd,{type:'bar',data:{labels:days.map(d=>d.slice(8)),datasets:[{label:'Доходы',data:days.map(d=>Math.round(byDay[d].inc)),backgroundColor:'rgba(22,163,74,0.65)',borderRadius:3},{label:'Расходы',data:days.map(d=>Math.round(byDay[d].exp)),backgroundColor:'rgba(220,38,38,0.65)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:axisOpts,y:axisOpts},plugins:{legend:legOpts}}});
+  }
+  // Капитал по месяцам: баланс всех счетов на конец периода (+ текущие инвестиции пунктиром на последней точке)
+  const capCanvas=document.getElementById('chartCapital');
+  if(capCanvas){
+    const hist=calcTotalBalanceHistory();
+    if(hist){
+      const months=Object.keys(hist).sort();
+      if(months.length){
+        const investNow=Object.values(DB.investPrices||{}).length
+          ?Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0)
+            .reduce((s,h)=>s+h.qty*(DB.investPrices[h.isin||h.ticker]||0),0):0;
+        const cashSeries=months.map(m=>Math.round(hist[m].end));
+        const withInvest=months.map((m,i)=>cashSeries[i]+(i===months.length-1?investNow:0));
+        const ds=[{label:'Капитал (счета)',data:cashSeries,borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,0.12)',fill:true,tension:0.3,pointRadius:2,borderWidth:2}];
+        if(investNow)ds.push({label:'+ инвестиции (текущие)',data:withInvest,borderColor:'#16a34a',borderDash:[5,4],fill:false,tension:0.3,pointRadius:2,borderWidth:2});
+        charts.capital=new Chart(capCanvas,{type:'line',data:{labels:months.map(fmtMonth),datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:axisOpts,y:axisOpts},plugins:{legend:legOpts,tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+Math.round(ctx.parsed.y).toLocaleString('ru-RU')+' ₽'}}}}});
+      }
+    }
   }
 }
 
@@ -3586,7 +3611,6 @@ function pageBalance(){
 function pageTxns(){
   const allPKeys=Object.keys(DB.periods).sort().reverse();
   const allTxns=allPKeys.flatMap(p=>getTxns(p));
-  const unlinkCount=allTxns.filter(t=>t.type==='transfer'&&!t.linkedTo).length;
   if(!allTxns.length)return pageEmpty();
   const srcTxns=txAllPeriods?allTxns:getTxns(currentPeriod);
   const groups=[...new Set(srcTxns.map(t=>t.group))].sort();
@@ -3597,7 +3621,7 @@ function pageTxns(){
   const unconfTotal=allTxns.filter(t=>!t.confirmed).length;
   const bulkGrpOpts=getAllGroups().map(g=>'<option value="'+g+'">'+g+'</option>').join('');
   return '<div class="page-header"><div class="page-title">Операции</div>'
-    +'<div class="page-actions">'+'<select onchange="setTxPeriod(this.value)" style="'+sel+'">'+txPeriodOpts+'</select>'+'<button onclick="filterUnlinked=!filterUnlinked;filterTxns()" style="'+sel+';position:relative;padding:6px 10px;cursor:pointer;border-radius:var(--r);'+(filterUnlinked?'background:var(--expense);color:#fff;border-color:var(--expense)':'')+'" title="Только несвязанные переводы">⇄ Несвязанные<span style="'+(!unlinkCount?'display:none':'')+'position:absolute;top:-6px;right:-6px;background:var(--expense);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px">'+unlinkCount+'</span></button>'+'<button onclick="const n=linkTransferPairs();forceReapply();toast(n?`Связано: ${n} пар`:`Новых пар не найдено`,'+(n>0?"'ok'":"'info'")+')" style="'+sel+'">🔗 Связать</button>'+'</div></div>'
+    +'<div class="page-actions"><select onchange="setTxPeriod(this.value)" style="'+sel+'">'+txPeriodOpts+'</select></div></div>'
     +'<div class="tbl-wrap sticky-header">'
     +'<div class="tbl-toolbar" style="flex-wrap:wrap;gap:6px">'
     +'<input type="text" id="txSearch" placeholder="Поиск..." value="'+txFilterSearch+'" oninput="filterTxns()" style="width:150px">'
@@ -3658,7 +3682,6 @@ function filterTxns(){
     if(account&&t.account!==account&&t.linkedAccount!==account)return false;
     if(ctgF&&!(t.counterparty||'').toLowerCase().includes(ctgF)&&!(t.counterpartyINN||'').includes(ctgF)&&!t.desc.toLowerCase().includes(ctgF))return false;
     if(txShowUnconfirmed&&t.confirmed)return false;
-    if(filterUnlinked&&!(t.type==='transfer'&&!t.linkedTo))return false;
     return true;
   });
 
@@ -3882,7 +3905,6 @@ function bulkConfirmVisible(){
     if(account&&t.account!==account&&t.linkedAccount!==account)return false;
     if(ctgF&&!(t.counterparty||'').toLowerCase().includes(ctgF)&&!(t.counterpartyINN||'').includes(ctgF)&&!t.desc.toLowerCase().includes(ctgF))return false;
     if(txShowUnconfirmed&&t.confirmed)return false;
-    if(filterUnlinked&&!(t.type==='transfer'&&!t.linkedTo))return false;
     return true;
   });
   const periods=new Set();
@@ -4481,6 +4503,13 @@ function pageInvestments(){
   // Total across all accounts (for summary cards)
   const totalAllValue=accounts.flatMap(([,a])=>a.holdings||[]).filter(h=>h.qty>0)
     .reduce((s,h)=>s+(h.qty*(prices[h.isin||h.ticker]||0)),0);
+  // P&L по всему портфелю — только позиции, у которых есть и средняя цена, и текущая котировка
+  const _pnlH=accounts.flatMap(([,a])=>a.holdings||[]).filter(h=>h.qty>0&&h.avgPrice&&(prices[h.isin||h.ticker]||0)>0);
+  const totalAllCost=_pnlH.reduce((s,h)=>s+h.qty*h.avgPrice,0);
+  const totalAllPnl=_pnlH.reduce((s,h)=>s+(h.qty*prices[h.isin||h.ticker]-h.qty*h.avgPrice),0);
+  const totalAllPnlPct=totalAllCost>0?totalAllPnl/totalAllCost*100:0;
+  // Свободный кэш по брокерским счетам
+  const brokerCashTotal=Object.keys(DB.investments||{}).reduce((s,accId)=>s+(computeBrokerCash(accId)||0),0);
 
   let totalValue=0;
   let rows='';
@@ -4490,10 +4519,10 @@ function pageInvestments(){
     const holdings=(data.holdings||[]).filter(h=>h.qty>0);
     if(!holdings.length)continue;
     const accName=DB.accounts[accId]?.name||holdings[0]?.brokerName||accId;
-    let accTotal=0;
+    let accTotal=0,accCost=0,accPnl=0;
 
     // Account header row
-    rows+='<tr><td colspan="5" style="background:var(--bg3);font-weight:600;padding:10px 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">'+accName+'</td></tr>';
+    rows+='<tr><td colspan="7" style="background:var(--bg3);font-weight:600;padding:10px 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">'+accName+'</td></tr>';
 
     for(const h of holdings){
       const priceKey=h.isin||h.ticker;
@@ -4501,6 +4530,11 @@ function pageInvestments(){
       const value=h.qty*price;
       totalValue+=value;
       accTotal+=value;
+      const hasPnl=h.avgPrice&&price>0;
+      const cost=hasPnl?h.qty*h.avgPrice:0;
+      const pnl=hasPnl?value-cost:null;
+      const pnlPct=hasPnl&&cost>0?pnl/cost*100:null;
+      accCost+=cost;accPnl+=(pnl||0);
       let type='Акция';
       if(h.secType){const st=h.secType.toLowerCase();if(st.includes('пай')||st.includes('фонд'))type='Фонд';else if(st.includes('обл'))type='Облигация';else if(st.includes('пфи')||st.includes('фьюч'))type='ПФИ';else type=h.secType;}
       else if(h.name.includes('обл'))type='Облигация';
@@ -4515,11 +4549,14 @@ function pageInvestments(){
         +'oninput="setInvestPrice(this.dataset.key,this.value)" data-key="'+priceKey+'" '
         +'style="width:100px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);text-align:right"></td>'
         +'<td style="text-align:right;font-weight:500">'+(value>0?fmtMoney(value):'—')+'</td>'
+        +'<td style="text-align:right;font-weight:500;color:'+(pnl==null?'var(--muted)':pnl>=0?'var(--income)':'var(--expense)')+'">'
+        +(pnl==null?'—':(pnl>=0?'+':'−')+fmtMoney(Math.abs(pnl))+(pnlPct!=null?'<div style="font-size:11px;font-weight:400">'+(pnl>=0?'+':'−')+Math.abs(pnlPct).toFixed(1)+'%</div>':''))+'</td>'
         +'</tr>';
     }
     // Account subtotal
-    if(accTotal>0)rows+='<tr style="border-top:2px solid var(--border)"><td colspan="4" style="padding:8px 12px;font-size:12px;color:var(--muted)">Итого '+accName+'</td>'
-      +'<td style="text-align:right;font-weight:600;padding:8px 12px">'+fmtMoney(accTotal)+'</td></tr>';
+    if(accTotal>0)rows+='<tr style="border-top:2px solid var(--border)"><td colspan="5" style="padding:8px 12px;font-size:12px;color:var(--muted)">Итого '+accName+'</td>'
+      +'<td style="text-align:right;font-weight:600;padding:8px 12px">'+fmtMoney(accTotal)+'</td>'
+      +'<td style="text-align:right;font-weight:600;padding:8px 12px;color:'+(accPnl>=0?'var(--income)':'var(--expense)')+'">'+(accCost>0?(accPnl>=0?'+':'−')+fmtMoney(Math.abs(accPnl)):'—')+'</td></tr>';
   }
 
   return '<div class="page-header"><div class="page-title">Инвестиции</div>'
@@ -4529,11 +4566,13 @@ function pageInvestments(){
     +'</div></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">'
     +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--income)">'+fmtMoney(totalAllValue)+'</div><div style="font-size:12px;color:var(--muted)">Весь портфель</div></div>'
+    +(totalAllCost>0?'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:'+(totalAllPnl>=0?'var(--income)':'var(--expense)')+'">'+(totalAllPnl>=0?'+':'−')+fmtMoney(Math.abs(totalAllPnl))+'</div><div style="font-size:12px;color:var(--muted)">Прибыль/убыток ('+(totalAllPnl>=0?'+':'−')+Math.abs(totalAllPnlPct).toFixed(1)+'%)</div></div>':'')
+    +(brokerCashTotal?'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+fmtMoney(brokerCashTotal)+'</div><div style="font-size:12px;color:var(--muted)">Свободный кэш</div></div>':'')
     +(investFilter!=='all'?'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+fmtMoney(totalValue)+'</div><div style="font-size:12px;color:var(--muted)">Выбранный счёт</div></div>':'')
     +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+allHoldings.length+'</div><div style="font-size:12px;color:var(--muted)">Позиций</div></div>'
     +'</div>'
     +'<div class="card"><div class="tbl-wrap"><table>'
-    +'<thead><tr><th>Актив</th><th>Тип</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Ср. цена</th><th style="text-align:right">Текущая ₽</th><th style="text-align:right">Стоимость</th></tr></thead>'
+    +'<thead><tr><th>Актив</th><th>Тип</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Ср. цена</th><th style="text-align:right">Текущая ₽</th><th style="text-align:right">Стоимость</th><th style="text-align:right">P&amp;L</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div></div>';
 }
 function setInvestPrice(key,val){
@@ -4561,13 +4600,27 @@ async function fetchMOEXPrices(){
         if(secid&&price){const h=all.find(h=>h.ticker===secid);if(h){DB.investPrices[h.isin||h.ticker]=price;updated++;}}
       }
     }
-    // Bonds (price in % of par 1000 RUB)
+    // Bonds (price in % of par; ruble price = pct/100 * номинал)
     if(isins.length){
       const r2=await fetch('https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?securities='+isins.slice(0,30).join(',')+'&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,LCURRENTPRICE');
       const d2=await r2.json();
       for(const row of d2.marketdata?.data||[]){
         const[secid,last,lcur]=row;const pct=last||lcur||0;
         if(secid&&pct){DB.investPrices[secid]=Math.round(pct*10);updated++;}
+      }
+      // Fallback: облигации без цены — поштучный запрос по всем режимам торгов + номинал
+      const stillMissing=isins.filter(i=>!DB.investPrices[i]);
+      for(const isin of stillMissing.slice(0,30)){
+        try{
+          const rf=await fetch('https://iss.moex.com/iss/engines/stock/markets/bonds/securities/'+encodeURIComponent(isin)+'.json?iss.meta=off&iss.only=marketdata,securities&marketdata.columns=SECID,LAST,LCURRENTPRICE,MARKETPRICE&securities.columns=SECID,PREVPRICE,PREVADMITTEDQUOTE,FACEVALUE');
+          const df=await rf.json();
+          let pct=0,face=1000;
+          for(const row of df.marketdata?.data||[]){const[,last,lcur,mkt]=row;pct=last||lcur||mkt||0;if(pct)break;}
+          const sc=df.securities?.columns||[],sd=(df.securities?.data||[])[0];
+          if(sd){const fv=sd[sc.indexOf('FACEVALUE')];if(fv)face=fv;
+            if(!pct)pct=sd[sc.indexOf('PREVPRICE')]||sd[sc.indexOf('PREVADMITTEDQUOTE')]||0;}
+          if(pct){DB.investPrices[isin]=Math.round(pct/100*face);updated++;}
+        }catch(_){}
       }
     }
     saveInvestments('MOEX prices');
