@@ -1363,20 +1363,94 @@ function parseTinkoffBrokerPDF(pages){
     const debLine=lines.find(l=>lineText(l).includes('Сумма списания'));
 
     // Денежные суммы: ищем в числовых строках рядом с X каждой операции
-    // В PDF суммы зачисления — числа с «.» (5,546.00 / 40,540.00 и т.п.)
-    // amtLines: все строки содержащие числа в форматах 5,539.28 / 267,087.11 / 5,546.00
+    // Колонки идут с шагом ~17-51px — используем жёсткий допуск ±9px
     const numRe=/\b\d[\d,]*\.\d{2}\b/;
-    const amtLines=lines.filter(l=>numRe.test(lineText(l))&&
-      !lineText(l).includes('RUB')&&!lineText(l).includes('Дата'));
+    const _amtLinesAll=lines.filter(l=>{
+      const t=lineText(l);
+      if(!numRe.test(t))return false;
+      if(t.includes('RUB')||t.includes('Дата')||t.includes('Задолженность')||
+         t.includes('Исходящий')||t.includes('Входящий')||t.includes('Плановый')||
+         t.includes('Сумма')||t.includes('Непокрытая')||t.includes('Примечание'))return false;
+      return true;
+    });
+    // Строки с крупными числами (>2): для Пополнений/Выводов
+    const amtLines=_amtLinesAll.filter(l=>{
+      const nums=lineText(l).match(/\b\d[\d,]*\.\d{2}\b/g)||[];
+      const maxV=Math.max(...nums.map(s=>parseFloat(s.replace(/,/g,''))));
+      return maxV>2;
+    }).sort((a,b)=>{
+      const mA=Math.max(...(lineText(a).match(/\b\d[\d,]*\.\d{2}\b/g)||['0']).map(s=>parseFloat(s.replace(/,/g,''))));
+      const mB=Math.max(...(lineText(b).match(/\b\d[\d,]*\.\d{2}\b/g)||['0']).map(s=>parseFloat(s.replace(/,/g,''))));
+      return mB-mA;
+    });
+    // Строки с мелкими числами (>0, <=2): для Налогов (НДФЛ 1-2 руб)
+    const amtLinesSmall=_amtLinesAll.filter(l=>{
+      const nums=lineText(l).match(/\b\d[\d,]*\.\d{2}\b/g)||[];
+      return nums.some(s=>{ const v=parseFloat(s.replace(/,/g,'')); return v>0&&v<=2; });
+    });
 
-    // По X каждой операции ищем ближайшее число в любой amtLine
-    function amtAtX(targetX){
-      let best=null,bestDist=40; // допуск ±40px
-      for(const al of amtLines){
+    // Поиск суммы по X
+    function amtAtXFrom(src,targetX,useFallback){
+      let best=null,bestDist=9;
+      for(const al of src){
         for(const w of al.words){
-          const v=parseFloat(w.text.replace(/,/g,''));
+          const raw=w.text.replace(/[^0-9.,]/g,'').replace(/,/g,'');
+          const v=parseFloat(raw);
           if(!isNaN(v)&&v>0){
             const dist=Math.abs(w.x-targetX);
+            if(dist<bestDist){best=v;bestDist=dist;}
+          }
+        }
+      }
+      if(best!=null||!useFallback)return best||0;
+      bestDist=9;
+      for(const al of src){
+        for(const w of al.words){
+          const raw=w.text.replace(/[^0-9.,]/g,'').replace(/,/g,'');
+          const v=parseFloat(raw);
+          if(!isNaN(v)&&v>0){
+            const dist=Math.abs(w.x-(targetX+17));
+            if(dist<bestDist){best=v;bestDist=dist;}
+          }
+        }
+      }
+      return best||0;
+    }
+    function amtAtX(targetX,useFallback){return amtAtXFrom(amtLines,targetX,useFallback);}
+    function taxAtX(targetX){return amtAtXFrom(amtLinesSmall,targetX,false)||amtAtXFrom(amtLines,targetX,false);}
+    function dateAtX(line,targetX){
+      if(!line)return null;
+      let best=null,bestDist=9;
+      for(const w of line.words){
+        if(/\d{2}\.\d{2}\.\d{4}/.test(w.text)&&Math.abs(w.x-targetX)<bestDist){best=w.text;bestDist=Math.abs(w.x-targetX);}
+      }
+      return best;
+    }
+
+    // Точный поиск суммы по X: допуск ±9px (безопасно при шаге ≥17px)
+    // useFallback=true: если не нашли, пробуем +17px (для широких чисел, сдвинутых в PDF)
+    function amtAtX(targetX,useFallback){
+      // Первый проход: ±9px
+      let best=null,bestDist=9;
+      for(const al of amtLines){
+        for(const w of al.words){
+          const raw=w.text.replace(/[^0-9.,]/g,'').replace(/,/g,'');
+          const v=parseFloat(raw);
+          if(!isNaN(v)&&v>0){
+            const dist=Math.abs(w.x-targetX);
+            if(dist<bestDist){best=v;bestDist=dist;}
+          }
+        }
+      }
+      if(best!=null||!useFallback)return best||0;
+      // Fallback: число могло сдвинуться в следующую колонку (+17px) из-за широкого числа
+      bestDist=9;
+      for(const al of amtLines){
+        for(const w of al.words){
+          const raw=w.text.replace(/[^0-9.,]/g,'').replace(/,/g,'');
+          const v=parseFloat(raw);
+          if(!isNaN(v)&&v>0){
+            const dist=Math.abs(w.x-(targetX+17));
             if(dist<bestDist){best=v;bestDist=dist;}
           }
         }
@@ -1385,7 +1459,7 @@ function parseTinkoffBrokerPDF(pages){
     }
     function dateAtX(line,targetX){
       if(!line)return null;
-      let best=null,bestDist=999;
+      let best=null,bestDist=9;
       for(const w of line.words){
         if(/\d{2}\.\d{2}\.\d{4}/.test(w.text)&&Math.abs(w.x-targetX)<bestDist){best=w.text;bestDist=Math.abs(w.x-targetX);}
       }
@@ -1403,18 +1477,22 @@ function parseTinkoffBrokerPDF(pages){
       const date=d2iso(dateRaw);
       const month=date.slice(0,7);
 
-      const credit=amtAtX(col.x);
-      const debit=0; // вывод определяем по типу операции, не по знаку суммы
+      // useFallback=true для пополнений и выводов (широкие числа сдвигаются в PDF)
+      // useFallback=false для налогов (маленькие суммы, не должны брать соседнюю колонку)
+      const isTax=opLow.includes('налог');
+      const credit=amtAtX(col.x,!isTax);
       const amtRub_raw=credit;
-      if(!amtRub_raw&&!opLow.includes('налог'))continue;
+      if(!amtRub_raw&&!isTax)continue;
 
       let type,group,sub,desc,amtRub;
       if(opLow.includes('пополнение')){
         type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';amtRub=amtRub_raw;
       } else if(opLow.includes('вывод')){
         type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';amtRub=-amtRub_raw;
-      } else if(opLow.includes('налог')){
-        type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='НДФЛ брокерский';amtRub=-(amtAtX(col.x)||0);
+      } else if(isTax){
+        const taxAmt=taxAtX(col.x);
+        if(!taxAmt)continue;
+        type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='НДФЛ брокерский';amtRub=-taxAmt;
       } else if(opLow.includes('купон')||opLow.includes('дивид')||opLow.includes('выплата')){
         type='income';group='Инвестиционный доход';
         sub=opLow.includes('дивид')?'Дивиденды':'Купоны';desc=opStr;amtRub=amtRub_raw;
