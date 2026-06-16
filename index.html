@@ -1015,144 +1015,242 @@ function parseCifraBankPDF(pages){
 // ── VTB Broker XLSX parser ──
 function parseVTBBrokerXLSX(wb){
   const txns=[];
-  const ws=wb.Sheets[wb.SheetNames[0]];
+  const ws=wb.Sheets['brokerage_report']||wb.Sheets[wb.SheetNames[0]];
+  if(!ws)return txns;
 
-  function cellVal(col,row){
-    const cell=ws[XLSX.utils.encode_cell({r:row,c:col})];
-    return cell?cell.v:'';
-  }
+  function cv(col,row){const c=ws[XLSX.utils.encode_cell({r:row,c:col})];return c?c.v:'';}
+  function cvs(col,row){return String(cv(col,row)||'').trim();}
 
   const ref=ws['!ref']||'A1:A1';
   const range=XLSX.utils.decode_range(ref);
   const maxRow=range.e.r;
 
-  // Extract client info
-  let accNum='vtb_broker',owner='wife';
+  // ── Извлечение мета: клиент, субсчёт ──
+  let accNum='vtb_broker', owner='wife', subNum='';
   for(let r=0;r<15;r++){
-    const v=String(cellVal(1,r)||'');
-    if(v.includes('Безценных')){
-      if(v.toLowerCase().includes('владислав')||v.toLowerCase().includes('влад'))owner='me';
+    const b=cvs(1,r);
+    if(b.includes('Безценных')){
+      if(b.toLowerCase().includes('владислав'))owner='me';
       else owner='wife';
     }
-    // Субсчет
-    const v0=String(cellVal(0,r)||'')+String(cellVal(1,r)||'');
-    if(v0.includes('субсчета')){
-      const sub=String(cellVal(1,r)||'').trim();
-      if(sub)accNum='vtb_broker_'+sub.replace(/[^a-zA-Z0-9_]/g,'').slice(0,20);
+    if(cvs(7,r).includes('Владислав'))owner='me';
+    if(b==='№ субсчета:'||b.includes('субсчета')){
+      const sub=cvs(7,r)||cvs(1,r+1);
+      if(sub&&/^[A-Z0-9]+$/.test(sub.trim())){subNum=sub.trim();accNum='vtb_broker_'+subNum;}
     }
   }
-  registerAccount(accNum,'vtb_broker_xlsx','ВТБ Брокер','RUB');
-  if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
 
-  // VTB broker: data in col 1 (not col 0)
-  // Columns: date=1, sum=2, currency=6, opType=9, comment=15
-  const C_DATE=1,C_AMT=2,C_CUR=6,C_OP=9,C_CMT=15;
+  // ИНН из строки 4 (col 22)
+  const inn=cvs(22,3)||cvs(22,4);
 
-  // Find "Движение денежных средств" section
+  // Период из строки 1 (заголовок)
+  const titleText=cvs(3,0)||cvs(1,0)||'';
+  const periodM=titleText.match(/с\s+(\d{2}\.\d{2}\.\d{4})\s+по\s+(\d{2}\.\d{2}\.\d{4})/);
+  const reportEndDate=periodM?toISO(periodM[2]):new Date().toISOString().slice(0,10);
+
+  registerAccount(accNum,'vtb_broker_xlsx','ВТБ Брокер '+subNum,'RUB');
+  if(DB.accounts[accNum]){
+    DB.accounts[accNum].owner=owner;
+    DB.accounts[accNum].isBroker=true;
+  }
+
+  // helper: Excel serial → ISO date
+  function excelDateToISO(v){
+    if(!v)return null;
+    if(v instanceof Date)return v.toISOString().slice(0,10);
+    if(typeof v==='number'){
+      const d=new Date(Math.round((v-25569)*86400*1000));
+      if(!isNaN(d.getTime()))return d.toISOString().slice(0,10);
+    }
+    const s=String(v).trim();
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+    if(/^\d{2}\.\d{2}\.\d{4}$/.test(s))return s.split('.').reverse().join('-');
+    return null;
+  }
+
+  // ── Движение денежных средств ──
   let cashStart=-1;
   for(let r=0;r<=maxRow;r++){
-    if(String(cellVal(C_DATE,r)||'').trim()==='Движение денежных средств'){cashStart=r;break;}
-  }
-  if(cashStart<0){console.log('[VTBBroker] cash section not found');return txns;}
-
-  // Find header row
-  let dataStart=-1;
-  for(let r=cashStart;r<cashStart+10;r++){
-    if(String(cellVal(C_DATE,r)||'').trim()==='Дата'){dataStart=r+1;break;}
-  }
-  if(dataStart<0){console.log('[VTBBroker] header not found');return txns;}
-
-  // Find end section
-  let dataEnd=maxRow+1;
-  for(let r=dataStart;r<=maxRow;r++){
-    const v=String(cellVal(C_DATE,r)||'').trim();
-    if(v.startsWith('Отчёт об остатках')||v.startsWith('Подтвержден')){dataEnd=r;break;}
+    if(cvs(1,r)==='Движение денежных средств'){cashStart=r;break;}
   }
 
-  for(let r=dataStart;r<dataEnd;r++){
-    const dateRaw=cellVal(C_DATE,r);
-    if(!dateRaw)continue;
+  let holdStart=-1;
+  for(let r=0;r<=maxRow;r++){
+    if(cvs(1,r).startsWith('Отчёт об остатках ценных бумаг')&&!cvs(1,r).includes('НИФИ')){holdStart=r;break;}
+  }
+  let holdNIFIStart=-1;
+  for(let r=holdStart+1;r<=maxRow;r++){
+    if(cvs(1,r).includes('НИФИ')){holdNIFIStart=r;break;}
+  }
 
-    // Date can be Date object or string
-    let date='';
-    if(dateRaw instanceof Date||typeof dateRaw==='object'){
-      const d=new Date(dateRaw);
-      if(isNaN(d.getTime()))continue;
-      date=d.toISOString().slice(0,10);
-    } else if(typeof dateRaw==='number'){
-      // Excel serial date
-      const d=new Date(Math.round((dateRaw-25569)*86400*1000));
-      date=d.toISOString().slice(0,10);
-    } else {
-      const s=String(dateRaw).trim();
-      if(!s.match(/^\d{4}-\d{2}-\d{2}$/)&&!s.match(/^\d{2}\.\d{2}\.\d{4}$/))continue;
-      date=s.includes('.')?s.split('.').reverse().join('-'):s;
+  // Парсим кэш-движения
+  if(cashStart>=0){
+    const sectionEnd=holdStart>cashStart?holdStart:maxRow+1;
+    for(let r=cashStart+2;r<sectionEnd;r++){
+      const dateRaw=cv(1,r);
+      const date=excelDateToISO(dateRaw);
+      if(!date)continue;
+      const amt=parseFloat(cv(2,r))||0;
+      const currency=cvs(6,r)||'RUR';
+      const opType=cvs(8,r);
+      const comment=cvs(14,r);
+      if(!opType||amt===0)continue;
+      if(opType==='Тип операции'||opType==='Основной рынок'||opType==='Срочный рынок')continue;
+
+      const month=date.slice(0,7);
+      const parts=date.split('-');
+      const dateDisplay=`${parts[2]}.${parts[1]}.${parts[0]}`;
+      const opLow=opType.toLowerCase();
+      // USD по текущему курсу ЦБ (примерный)
+      const rate=getCBRRate?.(date,'USD')||87;
+      const amtRub=currency==='USD'?amt*rate:amt;
+
+      let type,group,sub,desc;
+      if(opLow.includes('зачисление денежных средств')){
+        type='transfer';group='Перевод';sub='Пополнение брокерского счёта';
+        desc='Пополнение брокерского счёта ВТБ';
+      } else if(opLow.includes('перевод денежных средств')){
+        // Перевод между субсчетами — не деньги пришли/ушли реально
+        type='transfer';group='Перевод';sub='Перевод между субсчетами';
+        desc='Перевод между субсчетами ВТБ: '+comment.slice(0,80);
+      } else if(opLow.includes('вывод')||opLow.includes('списание')){
+        type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
+        desc='Вывод с брокерского счёта ВТБ';
+      } else if(opLow.includes('сальдо')){
+        type='investment';group='Инвестиции';sub=amtRub<0?'Покупка ценных бумаг':'Продажа ценных бумаг';
+        desc='Расчёты по сделкам';
+      } else if(opLow.includes('вознаграждение')||opLow.includes('комиссия')){
+        type='expense';group='Инвестиции';sub='Комиссии брокера';
+        desc='Комиссия ВТБ Брокер';
+      } else if(opLow.includes('ндфл')){
+        type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='НДФЛ';
+      } else if(opLow.includes('дивид')){
+        type='income';group='Инвестиционный доход';sub='Дивиденды';desc=opType;
+      } else if(opLow.includes('купон')||opLow.includes('нкд')){
+        type='income';group='Инвестиционный доход';sub='Купоны';desc=opType;
+      } else {
+        type=amt>0?'income':'expense';
+        const c=applyCategForTx({desc:opType,amtRub});
+        group=c.g;sub=c.s;desc=opType;
+      }
+
+      txns.push({
+        id:uid(),date,month,dateDisplay,
+        desc:(desc+(comment&&desc!==comment?': '+comment.slice(0,60):'')).slice(0,150),
+        card:'ВТБ Брокер',account:accNum,bankCat:opType.slice(0,30),
+        amtOp:amtRub,curOp:'RUB',amtRub,
+        status:'OK',source:'vtb_broker_xlsx',
+        counterparty:'ВТБ',counterpartyINN:'7702070139',counterpartyAcc:'',
+        manualCategory:false,linkedTo:null,linkedAccount:null,
+        type,group,sub
+      });
+    }
+  }
+
+  // ── Холдинги (Отчёт об остатках ценных бумаг) ──
+  if(holdStart>=0){
+    if(!DB.investments)DB.investments={};
+    if(!DB.investments[accNum])DB.investments[accNum]={holdings:[],updatedAt:reportEndDate};
+    else DB.investments[accNum].updatedAt=reportEndDate;
+
+    const holdings=[];
+    const SKIP_NAMES=new Set(['АКЦИЯ','ПАЙ','ОБЛИГАЦИЯ','ИТОГО:','ВСЕГО:']);
+    const SKIP_PREFIXES=['Площадка','Входящий','Исходящий','Наимен','Изменен'];
+    let currentSecType='Акция';
+    const seenNames=new Set(); // для дедупликации (одна бумага на нескольких площадках)
+
+    const holdEnd=holdNIFIStart>holdStart?holdNIFIStart:(maxRow+1);
+    for(let r=holdStart+1;r<holdEnd;r++){
+      const nameCell=cvs(1,r);
+      if(!nameCell)continue;
+      if(SKIP_NAMES.has(nameCell)||SKIP_PREFIXES.some(p=>nameCell.startsWith(p)))continue;
+      // Секционный заголовок типа («АКЦИЯ», «ПАЙ»)
+      if(nameCell==='АКЦИЯ'){currentSecType='Акция';continue;}
+      if(nameCell==='ПАЙ'||nameCell.includes('ПАЙ')){currentSecType='Фонд';continue;}
+      if(nameCell==='ОБЛИГАЦИЯ'){currentSecType='Облигация';continue;}
+
+      // Строки-ВСЕГО и агрегаторы
+      if(nameCell==='ИТОГО:'||nameCell==='ВСЕГО:')continue;
+      // Строки-дублёры площадок (нет имени в col1, только площадка в col5)
+      if(!nameCell&&cvs(5,r))continue;
+
+      // Парсим: «TICKER, RegNum, ISIN» или «Имя, RegNum, ISIN»
+      const parts=nameCell.split(',').map(s=>s.trim());
+      const ticker=parts[0]||'';
+      const regNum=parts[1]||'';
+      const isin=parts[2]||parts[1]||'';
+
+      // Если у бумаги несколько площадок — уже добавили
+      const dedupeKey=isin||ticker;
+      if(seenNames.has(dedupeKey))continue;
+      seenNames.add(dedupeKey);
+
+      const qty=parseFloat(cv(10,r))||0;
+      if(qty===0)continue; // нет позиции на конец периода
+
+      const priceCur=cvs(13,r)||'RUR';
+      const priceRaw=String(cv(14,r)||'0').replace(/,/g,'');
+      const price=parseFloat(priceRaw)||0;
+
+      // Цена в рублях: если USD — умножить на курс
+      let priceRub=price;
+      if(priceCur==='USD')priceRub=price*(getCBRRate?.(reportEndDate,'USD')||87);
+
+      holdings.push({
+        name:ticker.split(' ')[0]||nameCell.slice(0,40),
+        fullName:nameCell.slice(0,100),
+        ticker:ticker.split(' ')[0],
+        isin:isin.length>=12?isin:regNum,
+        qty,
+        avgPrice:null, // нет в отчёте ВТБ
+        secType:currentSecType,
+        broker:'ВТБ',
+        brokerName:'ВТБ Брокер '+subNum,
+        priceCur,
+        lastPrice:priceRub>0?Math.round(priceRub*100)/100:null,
+      });
+
+      // Записываем котировку если есть
+      if(priceRub>0){
+        if(!DB.investPrices)DB.investPrices={};
+        const priceKey=isin.length>=12?isin:ticker.split(' ')[0];
+        if(priceKey)DB.investPrices[priceKey]=Math.round(priceRub*100)/100;
+      }
     }
 
-    const month=date.slice(0,7);
-    const parts=date.split('-');
-    const dateDisplay=`${parts[2]}.${parts[1]}.${parts[0]}`;
+    DB.investments[accNum].holdings=holdings;
 
-    const amt=parseFloat(cellVal(C_AMT,r))||0;
-    const currency=String(cellVal(C_CUR,r)||'RUR').trim();
-    const opType=String(cellVal(C_OP,r)||'').trim();
-    const comment=String(cellVal(C_CMT,r)||'').trim();
-
-    if(!opType||amt===0)continue;
-    // Skip header rows
-    if(opType==='Тип операции'||opType==='Основной рынок')continue;
-
-    const opLow=opType.toLowerCase();
-    const amtRub=currency==='USD'?amt*90:amt;
-
-    let type,group,sub,desc;
-
-    if(opLow.includes('зачисление денежных средств')){
-      type='transfer';group='Перевод';sub='Пополнение брокерского счёта';
-      desc='Пополнение брокерского счёта ВТБ';
-    } else if(opLow.includes('списание денежных средств')||opLow.includes('вывод дс')||opLow.includes('вывод денежных средств')){
-      type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
-      desc='Вывод с брокерского счёта ВТБ';
-    } else if(opLow.includes('сальдо расчетов')){
-      type='investment';group='Инвестиции';sub=amtRub<0?'Покупка ценных бумаг':'Продажа ценных бумаг';
-      desc='Расчёты по сделкам';
-    } else if(opLow.includes('вознаграждение брокера')||opLow.includes('комиссия')){
-      type='expense';group='Инвестиции';sub='Комиссии брокера';
-      desc='Комиссия ВТБ Брокер: '+comment.slice(0,60);
-    } else if(opLow.includes('ндфл')){
-      type='expense';group='Инвестиции';sub='Налоги с инвестиций';
-      desc='НДФЛ брокерский';
-    } else if(opLow.includes('вариационная маржа')){
-      type=amt>0?'income':'expense';
-      group='Инвестиции';sub='Вариационная маржа';
-      desc='Вариационная маржа';
-    } else if(opLow.includes('перевод денежных средств')){
-      type='transfer';group='Перевод';sub='Перевод между субсчетами';
-      desc='Перевод между субсчетами ВТБ';
-    } else if(opLow.includes('дивид')){
-      type='income';group='Инвестиционный доход';sub='Дивиденды';desc=opType;
-    } else if(opLow.includes('купон')||opLow.includes('нкд')){
-      type='income';group='Инвестиционный доход';sub='Купоны';desc=opType;
-    } else {
-      type=amt>0?'income':'expense';
-      const c=applyCategForTx({desc:opType,amtRub:amtRub});
-      group=c.g;sub=c.s;desc=opType;
+    // Также парсим неторговые разделы (НИФИ)
+    if(holdNIFIStart>=0){
+      let movStart=-1;
+      for(let r=holdNIFIStart+1;r<=maxRow;r++){
+        if(cvs(1,r).startsWith('Движение ценных')){movStart=r;break;}
+        const n=cvs(1,r);
+        if(!n||SKIP_PREFIXES.some(p=>n.startsWith(p)))continue;
+        const pts=n.split(',').map(s=>s.trim());
+        const qty=parseFloat(cv(16,r))||0;
+        if(qty===0)continue;
+        holdings.push({
+          name:pts[0]||n.slice(0,40),fullName:n.slice(0,100),
+          ticker:pts[0],isin:pts[2]||pts[1]||'',
+          qty,avgPrice:null,secType:'Прочее',broker:'ВТБ',brokerName:'ВТБ Брокер '+subNum,
+          priceCur:'RUR',lastPrice:null
+        });
+      }
+      DB.investments[accNum].holdings=holdings;
     }
 
-    txns.push({
-      id:Math.random().toString(36).slice(2,10),
-      date,month,dateDisplay,
-      desc:(desc+(comment&&!desc.includes(comment.slice(0,20))?': '+comment.slice(0,60):'')).slice(0,150),
-      card:'ВТБ Брокер',account:accNum,
-      bankCat:opType.slice(0,30),
-      amtOp:amtRub,curOp:'RUB',amtRub,
-      status:'OK',source:'vtb_broker_xlsx',
-      counterparty:'ВТБ',counterpartyINN:'7702070139',counterpartyAcc:'',
-      manualCategory:false,linkedTo:null,linkedAccount:null,
-      type,group,sub
-    });
+    // Итоговая стоимость из «ОЦЕНКА активов»
+    for(let r=0;r<25;r++){
+      if(cvs(1,r).includes('ОЦЕНКА активов по Курсу')){
+        const val=parseFloat(cv(10,r))||0;
+        if(val>0)DB.accounts[accNum].balanceAnchor={value:val,date:reportEndDate};
+        break;
+      }
+    }
   }
-  console.log('[VTBBroker] parsed txns:',txns.length);
+
+  console.log('[VTBBroker] txns:',txns.length,'holdings:',DB.investments?.[accNum]?.holdings?.length||0);
   return txns;
 }
 
