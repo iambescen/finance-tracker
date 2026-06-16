@@ -2895,7 +2895,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Питание",
-      "sub": "Продукты/супермаркеты"
+      "sub": "Продукты/супермаркеты",
+      "confirmed": true
     },
     {
       "id": "lmtvr8hm",
