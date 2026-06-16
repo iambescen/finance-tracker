@@ -646,15 +646,69 @@ function registerAccount(accNum,source,bankName,currency){
 }
 
 function parseTinkoff(rows){
+  // Bank category → system category
+  const BANK_CAT_MAP={
+    'Супермаркеты':['Питание','Продукты/супермаркеты','expense'],
+    'Аптеки':['Здоровье','Лекарства/аптека','expense'],
+    'Детские товары':['Дети','Детские товары','expense'],
+    'Заправки':['Транспорт','Топливо','expense'],
+    'Связь':['Сервисы/Связь','Мобильная связь','expense'],
+    'Цифровые товары':['Сервисы/Связь','Подписки на сервисы','expense'],
+    'Платные дороги':['Транспорт','Такси/Общественный транспорт','expense'],
+    'Госуслуги':['Прочее','Госуслуги/штрафы','expense'],
+  };
+  // MCC → system category (supplement when bankCat is vague)
+  const MCC_MAP={
+    '5411':['Питание','Продукты/супермаркеты','expense'],
+    '5912':['Здоровье','Лекарства/аптека','expense'],
+    '5945':['Дети','Детские товары','expense'],
+    '5541':['Транспорт','Топливо','expense'],'5542':['Транспорт','Топливо','expense'],
+    '4814':['Сервисы/Связь','Мобильная связь','expense'],
+    '7922':['Развлечения/Отдых','Кино/концерты/мероприятия','expense'],
+    '4111':['Транспорт','Такси/Общественный транспорт','expense'],
+    '4121':['Транспорт','Такси/Общественный транспорт','expense'],
+    '5812':['Питание','Рестораны/кафе','expense'],
+    '5814':['Питание','Рестораны/кафе','expense'],
+  };
   return rows.map(r=>{
+    if((r['Статус']||'').toUpperCase()==='FAILED')return null; // skip failed
     const dateRaw=r['Дата операции']||'';if(!dateRaw)return null;
-    const amtOp=parseAmt(r['Сумма операции']),amtRub=parseAmt(r['Сумма платежа']);
-    const curOp=r['Валюта операции']||'RUB',desc=r['Описание']||'',bankCat=r['Категория']||'',card=r['Номер карты']||'';
+    const amtOp=parseAmt(r['Сумма операции']);
+    const amtRub=parseAmt(r['Сумма платежа']||r['Сумма операции']);
+    const curOp=(r['Валюта операции']||'RUB').trim();
+    const curRub=(r['Валюта платежа']||'RUB').trim();
+    const desc=(r['Описание']||'').trim();
+    const bankCat=(r['Категория']||'').trim();
+    const mcc=(r['MCC']||'').trim();
+    const card=(r['Номер карты']||'').trim();
+    const cashback=parseAmt(r['Кэшбэк']||'0')||0;
+    const bonuses=parseAmt(r['Бонусы (включая кэшбэк)']||'0')||0;
+    const timeStr=(dateRaw.split(' ')[1]||'').trim();
     const date=toISO(dateRaw),month=date.slice(0,7);
-    const tx={id:uid(),date,month,dateDisplay:dateRaw.split(' ')[0],desc,card,account:card.replace(/\*/g,'').trim()||'',bankCat,amtOp,curOp,amtRub,status:r['Статус']||'',source:'tinkoff',counterparty:'',counterpartyINN:'',counterpartyAcc:'',manualCategory:false,linkedTo:null,linkedAccount:null};
-    const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;
-    if(tx.type==='transfer'&&isCashWithdrawal(tx))tx.linkedAccount=getCashAccountForTx(tx);
-    if(card)registerAccount(card,'tinkoff','Тинькофф', r['Валюта счёта']||'RUB');
+    const dateDisplay=dateRaw.split(' ')[0];
+    const accKey=card?card.replace('*','').trim():'tinkoff_main';
+    const tx={
+      id:uid(),date,month,dateDisplay,time:timeStr,
+      desc,card:card||'',account:accKey,
+      bankCat,mcc,cashback,bonuses,
+      amtOp,curOp,amtRub:(curRub!==curOp?amtRub:amtOp),
+      status:'OK',source:'tinkoff',
+      counterparty:desc,counterpartyINN:'',counterpartyAcc:'',
+      manualCategory:false,linkedTo:null,linkedAccount:null
+    };
+    // Categorize: Наличные → cash transfer; Переводы → transfer; bank/MCC map; fallback to rules
+    if(bankCat==='Наличные'&&amtOp<0){
+      tx.type='transfer';tx.group='Перевод';tx.sub='Снятие наличных';
+      tx.linkedAccount=getCashAccountForTx(tx);
+    }else if(bankCat==='Переводы'){
+      const c=applyCategForTx(tx);tx.type=c.t;tx.group=c.g;tx.sub=c.s;
+    }else{
+      const bm=BANK_CAT_MAP[bankCat],mm=MCC_MAP[mcc];
+      if(bm&&amtOp<0){[tx.group,tx.sub,tx.type]=bm;}
+      else if(mm&&amtOp<0){[tx.group,tx.sub,tx.type]=mm;}
+      else{const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;}
+    }
+    registerAccount(accKey,'tinkoff','Тинькофф',curRub||'RUB');
     return tx;
   }).filter(Boolean);
 }
@@ -2332,8 +2386,8 @@ function ingest(newTxns){
   let added=0;
   for(const[month,txns]of Object.entries(byMonth)){
     const existing=getTxns(month);
-    const keys=new Set(existing.map(t=>t.date+'|'+t.desc+'|'+t.amtOp));
-    const deduped=txns.filter(t=>!keys.has(t.date+'|'+t.desc+'|'+t.amtOp));
+    const keys=new Set(existing.map(t=>(t.date||'')+'|'+(t.card||'')+'|'+(t.time||'')+'|'+(t.desc||'')+'|'+(t.amtOp||0)));
+    const deduped=txns.filter(t=>!keys.has((t.date||'')+'|'+(t.card||'')+'|'+(t.time||'')+'|'+(t.desc||'')+'|'+(t.amtOp||0)));
     if(!DB.periods[month])DB.periods[month]={};
     DB.periods[month].transactions=[...existing,...deduped].sort((a,b)=>b.date.localeCompare(a.date));
     added+=deduped.length;
