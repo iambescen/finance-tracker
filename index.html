@@ -1567,7 +1567,7 @@ function parseBakayBank(rows) {
   return rows; // handled separately in processBakayRows
 }
 
-function parseTraderNetXLSX(wb){
+async function parseTraderNetXLSX(wb){
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
   if(!rows.length) return [];
@@ -1583,8 +1583,16 @@ function parseTraderNetXLSX(wb){
   registerAccount(accNum, 'tradernet_xlsx', 'Цифра Брокер (TraderNet)', 'RUR');
   if(DB.accounts[accNum]) DB.accounts[accNum].isBroker = true;
 
-  const USDT_TO_RUB = 90; // approximate rate
   const txns = [];
+  // Pre-fetch CBR rates for all transaction dates
+  const allRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null}).slice(1);
+  const txDates = allRows.map(r => {
+    if(!r[1]) return null;
+    const d = new Date(r[1]);
+    if(isNaN(d)) return null;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }).filter(Boolean);
+  await prefetchCBRRates(txDates, allRows.map(r => String(r[5]||'')));
 
   for(const row of rows.slice(1)){
     if(!row[0] || !row[1]) continue;
@@ -1616,9 +1624,9 @@ function parseTraderNetXLSX(wb){
     }
     const month = date.slice(0,7);
 
-    // Convert to RUB
-    const amtRub = currency === 'USDT' ? amt * USDT_TO_RUB :
-                   currency === 'RUR' ? amt : amt;
+    // Convert to RUB using CBR rate
+    const cbrRate = getCBRRate(date, currency);
+    const amtRub = amt * cbrRate;
 
     let type, group, sub, desc = op + (comment ? ': ' + comment.slice(0,80) : '');
     const opLow = op.toLowerCase();
@@ -1667,7 +1675,7 @@ function parseTraderNetXLSX(wb){
 }
 
 
-function processBakayRows(worksheet) {
+async function processBakayRows(worksheet) {
   // Parse raw worksheet data
   const txns = [];
   let accountNum = null;
@@ -1710,9 +1718,15 @@ function processBakayRows(worksheet) {
   // Register account
   registerAccount(accountNum, 'bakay_xlsx', 'Бакай Банк', currency);
 
-  // KGS/RUB rate: extract dynamically from conversion description
-  // Default: 1 KGS ≈ 90/87.5 ≈ 1.03 RUB (USD rate anchor)
-  let KGS_TO_RUB = 1.03;
+  // Collect all dates and currencies for CBR prefetch
+  const _allDates = [], _allCurs = [];
+  for(let i=headerRow+1;i<rows.length;i++){
+    const r=rows[i];if(!r[0])continue;
+    const dp=(String(r[1]||'')).match(/(\d{2})\.(\d{2})\.(\d{4})/);
+    if(dp)_allDates.push(`${dp[3]}-${dp[2]}-${dp[1]}`);
+    if(r[5])_allCurs.push(String(r[5]));
+  }
+  await prefetchCBRRates(_allDates, _allCurs);
 
   // Parse transactions
   for (let i = headerRow + 1; i < rows.length; i++) {
@@ -1742,22 +1756,14 @@ function processBakayRows(worksheet) {
     const isExpense = debit > 0;
     const amtLocal = isExpense ? -debit : credit;
 
-    // Convert to RUB
+    // Convert to RUB using CBR rate
     let amtRub, amtOp = amtLocal;
-    // Try to extract rate from description (e.g., "курс: 87.500000" = KGS per USD)
-    const kgsRateM = desc.match(/курс[:\s]+([\d.]+)/i);
-    if (kgsRateM) {
-      const kgsPerUsd = parseFloat(kgsRateM[1]) || 87.5;
-      KGS_TO_RUB = 90 / kgsPerUsd; // use USD as anchor (90 RUB/USD approximate)
-    }
-    if (currency === 'USD') {
-      const usdRate = 90;
-      amtRub = amtLocal * usdRate;
-    } else {
-      amtRub = amtLocal * KGS_TO_RUB;
-      // For conversion rows, also store USD amount if visible in description
+    const cbrRate = getCBRRate(date, currency);
+    amtRub = amtLocal * cbrRate;
+    // For KGS conversion rows, store USD amount if visible
+    if(currency !== 'USD') {
       const usdM = desc.match(/Покупка ([\d.]+) USD/i);
-      if (usdM) { amtOp = isExpense ? -parseFloat(usdM[1]) : parseFloat(usdM[1]); }
+      if(usdM){ amtOp = isExpense ? -parseFloat(usdM[1]) : parseFloat(usdM[1]); }
     }
 
     // Detect if it's a conversion between own accounts
@@ -2761,6 +2767,55 @@ async function processPDFFile(file) {
   }
 }
 
+// ── ЦБ РФ курсы валют ──────────────────────────────────────────────────────
+const _cbrCache = {}; // 'YYYY-MM-DD' → {USD:87.5, KGS:1.03, ...}
+
+async function fetchCBRRates(dateISO) {
+  if(_cbrCache[dateISO]) return _cbrCache[dateISO];
+  const [y,m,d] = dateISO.split('-');
+  const url = `https://www.cbr.ru/scripts/XML_daily.asp?date_req=${d}/${m}/${y}`;
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    const xml = new DOMParser().parseFromString(text, 'text/xml');
+    const rates = {};
+    xml.querySelectorAll('Valute').forEach(v => {
+      const code = v.querySelector('CharCode')?.textContent?.trim();
+      const nominal = parseInt(v.querySelector('Nominal')?.textContent || '1');
+      const val = parseFloat((v.querySelector('Value')?.textContent || '0').replace(',','.'));
+      if(code && val) rates[code] = val / nominal;
+    });
+    rates['USDT'] = rates['USD'] || 90; // USDT ≈ USD
+    rates['RUR'] = 1; rates['RUB'] = 1;
+    _cbrCache[dateISO] = rates;
+    return rates;
+  } catch(e) {
+    console.warn('CBR fetch error for', dateISO, e);
+    const fallback = {USD:90, KGS:1.03, USDT:90, RUR:1, RUB:1};
+    _cbrCache[dateISO] = fallback;
+    return fallback;
+  }
+}
+
+function getCBRRate(dateISO, currency) {
+  const cur = (currency||'RUB').toUpperCase().replace('RUR','RUB');
+  if(cur === 'RUB' || cur === 'RUR') return 1;
+  const cached = _cbrCache[dateISO];
+  if(cached && cached[cur]) return cached[cur];
+  // Fallback rates
+  const defaults = {USD:90, USDT:90, KGS:1.03, EUR:98, GBP:114, CNY:12, BYN:27};
+  return defaults[cur] || 1;
+}
+
+async function prefetchCBRRates(dates, currencies) {
+  const uniqueDates = [...new Set(dates)].filter(Boolean);
+  const needsFetch = currencies.some(c => !['RUB','RUR'].includes(c?.toUpperCase?.()));
+  if(!needsFetch) return;
+  toast('Загружаем курсы ЦБ...','info');
+  await Promise.all(uniqueDates.map(d => fetchCBRRates(d)));
+}
+
+
 function processFile(file){
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='pdf'){
@@ -2769,7 +2824,7 @@ function processFile(file){
   }
   if(['xlsx','xls'].includes(ext)){
     const fr=new FileReader();
-    fr.onload=e=>{
+    fr.onload=async e=>{
       try{
         const wb=XLSX.read(e.target.result,{type:'array'});
         const ws=wb.Sheets[wb.SheetNames[0]];
@@ -2792,11 +2847,11 @@ function processFile(file){
           if(txns.length){ingest(txns);}
           else{toast('Цифра Брокер: не найдены операции','err');}
         } else if(isTraderNet){
-          const txns=parseTraderNetXLSX(wb);
+          const txns=await parseTraderNetXLSX(wb);
           if(txns.length){ingest(txns);}
           else{toast('TraderNet: не найдены операции','err');}
         } else if(isBakay){
-          const txns=processBakayRows(ws);
+          const txns=await processBakayRows(ws);
           if(txns.length){ingest(txns);}
           else{toast('Бакай Банк: не найдены операции','err');}
         } else {
@@ -2808,7 +2863,7 @@ function processFile(file){
     fr.readAsArrayBuffer(file);
   }else{
     const fr=new FileReader();
-    fr.onload=e=>{
+    fr.onload=async e=>{
       try{
         let res=Papa.parse(e.target.result,{header:true,delimiter:';',skipEmptyLines:true});
         if(!res.data?.length)res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});
