@@ -1319,6 +1319,43 @@ function parseTinkoffBrokerXLSX(wb){
     break;
   }
 
+  // Section 4.1: Security metadata
+  if(DB.investments&&DB.investments[accNum]){
+    for(let r=0;r<=maxRow;r++){
+      if(!cellStr(0,r).startsWith('4.1 Информация о ценных'))continue;
+      let hdrRow41=-1;
+      for(let r2=r+1;r2<r+5;r2++){
+        if(cellStr(0,r2).includes('Наименование актива')){hdrRow41=r2;break;}
+      }
+      if(hdrRow41<0)break;
+      let cType=-1,cIssuer=-1,cISIN41=-1,cTkr41=-1;
+      for(let c=0;c<=80;c++){
+        const h=cellStr(c,hdrRow41);
+        if(h==='Тип')cType=c;
+        if(h.startsWith('Наименование эмитента'))cIssuer=c;
+        if(h==='ISIN')cISIN41=c;
+        if(h==='Код актива')cTkr41=c;
+      }
+      const meta={};
+      for(let r3=hdrRow41+1;r3<=maxRow;r3++){
+        const name=cellStr(0,r3);
+        if(!name||/^[4-9]\./.test(name)||name.startsWith('Итого'))break;
+        const isin41=cISIN41>=0?cellStr(cISIN41,r3):'';
+        const tkr41=cTkr41>=0?cellStr(cTkr41,r3):'';
+        const secType=cType>=0?cellStr(cType,r3):'';
+        const issuer=cIssuer>=0?cellStr(cIssuer,r3).replace(/[^\w\s\.\-]/g,' ').trim():'';
+        const key=isin41||tkr41;
+        if(key)meta[key]={secType,issuer};
+      }
+      DB.investments[accNum].holdings=DB.investments[accNum].holdings.map(h=>{
+        const k=h.isin||h.ticker;
+        if(k&&meta[k]){h.secType=meta[k].secType;h.issuer=meta[k].issuer;}
+        return h;
+      });
+      break;
+    }
+  }
+
   return txns;
 }
 
@@ -3832,7 +3869,10 @@ function pageInvestments(){
       const value=h.qty*price;
       totalValue+=value;
       accTotal+=value;
-      const type=h.name.includes('обб')||h.name.includes('обл')?'Облигация':h.name.includes('паи')||h.name.includes('БПИФ')?'Фонд':'Акция';
+      let type='Акция';
+      if(h.secType){const st=h.secType.toLowerCase();if(st.includes('пай')||st.includes('фонд'))type='Фонд';else if(st.includes('обл'))type='Облигация';else if(st.includes('пфи')||st.includes('фьюч'))type='ПФИ';else type=h.secType;}
+      else if(h.name.includes('обл'))type='Облигация';
+      else if(h.name.includes('паи')||h.name.includes('БПИФ')||h.name.includes('FinEx'))type='Фонд';
       rows+='<tr>'
         +'<td><div style="font-weight:500">'+h.name+'</div>'
         +(h.ticker?'<div style="font-size:11px;color:var(--muted)">'+h.ticker+(h.isin?' · '+h.isin:'')+'</div>':'')+'</td>'
