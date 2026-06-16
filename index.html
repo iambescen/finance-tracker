@@ -2401,16 +2401,22 @@ function parseVTBMortgagePDF(pages) {
 
       if(!amtParts.length) continue;
 
-      const amt = parseFloat(amtParts.join('').replace(/,/g,'.').replace(/\s/g,''));
+      //   = non-breaking space used as thousands separator in VTB
+      const amtStr = amtParts.join('').replace(/\xa0/g,'').replace(/[,]/g,'.').replace(/\s/g,'').replace('RUB','').trim();
+      const amt = parseFloat(amtStr);
       if(isNaN(amt)) continue;
 
       descWords.sort((a,b) => a.top!==b.top ? a.top-b.top : a.x-b.x);
-      // Take only description words from the band above the date (the actual row header)
+      // Take only description words near the date row (above and at same level)
       const descAbove = descWords.filter(w => w.top < dy + 5);
       let desc = descAbove.map(w=>w.text).join(' ')
-        .replace(/по$/,'').replace(/договору/g,'').replace(CONTRACT,'').replace(/\s+/g,' ').trim();
+        .replace(/по\s*$/,'').replace(/договору/g,'').replace(/по договору/gi,'')
+        .replace(new RegExp(CONTRACT.replace(/\//g,'\\/')+'\-?\w*','g'),'')
+        .replace(/634\/4151-?\w*/g,'')
+        .replace(/\s+/g,' ').trim();
 
-      if(!desc) desc = descWords.slice(0,4).map(w=>w.text).join(' ').replace(CONTRACT,'').trim();
+      if(!desc) desc = descWords.slice(0,3).map(w=>w.text).join(' ')
+        .replace(/договору/g,'').replace(new RegExp(CONTRACT,'g'),'').trim();
 
       // Determine operation type from desc
       const descLow = desc.toLowerCase();
