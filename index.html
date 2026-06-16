@@ -1193,13 +1193,15 @@ function parseVTBBrokerXLSX(wb){
     const seen=new Set();
     const holdEnd=holdNIFIStart>holdStart?holdNIFIStart:(maxRow+1);
 
-    // Определяем колонки из заголовка холдингов
+    // Определяем колонки из заголовка холдингов (значения могут содержать \n)
     let HC_QTY=11,HC_CUR=14,HC_PRICE=15;
     for(let c=0;c<=22;c++){
-      const v=cvs(c,holdStart+1);
-      if(v.includes('Исходящий остаток'))HC_QTY=c;
-      if(v.includes('Валюта')&&v.includes('цен'))HC_CUR=c;
-      if(v.startsWith('Цена'))HC_PRICE=c;
+      const raw=cv(c,holdStart+1); if(!raw)continue;
+      const v=String(raw).replace(/\n/g,' ').trim();
+      // «Исходящий остаток (шт)» — берём ПЕРВОЕ вхождение (не «Плановый»)
+      if(v.includes('Исходящий остаток')&&!v.includes('Планов')&&HC_QTY===11)HC_QTY=c;
+      if(v.includes('Валюта')&&v.toLowerCase().includes('цен')&&!v.includes('расчёт'))HC_CUR=c;
+      if(v.startsWith('Цена')&&!v.includes('исполнения'))HC_PRICE=c;
     }
 
     for(let r=holdStart+2;r<holdEnd;r++){
@@ -1279,8 +1281,10 @@ function parseVTBBrokerXLSX(wb){
     for(let r=0;r<35;r++){
       const b=cvs(1,r);
       if(b.includes('ОЦЕНКА активов по Курсу')&&!b.includes('незавершен')){
-        const val=parseFloat(cv(11,r))||parseFloat(cv(10,r))||0;
-        if(val>0)DB.accounts[accNum].balanceAnchor={value:val,date:reportEndDate};
+        // Значение в разных субсчётах стоит в разных колонках (10, 11, ...) — берём первое числовое
+        let val=null;
+        for(let c=8;c<=20;c++){const v=cv(c,r);if(v!=null&&typeof v==='number'){val=v;break;}}
+        if(val!=null)DB.accounts[accNum].balanceAnchor={value:val,date:reportEndDate};
         break;
       }
     }
