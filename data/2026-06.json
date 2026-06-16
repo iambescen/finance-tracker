@@ -738,7 +738,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Питание",
-      "sub": "Рестораны/кафе"
+      "sub": "Рестораны/кафе",
+      "confirmed": true
     },
     {
       "id": "fs657p7y",
@@ -763,7 +764,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Питание",
-      "sub": "Продукты/супермаркеты"
+      "sub": "Продукты/супермаркеты",
+      "confirmed": true
     },
     {
       "id": "w52ubyzd",
