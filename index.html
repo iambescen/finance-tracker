@@ -1363,18 +1363,19 @@ function parseTinkoffBrokerXLSX(wb){
           const note=cellStr(C_NOTE,r);
           const opLow=opStr.toLowerCase();
           let type,group,sub,desc;
-          if(opLow.includes('пополнение')){type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';}
-          else if(opLow.includes('вывод')){type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';}
+          if(opLow.includes('пополнение')&&!opLow.includes('комиссия')){type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';}
+          else if(opLow.includes('перевод зачисление')||opLow.includes('зачисление перевод')){type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Входящий перевод';}
+          else if(opLow.includes('вывод')||opLow.includes('перевод списание')){type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод/перевод со счёта';}
           else if(opLow.includes('дивид')||(opLow.includes('выплата доход')&&note.toLowerCase().includes('акци'))){type='income';group='Инвестиционный доход';sub='Дивиденды';desc='Дивиденды: '+note.slice(0,50);}
           else if(opLow.includes('купон')||opLow.includes('нкд')||opLow.includes('выплата доход')||(opLow.includes('корпоративн')&&note.toLowerCase().includes('облигац'))){type='income';group='Инвестиционный доход';sub='Купоны';desc='Купоны: '+note.slice(0,60);}
-          else if(opLow.includes('покупка')||opLow.includes('продажа')||opLow.includes('сделка')){
+          else if(opLow.includes('покупка')||opLow.includes('продажа')||opLow.includes('сделка')||opLow.includes('отражение требований')){
             type='investment';group='Инвестиции';
             sub=net<0?'Покупка ценных бумаг':'Продажа ценных бумаг';
             desc=(net<0?'Покупка: ':'Продажа: ')+note.slice(0,60);
           }
           else if(opLow.includes('комиссия')){type='expense';group='Инвестиции';sub='Комиссии брокера';desc='Комиссия: '+opStr;}
           else if(opLow.includes('репо')){type='investment';group='Инвестиции';sub='РЕПО';desc='РЕПО';}
-          else if(opLow.includes('налог')){type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='Налог: '+opStr;}
+          else if(opLow.includes('налог')){if(net>0){type='income';group='Инвестиционный доход';sub='Налоговый вычет/возврат';desc='Возврат налога: '+opStr;}else{type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='Налог: '+opStr;}}
           else{type=net>0?'income':'expense';const c=applyCategForTx({desc:opStr,amtRub:net});group=c.g;sub=c.s;desc=opStr;}
           txns.push({
             id:Math.random().toString(36).slice(2,10),
@@ -1533,11 +1534,11 @@ function parseTinkoffBrokerXLSX(wb){
 
         // Build trade map: ticker → [{date, type, qty, price, total}]
         const tradesByTicker={};
-        let sec12start=maxRow+1;
         for(let r=hdr11+1;r<=maxRow;r++){
+          // Check col A for section boundary first
+          const colA=cellStr(0,r);
+          if(colA.match(/^1\.[2-9]\s|^[2-9]\./))break;
           const dateStr=cellStr(c11Date,r);
-          if(!dateStr){ continue; } // pagination marker
-          if(dateStr.startsWith('1.2')||dateStr.startsWith('2.'))break;
           if(!dateStr.match(/^\d{2}\.\d{2}\.\d{4}$/))continue;
           const ticker=cellStr(c11Ticker,r);
           const name=cellStr(c11Name,r);
