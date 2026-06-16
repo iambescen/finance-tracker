@@ -714,25 +714,52 @@ function parseTinkoff(rows){
 }
 
 function parseTinkoffBusiness(rows){
+  // Numeric ISO currency codes → ISO 4217 strings
+  const CUR_MAP={'643':'RUB','840':'USD','978':'EUR','826':'GBP','156':'CNY','398':'KZT'};
   return rows.map(r=>{
     const acc=(r['Номер счёта']||'').trim();
     const opType=(r['Тип операции (пополнение/списание)']||'').trim();
     const dateRaw=(r['Дата проведения']||'').trim();if(!dateRaw)return null;
     const amt=parseAmt(r['Сумма в валюте счёта']);if(!amt)return null;
-    const cur=(r['Валюта счёта']||'RUB').trim();
-    const desc=(r['Описание операции']||r['Назначение платежа']||'').trim();
-    const payerAcc=(r['Счет плательщика']||'').trim(),payerINN=(r['ИНН плательщика']||'').trim();
-    const rcvAcc=(r['Счет получателя']||'').trim(),ctgAcc=(r['Счет контрагента']||'').trim();
-    const ctgINN=(r['ИНН контрагента']||'').trim(),ctgName=(r['Наименование контрагента']||'').trim();
+    const rawCur=(r['Валюта счёта']||r['Валюта операции']||'RUB').trim();
+    const cur=CUR_MAP[rawCur]||rawCur||'RUB';
+    const payNum=(r['Номер платежа']||'').trim();
+    const descOp=(r['Описание операции']||'').trim();
+    const descPurp=(r['Назначение платежа']||'').trim();
+    // Use the longer/more informative description
+    const desc=(descPurp.length>descOp.length?descPurp:descOp)||descOp||descPurp;
+    const payerAcc=(r['Счет плательщика']||'').trim();
+    const payerINN=(r['ИНН плательщика']||'').trim();
+    const rcvAcc=(r['Счет получателя']||'').trim();
+    const ctgAcc=(r['Счет контрагента']||'').trim();
+    const ctgINN=(r['ИНН контрагента']||'').trim();
+    const ctgName=(r['Наименование контрагента']||'').trim();
     const date=toISO(dateRaw),month=date.slice(0,7);
     const isCredit=opType==='Кредит';
     const amtRub=isCredit?amt:-amt;
     const counterpartyINN=isCredit?payerINN:ctgINN;
     const counterpartyAcc=isCredit?(payerAcc||ctgAcc):ctgAcc;
-    const tx={id:uid(),date,month,dateDisplay:dateRaw,desc:desc||ctgName,card:'*'+acc.slice(-4),account:acc,bankCat:opType,amtOp:amtRub,curOp:cur,amtRub,status:'OK',source:'tinkoff_business',counterparty:ctgName,counterpartyINN,counterpartyAcc,manualCategory:false,linkedTo:null,linkedAccount:null};
+    const tx={
+      id:uid(),date,month,dateDisplay:dateRaw,
+      desc:desc||ctgName,
+      card:'*'+acc.slice(-4),account:acc,
+      paymentNum,bankCat:opType,
+      amtOp:amtRub,curOp:cur,amtRub,
+      status:'OK',source:'tinkoff_business',
+      counterparty:ctgName,counterpartyINN,counterpartyAcc,
+      manualCategory:false,linkedTo:null,linkedAccount:null
+    };
     const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;
     if(tx.type==='transfer'&&isCashWithdrawal(tx))tx.linkedAccount=getCashAccountForTx(tx);
-    registerAccount(acc,'tinkoff_business','Тинькофф Бизнес', cur);
+    // Auto-link if counterpartyAcc is a known own account
+    if(tx.type==='transfer'&&counterpartyAcc&&!tx.linkedAccount){
+      const ctgKey=counterpartyAcc.replace(/[^0-9a-zA-Z]/g,'').slice(-8);
+      if(DB.accounts[counterpartyAcc]||DB.accounts[ctgKey]||Object.values(DB.accounts).find(a=>String(a.number||'').endsWith(ctgKey))){
+        tx.linkedAccount=counterpartyAcc;
+      }
+    }
+    registerAccount(acc,'tinkoff_business','ТБ Счет ИП Копилка *'+acc.slice(-4),cur);
+    if(DB.accounts[acc])DB.accounts[acc].owner='me';
     return tx;
   }).filter(Boolean);
 }
