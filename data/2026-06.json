@@ -1668,7 +1668,8 @@
       "linkedAccount": "vtb_broker_1XC7I",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "yiaffg0i",
