@@ -197,8 +197,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Дети",
+      "sub": "Детские товары"
     },
     {
       "id": "l2ap5fqg",
@@ -272,8 +272,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Продукты/супермаркеты"
     },
     {
       "id": "mqw94at6",
@@ -347,8 +347,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Покупки",
+      "sub": "Красота/уход"
     },
     {
       "id": "rkw80dy3",
@@ -472,8 +472,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Здоровье",
+      "sub": "Лекарства/аптека"
     },
     {
       "id": "39fcm7gn",
