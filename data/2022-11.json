@@ -1,0 +1,52 @@
+{
+  "transactions": [
+    {
+      "id": "lei1txai",
+      "date": "2022-11-15",
+      "month": "2022-11",
+      "dateDisplay": "15.11.2022",
+      "desc": "Проценты по ипотеке",
+      "card": "ипотека",
+      "account": "mortgage_vtb",
+      "bankCat": "Ипотека",
+      "amtOp": -10367.49,
+      "curOp": "RUB",
+      "amtRub": -10367.49,
+      "status": "OK",
+      "source": "vtb_mortgage_pdf",
+      "counterparty": "Банк ВТБ (ипотека)",
+      "counterpartyINN": "",
+      "counterpartyAcc": "",
+      "manualCategory": false,
+      "linkedTo": null,
+      "linkedAccount": null,
+      "type": "expense",
+      "group": "Жильё",
+      "sub": "Аренда/Ипотека (платёж)"
+    },
+    {
+      "id": "5pxmaiqj",
+      "date": "2022-11-15",
+      "month": "2022-11",
+      "dateDisplay": "15.11.2022",
+      "desc": "Тело ипотеки (погашение долга)",
+      "card": "ипотека",
+      "account": "mortgage_vtb",
+      "bankCat": "Ипотека",
+      "amtOp": -10018.51,
+      "curOp": "RUB",
+      "amtRub": -10018.51,
+      "status": "OK",
+      "source": "vtb_mortgage_pdf",
+      "counterparty": "Банк ВТБ (ипотека)",
+      "counterpartyINN": "",
+      "counterpartyAcc": "",
+      "manualCategory": false,
+      "linkedTo": null,
+      "linkedAccount": null,
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Погашение тела ипотеки"
+    }
+  ]
+}
