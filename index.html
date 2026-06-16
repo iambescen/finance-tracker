@@ -4361,11 +4361,15 @@ async function loadFromGithub(){
       const blobBase='https://api.github.com/repos/'+user+'/'+repo+'/git/blobs/';
       let deletedPeriods=new Set();
       try{deletedPeriods=new Set(JSON.parse(localStorage.getItem('ff_deleted_periods')||'[]'));}catch(e){}
-      await Promise.all(files
-        .filter(f=>{
-          const key=f.name.replace('.json','');
-          return f.name.match(/^\d{4}-\d{2}\.json$/)&&f.sha&&!DB.periods[key]&&!deletedPeriods.has(key);
-        })
+      const periodsOnGH=files.filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/));
+      const toLoad=periodsOnGH.filter(f=>{
+        const key=f.name.replace('.json','');
+        return f.sha&&!DB.periods[key]&&!deletedPeriods.has(key);
+      });
+      const skipped=periodsOnGH.filter(f=>deletedPeriods.has(f.name.replace('.json',''))).map(f=>f.name);
+      console.log('[loadFromGH] on GitHub:',periodsOnGH.map(f=>f.name),'| deleted list:',[...deletedPeriods],'| loading:',toLoad.map(f=>f.name),'| skipping:',skipped);
+      if(skipped.length)toast('Пропущено удалённых: '+skipped.join(', '),'info');
+      await Promise.all(toLoad
         .map(async f=>{
           const dr=await fetch(blobBase+f.sha,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.raw+json'}});
           if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();
