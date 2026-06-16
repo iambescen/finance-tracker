@@ -1569,7 +1569,7 @@ function parseBakayBank(rows) {
 
 async function parseTraderNetXLSX(wb){
   const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, cellDates:true});
   if(!rows.length) return [];
 
   // Extract client code from comments
@@ -1585,11 +1585,14 @@ async function parseTraderNetXLSX(wb){
 
   const txns = [];
   // Pre-fetch CBR rates for all transaction dates
-  const allRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null}).slice(1);
+  const allRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null, cellDates:true}).slice(1);
   const txDates = allRows.map(r => {
     if(!r[1]) return null;
-    const d = new Date(r[1]);
-    if(isNaN(d)) return null;
+    let _d = r[1];
+    if(typeof _d === 'number') _d = new Date(Date.UTC(1899,11,30) + _d*864e5);
+    if(!(_d instanceof Date) && typeof _d !== 'object') return null;
+    const d = new Date(_d);
+    if(isNaN(d.getTime())) return null;
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }).filter(Boolean);
   await prefetchCBRRates(txDates, allRows.map(r => String(r[5]||'')));
@@ -1608,19 +1611,23 @@ async function parseTraderNetXLSX(wb){
     // Skip internal locking/unlocking operations
     if(op === 'Блокировка' || op === 'Разблокировка') continue;
 
-    // Parse date
+    // Parse date — cellDates:true gives Date objects; fallback handles strings
     let date, dateDisplay;
-    if(dateRaw instanceof Date || (dateRaw && typeof dateRaw === 'object' && dateRaw.getFullYear)){
-      const d = new Date(dateRaw);
+    let _dr = dateRaw;
+    if(typeof _dr === 'number') {
+      // Excel serial number: days since 1899-12-30
+      const epoch = new Date(Date.UTC(1899,11,30) + _dr*864e5);
+      _dr = epoch;
+    }
+    if(_dr instanceof Date || (typeof _dr === 'object' && _dr && _dr.getFullYear)) {
+      const d = new Date(_dr);
       const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
-      date = `${y}-${mo}-${dy}`;
-      dateDisplay = `${dy}.${mo}.${y}`;
+      date = `${y}-${mo}-${dy}`; dateDisplay = `${dy}.${mo}.${y}`;
     } else {
-      const s = String(dateRaw||'');
-      const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-      if(!m) continue;
-      date = `${m[1]}-${m[2]}-${m[3]}`;
-      dateDisplay = `${m[3]}.${m[2]}.${m[1]}`;
+      const s = String(_dr||'');
+      const m = s.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if(m){ date=`${m[3]}-${m[2]}-${m[1]}`; dateDisplay=`${m[1]}.${m[2]}.${m[3]}`; }
+      else { const m2=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(!m2) continue; date=`${m2[1]}-${m2[2]}-${m2[3]}`; dateDisplay=`${m2[3]}.${m2[2]}.${m2[1]}`; }
     }
     const month = date.slice(0,7);
 
