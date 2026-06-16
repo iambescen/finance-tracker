@@ -2740,6 +2740,12 @@ async function saveAllNow(){
       const r=await ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Save rules — '+date);
       if(!r.ok)errors.push('rules ('+r.status+')');
     }catch(e){errors.push('rules: '+e.message);}
+    // Save investments
+    if(Object.keys(DB.investments||{}).length>0){
+      try{
+        await ghPut('data/investments.json',JSON.stringify({prices:DB.investPrices||{},holdings:DB.investments||{}},null,2),'Save investments — '+date);
+      }catch(e){console.warn('investments save:',e);}
+    }
     // Delete from GitHub any periods that were deleted locally
     try{
       const dp=JSON.parse(localStorage.getItem('ff_deleted_periods')||'[]');
@@ -4723,7 +4729,7 @@ async function loadFromGithub(){
     // Load investments — create file if missing (first run)
     try{
       const ri=await fetch(apiBase+'data/investments.json',{headers:apiHdr});
-      if(ri.ok){const inv=await ri.json();if(inv.prices)DB.investPrices=inv.prices;if(inv.holdings)DB.investments=inv.holdings;}
+      if(ri.ok){const inv=await ri.json();if(inv.prices&&Object.keys(DB.investPrices||{}).length===0)DB.investPrices=inv.prices;if(inv.holdings&&Object.keys(DB.investments||{}).length===0)DB.investments=inv.holdings;}
       else if(ri.status===404){ghPut('data/investments.json',JSON.stringify({prices:{},holdings:{}},null,2),'Init investments.json').catch(()=>{});}
     }catch(e){}
     saveLocal();refreshUI();toast('Данные загружены из GitHub','info');
