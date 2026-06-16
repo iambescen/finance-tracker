@@ -557,7 +557,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Прочее",
-      "sub": "Прочие расходы"
+      "sub": "Прочие расходы",
+      "confirmed": true
     },
     {
       "id": "x5e7o96a",
