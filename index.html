@@ -1823,6 +1823,7 @@ function detectPDFBank(lines) {
   console.log('[PDF detect] first 300 chars:', text.slice(0,300));
   console.log('[PDF detect] has kk-:', text.includes('kk-'), 'has кредитный лимит:', text.includes('кредитный лимит'), 'has беспроцентный:', text.includes('беспроцентный'));
   if(text.includes('справка об уплаченных процентах') || text.includes('погашение основного долга') && text.includes('сбербанк')) return 'sber_loan';
+  if(text.includes('выписка по вкладу') || text.includes('наименование операции') && text.includes('сбер')) return 'sber_savings';
   if(text.includes('sberbank') || text.includes('сбербанк онлайн') || (text.includes('сбер') && text.includes('900'))) return 'sber';
   if(text.includes('kk-') && (text.includes('кредитный лимит') || text.includes('беспроцентный'))) return 'vtb_credit';
   if(text.includes('цифра банк') || text.includes('6506000327')) return 'cifra';
@@ -1979,6 +1980,136 @@ function parseSberPDF(flatLines, pages) {
   return txns;
 }
 
+
+
+// ── Sber Savings/Deposit PDF parser ──
+// Format: 4 columns per row
+// x≈48: Date | x≈112: Operation name + account | x≈248: Details (INN, payer, purpose) | x≈454: Amount | x≈525: Balance
+function parseSberSavingsPDF(flatLines, pages) {
+  const allText = flatLines.join(' ');
+
+  // Account number: 42307... or 40817...
+  let accountNum = '';
+  const am1 = allText.match(/4[02]\d{18}/);
+  if(am1) accountNum = am1[0];
+  else { const am2 = allText.match(/42307[\s\d]{15,25}/); if(am2) accountNum = am2[0].replace(/\s/g,''); }
+
+  // Period end date for balanceAnchor
+  const periodM = allText.match(/За период\s+\S+\s+—\s+(\d{2}\.\d{2}\.\d{4})/);
+  const periodEndDate = periodM ? toISO(periodM[1]) : null;
+
+  // Closing balance
+  const closingM = allText.match(/Остаток на \d{2}\.\d{2}\.\d{4}\s+([\d\s\xa0]+,\d{2})/);
+
+  if(accountNum) {
+    registerAccount(accountNum, 'sber_savings_pdf', 'Сбербанк Вклад', 'RUB');
+    const ac = DB.accounts[accountNum];
+    if(ac) {
+      ac.owner = 'me';
+      if(periodEndDate && closingM) {
+        const bal = parseFloat(closingM[1].replace(/[\s\xa0]/g,'').replace(',','.')) || 0;
+        ac.balanceAnchor = {value: bal, date: periodEndDate};
+        ac.currentBalance = bal;
+      }
+    }
+  }
+
+  const dateRe = /^\d{2}\.\d{2}\.\d{4}$/;
+  const txns = [];
+
+  for(const pageWords of (pages||[])) {
+    const sorted = [...pageWords].sort((a,b) => a.top - b.top || a.x - b.x);
+    const rows = [];
+    for(const w of sorted) {
+      const last = rows[rows.length - 1];
+      if(last && Math.abs(w.top - last[0].top) <= 6) last.push(w);
+      else rows.push([w]);
+    }
+
+    let i = 0;
+    while(i < rows.length) {
+      const row = rows[i];
+      // Transaction row: date at x<80 AND operation name at x≈112 AND amount at x≈440
+      const dateW = row.find(w => w.x < 80 && dateRe.test(w.text));
+      const opW   = row.find(w => w.x >= 100 && w.x < 200 && !dateRe.test(w.text) && w.text.length > 3);
+      const amtW  = row.find(w => w.x >= 430 && w.x < 530 && /^[+\-]?[\d\xa0\s]+,\d{2}$/.test(w.text.replace(/\xa0/g,' ').trim()));
+
+      if(!dateW || !opW || !amtW) { i++; continue; }
+
+      // Skip header rows
+      if(opW.text.includes('ОПЕРАЦИИ') || opW.text.includes('корреспондирующего')) { i++; continue; }
+
+      const opName = opW.text.trim();
+      const cleaned = amtW.text.replace(/\xa0/g,'').replace(/\s/g,'');
+      const isCredit = cleaned.startsWith('+');
+      const amtVal = parseFloat(cleaned.replace('+','').replace('-','').replace(',','.')) || 0;
+      const amtRub = isCredit ? amtVal : -amtVal;
+
+      // Collect all detail lines (x≈112 and x≈248) until next dated row
+      const detailLines = [];
+      const detailInfo = []; // x≈248 column (payer/payee info)
+      i++;
+      while(i < rows.length) {
+        const nr = rows[i];
+        const hasDate = nr.find(w => w.x < 80 && dateRe.test(w.text));
+        const hasAmt  = nr.find(w => w.x >= 430 && w.x < 530 && /^[+\-]?[\d\xa0\s]+,\d{2}$/.test(w.text.replace(/\xa0/g,' ').trim()));
+        if(hasDate && hasAmt) break; // next transaction
+        // Collect continuation text
+        for(const w of nr) {
+          if(w.x >= 100 && w.x < 240) detailLines.push(w.text);
+          else if(w.x >= 240 && w.x < 430) detailInfo.push(w.text);
+        }
+        i++;
+      }
+
+      const opAccount = detailLines.find(t => /к\/с\s+[\d\s]+/.test(t)) || '';
+      const details = detailInfo.join(' ');
+      const detailsLow = details.toLowerCase();
+
+      // Extract INN and counterparty from details
+      let cpName = '', cpINN = '', cpAcc = '';
+      const innM = details.match(/ИНН (?:плательщика|получателя):\s*(\d+)/);
+      if(innM) cpINN = innM[1];
+      const plM = details.match(/(?:Плательщик|Получатель):\s*([^\n]+?)(?:\s*ИНН|$)/);
+      if(plM) cpName = plM[1].replace(/\s+/g,' ').trim().slice(0,60);
+      const accM = details.match(/Лицевой счёт:\s*(\d+)/);
+      if(accM) cpAcc = accM[1];
+
+      const desc = opName + (cpName ? ' · ' + cpName : '') + (details ? ' | ' + details.slice(0,100) : '');
+      const dateISO = toISO(dateW.text);
+      const month = dateISO.slice(0,7);
+      const opLow = opName.toLowerCase();
+
+      const tx = {
+        id: uid(), date: dateISO, month, dateDisplay: dateW.text,
+        desc: desc.slice(0, 200),
+        card: accountNum ? '***' + accountNum.slice(-4) : '',
+        account: accountNum, bankCat: opName,
+        amtOp: amtRub, curOp: 'RUB', amtRub,
+        status: 'OK', source: 'sber_savings_pdf',
+        counterparty: cpName, counterpartyINN: cpINN, counterpartyAcc: cpAcc,
+        manualCategory: false, linkedTo: null, linkedAccount: null
+      };
+
+      if(opLow.includes('капитализация') || opLow.includes('начисленн') || opLow.includes('пролонгация')){
+        tx.type='income'; tx.group='Инвестиционный доход'; tx.sub='Купоны';
+        tx.desc = opName + ' вклада';
+      } else if(opLow.includes('пенсия') || opLow.includes('зачисление пенсии')){
+        tx.type='income'; tx.group='Доходы'; tx.sub='Пособия/вычеты';
+        tx.counterparty = cpName || 'ОСФР';
+      } else if(opLow.includes('списание') && (cpAcc === '40817810947008058607' || detailsLow.includes('перевод между счетами'))){
+        tx.type='transfer'; tx.group='Перевод'; tx.sub='Внутренний перевод';
+        if(cpAcc) tx.linkedAccount = cpAcc;
+      } else {
+        const c = applyCategForTx(tx); tx.type=c.t; tx.group=c.g; tx.sub=c.s;
+      }
+
+      txns.push(tx);
+    }
+  }
+
+  return txns;
+}
 
 
 // ── VTB PDF parser (coordinate-based) ──
@@ -2462,6 +2593,7 @@ async function processPDFFile(file) {
     let txns = [];
     if(bank === 'sber_loan') txns = parseSberLoanPDF(pdfData.flatLines, pdfData.pages);
     else if(bank === 'sber') txns = parseSberPDF(pdfData.flatLines, pdfData.pages);
+    else if(bank === 'sber_savings') txns = parseSberSavingsPDF(pdfData.flatLines, pdfData.pages);
     else if(bank === 'tinkoff_broker') txns = parseTinkoffBrokerPDF(pdfData.pages);
     else if(bank === 'cifra') txns = parseCifraBankPDF(pdfData.pages);
     else if(bank === 'vtb') txns = parseVTBPDF(pdfData.pages);
