@@ -646,20 +646,50 @@ function registerAccount(accNum,source,bankName,currency){
 }
 
 function parseTinkoff(rows){
-  // Bank category → system category
+  // Bank category → [group, sub, type]
   const BANK_CAT_MAP={
-    'Супермаркеты':['Питание','Продукты/супермаркеты','expense'],
-    'Аптеки':['Здоровье','Лекарства/аптека','expense'],
-    'Детские товары':['Дети','Детские товары','expense'],
-    'Заправки':['Транспорт','Топливо','expense'],
-    'Связь':['Сервисы/Связь','Мобильная связь','expense'],
-    'Цифровые товары':['Сервисы/Связь','Подписки на сервисы','expense'],
-    'Платные дороги':['Транспорт','Такси/Общественный транспорт','expense'],
-    'Госуслуги':['Прочее','Госуслуги/штрафы','expense'],
+    // Покупки
+    'Супермаркеты':     ['Питание','Продукты/супермаркеты','expense'],
+    'Аптеки':           ['Здоровье','Лекарства/аптека','expense'],
+    'Детские товары':   ['Дети','Детские товары','expense'],
+    'Заправки':         ['Транспорт','Топливо','expense'],
+    'Такси':            ['Транспорт','Такси/Общественный транспорт','expense'],
+    'Транспорт':        ['Транспорт','Такси/Общественный транспорт','expense'],
+    'Платные дороги':   ['Транспорт','Такси/Общественный транспорт','expense'],
+    'Авто':             ['Транспорт','Авто/парковка','expense'],
+    'Связь':            ['Сервисы/Связь','Мобильная связь','expense'],
+    'Мобильная связь':  ['Сервисы/Связь','Мобильная связь','expense'],
+    'Цифровые товары':  ['Сервисы/Связь','Подписки на сервисы','expense'],
+    'Подписки':         ['Сервисы/Связь','Подписки на сервисы','expense'],
+    'Рестораны':        ['Питание','Рестораны/кафе','expense'],
+    'Кафе и рестораны': ['Питание','Рестораны/кафе','expense'],
+    'Маркетплейсы':     ['Покупки','Маркетплейсы','expense'],
+    'Одежда и обувь':   ['Покупки','Одежда и обувь','expense'],
+    'Красота':          ['Здоровье','Красота и уход','expense'],
+    'Медицина':         ['Здоровье','Врач и медуслуги','expense'],
+    'Здоровье':         ['Здоровье','Врач и медуслуги','expense'],
+    'ЖКХ':              ['Жильё','Коммунальные услуги','expense'],
+    'Жильё':            ['Жильё','Коммунальные услуги','expense'],
+    'Ремонт':           ['Жильё','Ремонт','expense'],
+    'Отели':            ['Развлечения/Отдых','Отели и жильё','expense'],
+    'Путешествия':      ['Развлечения/Отдых','Путешествия','expense'],
+    'Развлечения':      ['Развлечения/Отдых','Развлечения','expense'],
+    'Кино':             ['Развлечения/Отдых','Кино/концерты/мероприятия','expense'],
+    'Образование':      ['Образование','Обучение','expense'],
+    'Спорт':            ['Здоровье','Спорт/фитнес','expense'],
+    'Госуслуги':        ['Прочее','Госуслуги/штрафы','expense'],
+    'Штрафы':           ['Прочее','Госуслуги/штрафы','expense'],
+    // Доходы
+    'Зарплата':             ['Доходы','Зарплата','income'],
+    'Дивиденды и купоны':   ['Инвестиционный доход','Дивиденды','income'],
+    'Бонусы':               ['Доходы','Кэшбэк/бонусы','income'],
+    'Пополнения':           ['Доходы','Прочие доходы','income'],
+    'Возврат':              ['Доходы','Возврат средств','income'],
   };
-  // MCC → system category (supplement when bankCat is vague)
+  // MCC → category (when bankCat is vague)
   const MCC_MAP={
     '5411':['Питание','Продукты/супермаркеты','expense'],
+    '5412':['Питание','Продукты/супермаркеты','expense'],
     '5912':['Здоровье','Лекарства/аптека','expense'],
     '5945':['Дети','Детские товары','expense'],
     '5541':['Транспорт','Топливо','expense'],'5542':['Транспорт','Топливо','expense'],
@@ -667,11 +697,22 @@ function parseTinkoff(rows){
     '7922':['Развлечения/Отдых','Кино/концерты/мероприятия','expense'],
     '4111':['Транспорт','Такси/Общественный транспорт','expense'],
     '4121':['Транспорт','Такси/Общественный транспорт','expense'],
+    '3990':['Транспорт','Такси/Общественный транспорт','expense'],
     '5812':['Питание','Рестораны/кафе','expense'],
     '5814':['Питание','Рестораны/кафе','expense'],
+    '5311':['Покупки','Универмаги','expense'],
+    '5961':['Покупки','Маркетплейсы','expense'],
+    '8011':['Здоровье','Врач и медуслуги','expense'],
+    '8099':['Здоровье','Врач и медуслуги','expense'],
+    '7011':['Развлечения/Отдых','Отели и жильё','expense'],
+    '4900':['Жильё','Коммунальные услуги','expense'],
   };
+
+  // Own transfer detection
+  const OWN_NAMES = ['между своими счетами','татьяна б','владислав б','безценных'];
+
   return rows.map(r=>{
-    if((r['Статус']||'').toUpperCase()==='FAILED')return null; // skip failed
+    if((r['Статус']||'').toUpperCase()==='FAILED')return null;
     const dateRaw=r['Дата операции']||'';if(!dateRaw)return null;
     const amtOp=parseAmt(r['Сумма операции']);
     const amtRub=parseAmt(r['Сумма платежа']||r['Сумма операции']);
@@ -687,26 +728,45 @@ function parseTinkoff(rows){
     const date=toISO(dateRaw),month=date.slice(0,7);
     const dateDisplay=dateRaw.split(' ')[0];
     const accKey=card?card.replace('*','').trim():'tinkoff_main';
+    const descLow=desc.toLowerCase();
+    const isOwnTransfer=OWN_NAMES.some(n=>descLow.includes(n));
+
     const tx={
       id:uid(),date,month,dateDisplay,time:timeStr,
       desc,card:card||'',account:accKey,
       bankCat,mcc,cashback,bonuses,
-      amtOp,curOp,amtRub:(curRub!==curOp?amtRub:amtOp),
+      amtOp,curOp,
+      amtRub:(curRub!==curOp?amtRub:amtOp),
       status:'OK',source:'tinkoff',
       counterparty:desc,counterpartyINN:'',counterpartyAcc:'',
       manualCategory:false,linkedTo:null,linkedAccount:null
     };
-    // Categorize: Наличные → cash transfer; Переводы → transfer; bank/MCC map; fallback to rules
+
     if(bankCat==='Наличные'&&amtOp<0){
       tx.type='transfer';tx.group='Перевод';tx.sub='Снятие наличных';
       tx.linkedAccount=getCashAccountForTx(tx);
-    }else if(bankCat==='Переводы'){
-      const c=applyCategForTx(tx);tx.type=c.t;tx.group=c.g;tx.sub=c.s;
-    }else{
-      const bm=BANK_CAT_MAP[bankCat],mm=MCC_MAP[mcc];
-      if(bm&&amtOp<0){[tx.group,tx.sub,tx.type]=bm;}
-      else if(mm&&amtOp<0){[tx.group,tx.sub,tx.type]=mm;}
-      else{const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;}
+    } else if(bankCat==='Переводы'||bankCat==='Пополнения'&&amtOp>0&&isOwnTransfer){
+      if(isOwnTransfer){
+        tx.type='transfer';tx.group='Перевод';tx.sub='Внутренний перевод';
+      } else if(bankCat==='Переводы'){
+        // External transfer — check amount sign
+        if(amtOp>0){tx.type='income';tx.group='Доходы';tx.sub='Входящие переводы';}
+        else{tx.type='expense';tx.group='Прочее';tx.sub='Исходящие переводы';}
+        // Apply rules to override if user has custom rules
+        const c=applyCategForTx(tx);tx.type=c.t;tx.group=c.g;tx.sub=c.s;
+      }
+    } else {
+      const bm=BANK_CAT_MAP[bankCat];
+      const mm=MCC_MAP[mcc];
+      if(bm){
+        [tx.group,tx.sub,tx.type]=bm;
+        // Income cats are always income regardless of sign
+        if(tx.type==='income'&&amtOp<0){tx.type='expense';tx.group='Прочее';tx.sub='Прочие расходы';}
+      } else if(mm&&amtOp<0){
+        [tx.group,tx.sub,tx.type]=mm;
+      } else {
+        const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;
+      }
     }
     registerAccount(accKey,'tinkoff','Тинькофф',curRub||'RUB');
     return tx;
