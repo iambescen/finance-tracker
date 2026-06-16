@@ -97,8 +97,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Питание",
+      "sub": "Рестораны/кафе"
     },
     {
       "id": "xvaafe8w",
