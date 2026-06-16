@@ -1013,7 +1013,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Здоровье",
-      "sub": "Визиты врача/платные услуги"
+      "sub": "Визиты врача/платные услуги",
+      "confirmed": true
     },
     {
       "id": "263tze26",
