@@ -890,7 +890,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Питание",
-      "sub": "Продукты/супермаркеты"
+      "sub": "Продукты/супермаркеты",
+      "confirmed": true
     },
     {
       "id": "adg7tp32",
