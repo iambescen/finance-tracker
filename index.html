@@ -159,6 +159,10 @@ tr:hover td{background:var(--bg3)}
 #txBulkBar{display:none;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid var(--accent);border-radius:var(--r);padding:7px 12px;gap:8px;align-items:center;flex-wrap:wrap}
 .ctg-link{cursor:pointer}
 .ctg-link:hover{color:var(--accent);text-decoration:underline}
+.owner-tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-top:3px;letter-spacing:0.2px}
+.owner-me{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.owner-wife{background:color-mix(in srgb,#e879a0 15%,transparent);color:#e879a0}
+.owner-joint{background:color-mix(in srgb,var(--income) 15%,transparent);color:var(--income)}
 .tx-cb{cursor:pointer;width:14px;height:14px}
 .unconf-btn{padding:5px 10px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:12px;white-space:nowrap}
 .unconf-btn.active{background:color-mix(in srgb,var(--expense) 15%,var(--bg3));border-color:var(--expense);color:var(--expense)}
@@ -2895,15 +2899,17 @@ function filterTxns(){
       shownIds.add(t.id);
       const _accOwner=DB.accounts[t.account]?.owner;
       const _ownerLabel=_accOwner==='me'?'Влад':_accOwner==='wife'?'Таня':_accOwner==='joint'?'Общий':'';
+      const _ownerCls=_accOwner==='me'?'owner-me':_accOwner==='wife'?'owner-wife':_accOwner==='joint'?'owner-joint':'';
+      const _ownerTag=_ownerLabel?'<span class="owner-tag '+_ownerCls+'">'+_ownerLabel+'</span>':'';
       if(isT&&t.linkedAccount){
         const arrow=t.amtRub<0?' → ':' ← ';
         accCell='<div style="font-size:11px;color:var(--muted2)">'+accLabel(t.account)+arrow+accLabel(t.linkedAccount)+'</div>'
-          +(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
+          +_ownerTag;
       }else if(isT&&t.counterpartyAcc){
-        accCell='<div style="font-size:11px;color:var(--muted2)">'+accLabel(t.account)+' → '+accLabel(t.counterpartyAcc)+'</div>';
+        accCell='<div style="font-size:11px;color:var(--muted2)">'+accLabel(t.account)+' → '+accLabel(t.counterpartyAcc)+'</div>'
+          +_ownerTag;
       }else{
-        accCell='<div style="font-size:12px;color:var(--muted2)">'+accLabel(t.account)+'</div>'
-          +(_ownerLabel?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_ownerLabel+'</div>':'');
+        accCell='<div style="font-size:12px;color:var(--muted2)">'+accLabel(t.account)+'</div>'+_ownerTag;
       }
       amtDisplay='<span class="'+cls+'">'+sign+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span>';
       const ctgSpan=t.counterparty&&!isT
