@@ -468,7 +468,7 @@ const CAT_TREE={
     'Покупки':['Одежда/обувь','Бытовая техника/электроника','Мебель/декор','Красота/уход','Книги'],
     'Развлечения/Отдых':['Кино/концерты/мероприятия','Путешествия/отпуск','Хобби'],
     'Сервисы/Связь':['Мобильная связь','Подписки на сервисы','Интернет/хостинг','Банковские комиссии'],
-    'Предпринимательство':['Оплата подрядчикам','Рекламные расходы','Налоги/взносы ИП','Банковские комиссии ИП'],
+    'Предпринимательство':['Выручка ИП','Оплата подрядчикам','Рекламные расходы','Налоги/взносы ИП','Банковские комиссии ИП'],
     'Образование':['Оплата обучения','Курсы/тренинги'],
     'Прочее':['Подарки','Благотворительность','Прочие расходы','Переводы физлицам'],
     'Инвестиции':['Комиссии брокера','Налоги с инвестиций','Прочие инвестиционные расходы'],
@@ -714,8 +714,13 @@ function parseTinkoff(rows){
 }
 
 function parseTinkoffBusiness(rows){
-  // Numeric ISO currency codes → ISO 4217 strings
   const CUR_MAP={'643':'RUB','840':'USD','978':'EUR','826':'GBP','156':'CNY','398':'KZT'};
+  // Known INN → category (for debit operations)
+  const INN_DEBIT_CAT={
+    '7710140679':['Предпринимательство','Банковские комиссии ИП','expense'], // Тинькофф
+    '7727406020':['Предпринимательство','Налоги/взносы ИП','expense'],       // ФНС/Казначейство
+  };
+
   return rows.map(r=>{
     const acc=(r['Номер счёта']||'').trim();
     const opType=(r['Тип операции (пополнение/списание)']||'').trim();
@@ -726,11 +731,9 @@ function parseTinkoffBusiness(rows){
     const payNum=(r['Номер платежа']||'').trim();
     const descOp=(r['Описание операции']||'').trim();
     const descPurp=(r['Назначение платежа']||'').trim();
-    // Use the longer/more informative description
     const desc=(descPurp.length>descOp.length?descPurp:descOp)||descOp||descPurp;
     const payerAcc=(r['Счет плательщика']||'').trim();
     const payerINN=(r['ИНН плательщика']||'').trim();
-    const rcvAcc=(r['Счет получателя']||'').trim();
     const ctgAcc=(r['Счет контрагента']||'').trim();
     const ctgINN=(r['ИНН контрагента']||'').trim();
     const ctgName=(r['Наименование контрагента']||'').trim();
@@ -739,27 +742,54 @@ function parseTinkoffBusiness(rows){
     const amtRub=isCredit?amt:-amt;
     const counterpartyINN=isCredit?payerINN:ctgINN;
     const counterpartyAcc=isCredit?(payerAcc||ctgAcc):ctgAcc;
+    const descLow=desc.toLowerCase();
+
     const tx={
       id:uid(),date,month,dateDisplay:dateRaw,
       desc:desc||ctgName,
       card:'*'+acc.slice(-4),account:acc,
-      paymentNum,bankCat:opType,
+      paymentNum:payNum,bankCat:opType,
       amtOp:amtRub,curOp:cur,amtRub,
       status:'OK',source:'tinkoff_business',
       counterparty:ctgName,counterpartyINN,counterpartyAcc,
       manualCategory:false,linkedTo:null,linkedAccount:null
     };
-    const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;
-    if(tx.type==='transfer'&&isCashWithdrawal(tx))tx.linkedAccount=getCashAccountForTx(tx);
-    // Auto-link if counterpartyAcc is a known own account
-    if(tx.type==='transfer'&&counterpartyAcc&&!tx.linkedAccount){
-      const ctgKey=counterpartyAcc.replace(/[^0-9a-zA-Z]/g,'').slice(-8);
-      if(DB.accounts[counterpartyAcc]||DB.accounts[ctgKey]||Object.values(DB.accounts).find(a=>String(a.number||'').endsWith(ctgKey))){
-        tx.linkedAccount=counterpartyAcc;
-      }
+
+    // Categorization logic: INN → purpose → rules
+    let categorized=false;
+    if(!isCredit&&INN_DEBIT_CAT[ctgINN]){
+      const[g,s,t]=INN_DEBIT_CAT[ctgINN];
+      tx.group=g;tx.sub=s;tx.type=t;categorized=true;
     }
-    registerAccount(acc,'tinkoff_business','ТБ Счет ИП Копилка *'+acc.slice(-4),cur);
-    if(DB.accounts[acc])DB.accounts[acc].owner='me';
+    if(!categorized&&descLow.includes('плата за обслуживание')){
+      tx.type='expense';tx.group='Предпринимательство';tx.sub='Банковские комиссии ИП';categorized=true;
+    }
+    if(!categorized&&(descLow.includes('пополнение енс')||descLow.includes('единый налог')||descLow.includes('взнос ип')||descLow.includes('усн'))){
+      tx.type='expense';tx.group='Предпринимательство';tx.sub='Налоги/взносы ИП';categorized=true;
+    }
+    if(!categorized&&(descLow.includes('перевод собственных')||descLow.includes('перевод средств на счет'))){
+      tx.type='transfer';tx.group='Перевод';tx.sub='Внутренний перевод';categorized=true;
+    }
+    if(!categorized&&isCredit&&(descLow.includes('оплата по договору')||descLow.includes('ведение рекламн')||descLow.includes('оплата по счету'))){
+      tx.type='income';tx.group='Предпринимательство';tx.sub='Выручка ИП';categorized=true;
+    }
+    if(!categorized&&!isCredit&&(descLow.includes('оплата по счету')||descLow.includes('оплата подрядч')||descLow.includes('ведение рекламн'))){
+      tx.type='expense';tx.group='Предпринимательство';tx.sub='Оплата подрядчикам';categorized=true;
+    }
+    if(!categorized){
+      const c=applyCategForTx(tx);tx.group=c.g;tx.sub=c.s;tx.type=c.t;
+    }
+    if(tx.type==='transfer'&&isCashWithdrawal(tx))tx.linkedAccount=getCashAccountForTx(tx);
+    // Auto-link transfers to known own accounts
+    if(tx.type==='transfer'&&counterpartyAcc&&!tx.linkedAccount){
+      const ctgKey=counterpartyAcc.slice(-8);
+      const found=DB.accounts[counterpartyAcc]
+        ||Object.values(DB.accounts).find(a=>String(a.number||'').endsWith(ctgKey)||String(a.display||'').endsWith(ctgKey));
+      if(found)tx.linkedAccount=found.number||counterpartyAcc;
+    }
+    const accLabel='ТБ Счет ИП *'+acc.slice(-4);
+    registerAccount(acc,'tinkoff_business',accLabel,cur);
+    if(DB.accounts[acc]){DB.accounts[acc].owner='me';}
     return tx;
   }).filter(Boolean);
 }
