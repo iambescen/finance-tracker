@@ -1157,141 +1157,168 @@ function parseTinkoffBrokerXLSX(wb){
   const txns=[];
   const ws=wb.Sheets[wb.SheetNames[0]];
 
-  // Read worksheet directly using cell addresses
-  function cellVal(col, row){
+  function cellVal(col,row){
     const addr=XLSX.utils.encode_cell({r:row,c:col});
     const cell=ws[addr];
     if(!cell)return '';
     return cell.v===undefined?'':cell.v;
   }
+  function cellStr(col,row){return String(cellVal(col,row)||'').trim();}
+  function cellNum(col,row){return parseFloat(cellVal(col,row))||0;}
 
-  // Get sheet range
   const ref=ws['!ref']||'A1:A1';
   const range=XLSX.utils.decode_range(ref);
   const maxRow=range.e.r;
 
-  // Column indices: A=0,K=10,W=22,AL=37,BA=52,BN=65,BY=76
-  const C_DATE=0,C_TIME=10,C_EXEC=22,C_OP=37,C_CREDIT=52,C_DEBIT=65,C_NOTE=76;
-
-  // Extract investor info from rows 0-9
-  let accNum='tinkoff_broker',owner='wife';
-  for(let r=0;r<10;r++){
-    const txt=String(cellVal(0,r)||'');
+  // ── Extract header info ───────────────────────────────────────────────────
+  let accNum='tinkoff_broker',owner='me',reportEndDate=null;
+  for(let r=0;r<12;r++){
+    const txt=cellStr(0,r);
     if(txt.includes('Инвестор:')){
       const m=txt.match(/\/\s*(\d+)\s+от/);
       if(m)accNum='tinkoff_broker_'+m[1];
-      if(txt.toLowerCase().includes('владислав'))owner='me';
-      else if(txt.toLowerCase().includes('татьяна'))owner='wife';
+      if(txt.toLowerCase().includes('татьяна'))owner='wife';
+    }
+    if(txt.includes('за период')){
+      const m=txt.match(/(\d{2}\.\d{2}\.\d{4})\s*$/);
+      if(m){const p=m[1].split('.');reportEndDate=`${p[2]}-${p[1]}-${p[0]}`;}
     }
   }
   registerAccount(accNum,'tinkoff_broker_xlsx','Тинькофф Брокер','RUB');
-  if(DB.accounts[accNum])DB.accounts[accNum].owner=owner;
+  if(DB.accounts[accNum]){DB.accounts[accNum].owner=owner;DB.accounts[accNum].isBroker=true;}
 
-  // Find section 2
-  let cashStart=-1;
+  // ── Section 2: Cash operations or balance summary ─────────────────────────
+  let sec2=-1;
   for(let r=0;r<=maxRow;r++){
-    const v=String(cellVal(0,r)||'').trim();
-    if(v.startsWith('2. Операции с денежными средствами')){cashStart=r;break;}
-  }
-  if(cashStart<0){return txns;}
-
-  // Find data header row ('Дата' in col A)
-  let dataStart=-1;
-  for(let r=cashStart;r<cashStart+30;r++){
-    if(String(cellVal(C_DATE,r)||'').trim()==='Дата'){dataStart=r+1;break;}
-  }
-  if(dataStart<0){return txns;}
-
-  // Find section 3
-  let dataEnd=maxRow+1;
-  for(let r=dataStart;r<=maxRow;r++){
-    if(String(cellVal(0,r)||'').trim().startsWith('3.')){dataEnd=r;break;}
+    if(cellStr(0,r).startsWith('2. Операции с денежными средствами')){sec2=r;break;}
   }
 
-  for(let r=dataStart;r<dataEnd;r++){
-    const opStr=String(cellVal(C_OP,r)||'').trim();
-    if(!opStr)continue;
-    // Skip headers/markers
-    if(opStr==='Операция'||opStr==='Исходящий остаток'||opStr==='Входящий остаток')continue;
-    if(opStr.match(/^\d+ из /))continue;
-
-    const credit=parseFloat(cellVal(C_CREDIT,r))||0;
-    const debit=parseFloat(cellVal(C_DEBIT,r))||0;
-    const note=String(cellVal(C_NOTE,r)||'').trim();
-    const net=credit-debit;
-    if(credit===0&&debit===0)continue;
-
-    // Get date
-    let rawDate=String(cellVal(C_DATE,r)||'').trim();
-    if(!rawDate.match(/^\d{2}\.\d{2}\.\d{4}$/)){
-      rawDate=String(cellVal(C_EXEC,r)||'').trim();
-    }
-    if(!rawDate.match(/^\d{2}\.\d{2}\.\d{4}$/))continue;
-
-    const parts=rawDate.split('.');
-    const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
-    const month=date.slice(0,7);
-
-    const opLow=opStr.toLowerCase();
-    let type,group,sub,desc;
-
-    if(opLow.includes('пополнение счет')){
-      type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';
-    } else if(opLow.includes('вывод')&&opLow.includes('средств')){
-      type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';
-    } else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд')){
-      type='income';group='Инвестиционный доход';sub=opStr.toLowerCase().includes('дивид')?'Дивиденды':'Купоны';
-      const assetM=note.match(/Наименование:\s*([^,]+)/);
-      desc='Купон/дивиденд'+(assetM?' '+assetM[1].trim():'');
-    } else if(opLow.includes('покупка/продажа')||opLow==='покупка'||opLow==='продажа'){
-      type='investment';group='Инвестиции';sub=net<0?'Покупка ценных бумаг':'Продажа ценных бумаг';desc='Покупка/продажа бумаг';
-    } else if(opLow.includes('комиссия')){
-      type='expense';group='Инвестиции';sub='Комиссии брокера';desc='Комиссия: '+opStr;
-    } else if(opLow.includes('репо')){
-      type='investment';group='Инвестиции';sub='РЕПО';desc='РЕПО операция';
-    } else if(opLow.includes('налог')){
-      type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='Налог: '+opStr;
-    } else {
-      type=net>0?'income':'expense';
-      const c=applyCategForTx({desc:opStr,amtRub:net});
-      group=c.g;sub=c.s;desc=opStr;
+  if(sec2>=0){
+    // Check if it's a TRANSACTION format (has 'Дата' col) or BALANCE SUMMARY (has 'Валюта')
+    let hasTxnFormat=false,hasBalSummary=false,balHdrRow=-1;
+    for(let r=sec2;r<sec2+20;r++){
+      const a=cellStr(0,r);
+      if(a==='Дата'){hasTxnFormat=true;break;}
+      if(a==='Валюта'){hasBalSummary=true;balHdrRow=r;break;}
     }
 
-    txns.push({
-      id:Math.random().toString(36).slice(2,10),
-      date,month,dateDisplay:rawDate,
-      desc:(desc+(note?': '+note.slice(0,60):'')).slice(0,150),
-      card:'Тинькофф Брокер',account:accNum,
-      bankCat:opStr.slice(0,30),
-      amtOp:net,curOp:'RUB',amtRub:net,
-      status:'OK',source:'tinkoff_broker_xlsx',
-      counterparty:'АО ТБанк',counterpartyINN:'7710140679',counterpartyAcc:'',
-      manualCategory:false,linkedTo:null,linkedAccount:null,
-      type,group,sub
-    });
-  }
-  // Parse securities holdings (section 3.1)
-  for(let r=0;r<=maxRow;r++){
-    if(String(cellVal(0,r)||'').trim()==='3.1 Движение по ценным бумагам инвестора'){
-      for(let r2=r+1;r2<r+10;r2++){
-        if(String(cellVal(0,r2)||'').trim()==='Наименование актива'){
-          const holdings=[];
-          for(let r3=r2+1;r3<=maxRow;r3++){
-            const name=String(cellVal(0,r3)||'').trim();
-            if(!name||name.startsWith('3.')||name.startsWith('4.'))break;
-            const ticker=String(cellVal(13,r3)||'').trim();
-            const isin=String(cellVal(20,r3)||'').trim();
-            const qty=parseFloat(cellVal(67,r3))||0;
-            holdings.push({name,ticker,isin,qty,broker:accNum,brokerName:'Тинькофф Брокер',updatedAt:new Date().toISOString()});
+    if(hasTxnFormat){
+      // Standard transaction format — find data rows
+      const C_DATE=0,C_EXEC=22,C_OP=37,C_CREDIT=52,C_DEBIT=65,C_NOTE=76;
+      let dataStart=-1;
+      for(let r=sec2;r<sec2+30;r++){
+        if(cellStr(C_DATE,r)==='Дата'){dataStart=r+1;break;}
+      }
+      let dataEnd=maxRow+1;
+      for(let r=dataStart>=0?dataStart:sec2;r<=maxRow;r++){
+        if(cellStr(0,r).startsWith('3.')){dataEnd=r;break;}
+      }
+      if(dataStart>=0){
+        for(let r=dataStart;r<dataEnd;r++){
+          const opStr=cellStr(C_OP,r);
+          if(!opStr||opStr==='Операция'||opStr.match(/^\d+ из /))continue;
+          const credit=cellNum(C_CREDIT,r),debit=cellNum(C_DEBIT,r);
+          const net=credit-debit;if(credit===0&&debit===0)continue;
+          let rawDate=cellStr(C_DATE,r);
+          if(!rawDate.match(/^\d{2}\.\d{2}\.\d{4}$/))rawDate=cellStr(C_EXEC,r);
+          if(!rawDate.match(/^\d{2}\.\d{2}\.\d{4}$/))continue;
+          const parts=rawDate.split('.');
+          const date=`${parts[2]}-${parts[1]}-${parts[0]}`;
+          const month=date.slice(0,7);
+          const note=cellStr(C_NOTE,r);
+          const opLow=opStr.toLowerCase();
+          let type,group,sub,desc;
+          if(opLow.includes('пополнение')){type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';}
+          else if(opLow.includes('вывод')){type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';}
+          else if(opLow.includes('дивид')){type='income';group='Инвестиционный доход';sub='Дивиденды';desc='Дивиденды: '+note.slice(0,50);}
+          else if(opLow.includes('купон')||opLow.includes('нкд')){type='income';group='Инвестиционный доход';sub='Купоны';desc='Купоны: '+note.slice(0,50);}
+          else if(opLow.includes('покупка')||opLow.includes('продажа')||opLow.includes('сделка')){
+            type='investment';group='Инвестиции';
+            sub=net<0?'Покупка ценных бумаг':'Продажа ценных бумаг';
+            desc=(net<0?'Покупка: ':'Продажа: ')+note.slice(0,60);
           }
-          if(!DB.investments)DB.investments={};
-          DB.investments[accNum]={holdings,updatedAt:new Date().toISOString()};
-          break;
+          else if(opLow.includes('комиссия')){type='expense';group='Инвестиции';sub='Комиссии брокера';desc='Комиссия: '+opStr;}
+          else if(opLow.includes('репо')){type='investment';group='Инвестиции';sub='РЕПО';desc='РЕПО';}
+          else if(opLow.includes('налог')){type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='Налог: '+opStr;}
+          else{type=net>0?'income':'expense';const c=applyCategForTx({desc:opStr,amtRub:net});group=c.g;sub=c.s;desc=opStr;}
+          txns.push({
+            id:Math.random().toString(36).slice(2,10),
+            date,month,dateDisplay:rawDate,
+            desc:(desc+(note&&!desc.includes(note)?': '+note.slice(0,60):'')).slice(0,150),
+            card:'Тинькофф Брокер',account:accNum,bankCat:opStr.slice(0,30),
+            amtOp:net,curOp:'RUB',amtRub:net,status:'OK',source:'tinkoff_broker_xlsx',
+            counterparty:'АО ТБанк',counterpartyINN:'7710140679',counterpartyAcc:'',
+            manualCategory:false,linkedTo:null,linkedAccount:null,type,group,sub
+          });
         }
       }
-      break;
+    }
+
+    if(hasBalSummary&&balHdrRow>=0){
+      // Balance summary format: Валюта | ... | Входящий (col10) | Исходящий (col20)
+      // Find column positions dynamically
+      let colIn=-1,colOut=-1;
+      for(let c=0;c<=30;c++){
+        const h=cellStr(c,balHdrRow);
+        if(h.startsWith('Входящий'))colIn=c;
+        if(h.startsWith('Исходящий'))colOut=c;
+      }
+      if(colOut>=0){
+        for(let r=balHdrRow+1;r<balHdrRow+6;r++){
+          const cur=cellStr(0,r);
+          if(!cur||cur.startsWith('3.')||cur.startsWith('4.'))break;
+          const closingBal=cellNum(colOut,r);
+          if(cur==='RUB'&&closingBal!==0){
+            // Set balanceAnchor for broker cash account
+            const acn=DB.accounts[accNum];
+            if(acn&&reportEndDate){
+              acn.balanceAnchor={value:closingBal,date:reportEndDate};
+              acn.currentBalance=closingBal;
+            }
+          }
+        }
+      }
     }
   }
+
+  // ── Section 3.1: Securities movement → portfolio positions ────────────────
+  for(let r=0;r<=maxRow;r++){
+    if(!cellStr(0,r).startsWith('3.1 Движение'))continue;
+    // Find header row
+    let hdrRow=-1;
+    for(let r2=r+1;r2<r+5;r2++){
+      if(cellStr(0,r2).includes('Наименование актива')){hdrRow=r2;break;}
+    }
+    if(hdrRow<0)break;
+
+    // Find column positions dynamically
+    let cTicker=-1,cISIN=-1,cQtyOut=-1;
+    for(let c=0;c<=maxRow;c++){
+      const h=cellStr(c,hdrRow);
+      if(h==='Код актива'||h==='Тикер')cTicker=c;
+      if(h==='ISIN')cISIN=c;
+      if(h.startsWith('Исходящий'))cQtyOut=c;
+    }
+    // Fallback column positions for known format
+    if(cTicker<0)cTicker=13;
+    if(cISIN<0)cISIN=20;
+    if(cQtyOut<0)cQtyOut=67;
+
+    const holdings=[];
+    for(let r3=hdrRow+1;r3<=maxRow;r3++){
+      const name=cellStr(0,r3);
+      if(!name||name.match(/^[34]\./)|| name.startsWith('Итого'))break;
+      const ticker=cellStr(cTicker,r3)||name.slice(0,8).toUpperCase();
+      const isin=cellStr(cISIN,r3);
+      const qtyOut=cellNum(cQtyOut,r3);
+      if(qtyOut===0&&!isin)continue;
+      holdings.push({name,ticker,isin,qty:qtyOut,avgPrice:0,broker:accNum,brokerName:'Тинькофф Брокер',updatedAt:reportEndDate||new Date().toISOString().slice(0,10)});
+    }
+    if(!DB.investments)DB.investments={};
+    DB.investments[accNum]={holdings,updatedAt:reportEndDate||new Date().toISOString().slice(0,10)};
+    break;
+  }
+
   return txns;
 }
 
