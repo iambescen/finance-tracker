@@ -354,7 +354,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Питание",
-      "sub": "Продукты/супермаркеты"
+      "sub": "Продукты/супермаркеты",
+      "confirmed": true
     },
     {
       "id": "tpzbmqgz",
@@ -379,7 +380,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Покупки",
-      "sub": "Красота/уход"
+      "sub": "Красота/уход",
+      "confirmed": true
     },
     {
       "id": "h0thppnx",
