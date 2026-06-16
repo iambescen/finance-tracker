@@ -1,31 +1,6 @@
 {
   "transactions": [
     {
-      "id": "vfl7murh",
-      "date": "2025-12-31",
-      "month": "2025-12",
-      "dateDisplay": "31.12.2025",
-      "desc": "Оплата товаров и услуг. PYATERO CHKA",
-      "card": "***2073",
-      "account": "40817810990189542073",
-      "bankCat": "Расход",
-      "amtOp": -955.83,
-      "curOp": "RUB",
-      "amtRub": -955.83,
-      "status": "OK",
-      "source": "vtb_credit_pdf",
-      "counterparty": "Оплата товаров и услуг. PYATERO CHKA",
-      "counterpartyINN": "",
-      "counterpartyAcc": "",
-      "manualCategory": false,
-      "linkedTo": null,
-      "linkedAccount": null,
-      "isCreditCard": true,
-      "type": "expense",
-      "group": "Питание",
-      "sub": "Продукты/супермаркеты"
-    },
-    {
       "id": "39fcm7gn",
       "date": "2025-12-15",
       "month": "2025-12",
