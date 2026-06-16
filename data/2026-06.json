@@ -2924,13 +2924,13 @@
       "counterparty": "Оплата товаров и услуг. FIXPRICE",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Питание",
-      "sub": "Продукты/супермаркеты",
+      "group": "Покупки",
+      "sub": "Дом/ремонт",
       "confirmed": true
     },
     {
