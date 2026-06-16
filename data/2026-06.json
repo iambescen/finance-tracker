@@ -507,7 +507,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Транспорт",
-      "sub": "Топливо"
+      "sub": "Топливо",
+      "confirmed": true
     },
     {
       "id": "ot1cjbnd",
