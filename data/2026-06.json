@@ -378,8 +378,8 @@
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Питание",
-      "sub": "Продукты/супермаркеты"
+      "group": "Покупки",
+      "sub": "Красота/уход"
     },
     {
       "id": "h0thppnx",
@@ -398,13 +398,13 @@
       "counterparty": "Оплата товаров и услуг. MAGNIT MK TRANS.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "isCreditCard": true,
       "type": "expense",
-      "group": "Питание",
-      "sub": "Продукты/супермаркеты"
+      "group": "Покупки",
+      "sub": "Красота/уход"
     },
     {
       "id": "au40kpd7",
