@@ -172,6 +172,7 @@ tr:hover td{background:var(--bg3)}
 .type-tag.income{background:var(--income-soft);color:var(--income)}
 .type-tag.expense{background:var(--expense-soft);color:var(--expense)}
 .type-tag.transfer{background:var(--bg4);color:var(--muted2)}
+.type-tag.investment{background:color-mix(in srgb,#8b5cf6 15%,transparent);color:#8b5cf6}
 
 /* ── P&L table ── */
 .pl-header{display:grid;grid-template-columns:1fr 130px 130px 80px;padding:8px 14px;margin-bottom:2px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);font-weight:600;background:var(--bg3);border-radius:var(--r) var(--r) 0 0}
@@ -457,7 +458,7 @@ function detectInternalTransfer(tx){
 }
 
 const CAT_TREE={
-  income:{subs:['Выручка от услуг/курсов/товаров','Дивиденды/купоны/курсовая разница','Кэшбэк/проценты на остаток','Пособия/вычеты','Возвраты','Прочие доходы']},
+  income:{subs:['Выручка от услуг/курсов/товаров','Инвестиционный доход','Дивиденды','Купоны','Дивиденды/купоны/курсовая разница','Кэшбэк/проценты на остаток','Пособия/вычеты','Возвраты','Прочие доходы']},
   expense:{groups:{
     'Питание':['Продукты/супермаркеты','Рестораны/кафе'],
     'Дети':['Детский сад/школа','Кружки/секции','Детские товары'],
@@ -925,7 +926,7 @@ function parseVTBBrokerXLSX(wb){
       type='transfer';group='Перевод';sub='Вывод с брокерского счёта';
       desc='Вывод с брокерского счёта ВТБ';
     } else if(opLow.includes('сальдо расчетов')){
-      type='transfer';group='Перевод';sub='Сделка на бирже';
+      type='investment';group='Инвестиции';sub=amtRub<0?'Покупка ценных бумаг':'Продажа ценных бумаг';
       desc='Расчёты по сделкам';
     } else if(opLow.includes('вознаграждение брокера')||opLow.includes('комиссия')){
       type='expense';group='Инвестиции';sub='Комиссии брокера';
@@ -940,6 +941,10 @@ function parseVTBBrokerXLSX(wb){
     } else if(opLow.includes('перевод денежных средств')){
       type='transfer';group='Перевод';sub='Перевод между субсчетами';
       desc='Перевод между субсчетами ВТБ';
+    } else if(opLow.includes('дивид')){
+      type='income';group='Инвестиционный доход';sub='Дивиденды';desc=opType;
+    } else if(opLow.includes('купон')||opLow.includes('нкд')){
+      type='income';group='Инвестиционный доход';sub='Купоны';desc=opType;
     } else {
       type=amt>0?'income':'expense';
       const c=applyCategForTx({desc:opType,amtRub:amtRub});
@@ -1072,7 +1077,7 @@ function parseTinkoffBrokerPDF(pages){
       } else if(opLow.includes('налог')){
         type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='НДФЛ брокерский';amtRub=-Math.abs(amt)||0;
       } else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд')){
-        type='income';group='Инвестиции';sub='Купоны и дивиденды';desc='Купон/дивиденд';amtRub=amt;
+        type='income';group='Инвестиционный доход';sub=opStr.toLowerCase().includes('дивид')?'Дивиденды':'Купоны';desc='Купон/дивиденд';amtRub=amt;
       } else continue;
 
       txns.push({
@@ -1181,15 +1186,15 @@ function parseTinkoffBrokerXLSX(wb){
     } else if(opLow.includes('вывод')&&opLow.includes('средств')){
       type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';
     } else if(opLow.includes('выплата доходов')||opLow.includes('купон')||opLow.includes('дивиденд')){
-      type='income';group='Инвестиции';sub='Купоны и дивиденды';
+      type='income';group='Инвестиционный доход';sub=opStr.toLowerCase().includes('дивид')?'Дивиденды':'Купоны';
       const assetM=note.match(/Наименование:\s*([^,]+)/);
       desc='Купон/дивиденд'+(assetM?' '+assetM[1].trim():'');
     } else if(opLow.includes('покупка/продажа')||opLow==='покупка'||opLow==='продажа'){
-      type='transfer';group='Перевод';sub='Сделка на бирже';desc='Покупка/продажа бумаг';
+      type='investment';group='Инвестиции';sub=net<0?'Покупка ценных бумаг':'Продажа ценных бумаг';desc='Покупка/продажа бумаг';
     } else if(opLow.includes('комиссия')){
       type='expense';group='Инвестиции';sub='Комиссии брокера';desc='Комиссия: '+opStr;
     } else if(opLow.includes('репо')){
-      type='transfer';group='Перевод';sub='РЕПО';desc='РЕПО операция';
+      type='investment';group='Инвестиции';sub='РЕПО';desc='РЕПО операция';
     } else if(opLow.includes('налог')){
       type='expense';group='Инвестиции';sub='Налоги с инвестиций';desc='Налог: '+opStr;
     } else {
@@ -1339,7 +1344,7 @@ function parseCifraBrokerXLSX(wb){
         status:'OK',source:'cifra_broker_xlsx',
         counterparty:'IMEX',counterpartyINN:'',counterpartyAcc:'',
         manualCategory:false,linkedTo:null,linkedAccount:null,
-        type:'transfer',group:'Перевод',sub:'Конвертация USDT'
+        type:'investment',group:'Инвестиции',sub:(isBuy?'Покупка ценных бумаг':'Продажа ценных бумаг')
       });
       // Commission as separate expense
       if(comm>0){
@@ -1353,7 +1358,7 @@ function parseCifraBrokerXLSX(wb){
           status:'OK',source:'cifra_broker_xlsx',
           counterparty:'Цифра Брокер',counterpartyINN:'',counterpartyAcc:'',
           manualCategory:false,linkedTo:null,linkedAccount:null,
-          type:'expense',group:'Сервисы/Связь',sub:'Банковские комиссии'
+          type:'expense',group:'Инвестиции',sub:'Комиссии брокера'
         });
       }
     }
@@ -2533,6 +2538,9 @@ function pageDash(){
   });
   const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
   const expense=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+  const investTrades=txns.filter(t=>t.type==='investment');
+  const investBuy=Math.abs(investTrades.filter(t=>t.amtRub<0).reduce((s,t)=>s+t.amtRub,0));
+  const investSell=investTrades.filter(t=>t.amtRub>0).reduce((s,t)=>s+t.amtRub,0);
   const profit=income-expense;
   const savingsRate=income>0?Math.round(profit/income*100):0;
   const prevP=allP[allP.indexOf(currentPeriod)+1];
@@ -2631,6 +2639,9 @@ function pagePL(){
   if(!txns.length)return pageEmpty();
   const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amtRub,0);
   const expense=Math.abs(txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amtRub,0));
+  const investTrades=txns.filter(t=>t.type==='investment');
+  const investBuy=Math.abs(investTrades.filter(t=>t.amtRub<0).reduce((s,t)=>s+t.amtRub,0));
+  const investSell=investTrades.filter(t=>t.amtRub>0).reduce((s,t)=>s+t.amtRub,0);
   const profit=income-expense;
   const savingsRate=income>0?Math.round(profit/income*100):0;
   // Previous period for comparison (month only)
@@ -2662,6 +2673,13 @@ function pagePL(){
     +incRows+'<div style="height:10px"></div>'
     +'<div class="pl-row group" style="color:var(--expense)"><div>Расходы</div><div class="pl-val expense">'+fmtMoney(expense)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pE?fmtMoney(pE):'—')+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pE?(((expense-pE)/pE*100)>0?'+':'')+(((expense-pE)/pE*100)).toFixed(0)+'%':'—')+'</div></div>'
     +expRows
+    +(investBuy>0||investSell>0?
+      '<div class="pl-row group" style="color:#8b5cf6"><div>Инвестиционные операции</div><div class="pl-val" style="color:#8b5cf6">'+
+        (investSell>0?'↑'+fmtMoney(investSell)+' ':'')+
+        (investBuy>0?'↓'+fmtMoney(investBuy):'')+'</div><div></div><div></div></div>'+
+      (investSell>0?'<div class="pl-row sub"><div>Продажа ценных бумаг</div><div class="pl-val income">+'+fmtMoney(investSell)+'</div><div></div><div></div></div>':'')+
+      (investBuy>0?'<div class="pl-row sub"><div>Покупка ценных бумаг</div><div class="pl-val expense">'+fmtMoney(investBuy)+'</div><div></div><div></div></div>':'')
+    :'')
     +'<div class="pl-row total"><div>Чистый результат</div><div class="pl-val '+(profit>=0?'pos':'neg')+'">'+fmtMoney(profit,true)+'</div><div class="pl-val" style="color:var(--muted);font-size:12px">'+(pI||pE?fmtMoney(pI-pE,true):'—')+'</div><div class="pl-val" style="font-size:13px;font-weight:600;color:'+(savingsRate>=20?'var(--income)':savingsRate>=0?'var(--text)':'var(--expense)')+'">'+(income>0?savingsRate+'% сбережений':'—')+'</div></div></div>';
 }
 
@@ -2686,7 +2704,11 @@ function pageCF(){
   const opExpense=Math.abs(txns.filter(t=>t.type==='expense'&&opExpGroups.includes(t.group)).reduce((s,t)=>s+t.amtRub,0));
   const finExpense=Math.abs(txns.filter(t=>t.type==='expense'&&finGroups.includes(t.group)).reduce((s,t)=>s+t.amtRub,0));
   const transfers=txns.filter(t=>t.type==='transfer');
-  const opFlow=opIncome-opExpense,finFlow=-finExpense,total=opFlow+finFlow;
+  const investTxns=txns.filter(t=>t.type==='investment');
+  const investBuy=Math.abs(investTxns.filter(t=>t.amtRub<0).reduce((s,t)=>s+t.amtRub,0));
+  const investSell=investTxns.filter(t=>t.amtRub>0).reduce((s,t)=>s+t.amtRub,0);
+  const investFlow=investSell-investBuy;
+  const opFlow=opIncome-opExpense,finFlow=-finExpense,total=opFlow+finFlow+investFlow;
   function row(label,amt,sub){return '<div class="pl-row '+(sub?'sub':'group')+'"><div>'+label+'</div><div class="pl-val '+(amt>=0?'pos':'neg')+'">'+fmtMoney(amt,true)+'</div><div></div><div></div></div>';}
   const ss='padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--font)';
   const availY=[...new Set(allP.map(p=>+p.split('-')[0]))].sort().reverse();
@@ -2701,6 +2723,7 @@ function pageCF(){
     +row('Доходы',opIncome,true)+row('Операционные расходы',-opExpense,true)+row('Операционный поток',opFlow,false)
     +'<div style="height:8px"></div><div class="pl-row group" style="color:var(--muted2);font-size:12px"><div>Финансовая деятельность</div><div></div><div></div><div></div></div>'
     +row('Предпринимательство / налоги',-finExpense,true)+row('Финансовый поток',finFlow,false)
+    +(investBuy>0||investSell>0?'<div style="height:8px"></div><div class="pl-row group" style="color:#8b5cf6;font-size:12px"><div>Инвестиционная деятельность</div><div></div><div></div><div></div></div>'+row('Покупка бумаг',-investBuy,true)+row('Продажа бумаг',investSell,true)+row('Инвестиционный поток',investFlow,false):'')
     +'<div style="height:8px"></div><div class="pl-row sub"><div>Внутренние переводы (исключены из расчёта)</div><div class="pl-val" style="color:var(--muted)">'+transfers.length+' шт</div><div></div><div></div></div>'
     +'<div class="pl-row total"><div>Итого денежный поток</div><div class="pl-val '+(total>=0?'pos':'neg')+'">'+fmtMoney(total,true)+'</div><div></div><div></div></div></div>';
 }
@@ -2780,7 +2803,7 @@ function pageTxns(){
     +'<div class="tbl-toolbar" style="flex-wrap:wrap;gap:6px">'
     +'<input type="text" id="txSearch" placeholder="Поиск..." value="'+txFilterSearch+'" oninput="filterTxns()" style="width:150px">'
     +'<select id="txGroup" onchange="filterTxns()" style="'+sel+'"><option value="">Все категории</option>'+groups.map(g=>'<option'+(txFilterGroup===g?' selected':'')+'>'+g+'</option>').join('')+'</select>'
-    +'<select id="txType" onchange="filterTxns()" style="'+sel+'"><option value="">Все типы</option><option value="income"'+(txFilterType==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(txFilterType==='expense'?' selected':'')+'>Расходы</option><option value="transfer"'+(txFilterType==='transfer'?' selected':'')+'>Переводы</option></select>'
+    +'<select id="txType" onchange="filterTxns()" style="'+sel+'"><option value="">Все типы</option><option value="income"'+(txFilterType==='income'?' selected':'')+'>Доходы</option><option value="expense"'+(txFilterType==='expense'?' selected':'')+'>Расходы</option><option value="transfer"'+(txFilterType==='transfer'?' selected':'')+'>Переводы</option><option value="investment"'+(txFilterType==='investment'?' selected':'')+'>Сделки</option></select>'
     +'<select id="txAccount" onchange="filterTxns()" style="'+sel+'"><option value="">Все счета</option>'+accOpts+'</select>'
     +'<input type="text" id="txCounterparty" placeholder="Контрагент..." value="'+txFilterCounterparty+'" oninput="txFilterCounterparty=this.value;filterTxns()" style="width:130px">'
     +'<button class="unconf-btn'+(txShowUnconfirmed?' active':'')+'" onclick="txShowUnconfirmed=!txShowUnconfirmed;this.classList.toggle(\'active\');filterTxns()" title="Только неподтверждённые">⚠ Не разобрано'+(unconfTotal?' ('+unconfTotal+')':' ✓')+' </button>'
@@ -2927,7 +2950,7 @@ function filterTxns(){
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
       +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?ctgSpan:'')+'</td>'
       +'<td style="min-width:120px">'+accCell+'</td>'
-      +'<td><span class="type-tag '+(pair?'transfer':t.type)+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
+      +'<td><span class="type-tag '+(pair?'transfer':t.type)+'">'+(isI?'Доход':isT?'Перевод':t.type==='investment'?'Сделка':'Расход')+'</span></td>'
       +'<td>'+manualIcon+'<span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'" title="'+t.group+' / '+t.sub+'">'+t.group+'</span></td>'
       +'<td style="font-size:12px;color:var(--muted)">'+t.sub+'</td>'
       +'<td style="text-align:right;white-space:nowrap">'+amtDisplay+'</td>'
@@ -2980,7 +3003,7 @@ function renderGrouped(txns){
           +'<td style="color:var(--muted);font-size:11px;padding-left:20px">'+t.dateDisplay+'</td>'
           +'<td style="font-size:12px">'+t.desc+'</td>'
           +'<td style="font-size:11px;color:var(--muted2)">'+accLabel(t.account)+'</td>'
-          +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':'Расход')+'</span></td>'
+          +'<td><span class="type-tag '+t.type+'">'+(isI?'Доход':isT?'Перевод':t.type==='investment'?'Сделка':'Расход')+'</span></td>'
           +'<td><span class="cat-pill '+(isT?'transfer':'')+'" data-id="'+t.id+'">'+t.group+'</span></td>'
           +'<td style="font-size:11px;color:var(--muted)">'+t.sub+'</td>'
           +'<td style="text-align:right"><span class="'+cls+'">'+(isI?'+':'')+Math.abs(t.amtRub).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽</span></td>'
