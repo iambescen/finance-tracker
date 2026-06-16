@@ -1857,7 +1857,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Жильё",
-      "sub": "Коммунальные/Интернет"
+      "sub": "Коммунальные/Интернет",
+      "confirmed": true
     },
     {
       "id": "2tr0w9hu",
