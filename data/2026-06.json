@@ -404,7 +404,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Покупки",
-      "sub": "Красота/уход"
+      "sub": "Красота/уход",
+      "confirmed": true
     },
     {
       "id": "au40kpd7",
