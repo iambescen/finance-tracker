@@ -1330,10 +1330,11 @@ function parseTinkoffBrokerXLSX(wb){
   if(sec2>=0){
     // Check if it's a TRANSACTION format (has 'Дата' col) or BALANCE SUMMARY (has 'Валюта')
     let hasTxnFormat=false,hasBalSummary=false,balHdrRow=-1;
-    for(let r=sec2;r<sec2+20;r++){
+    // Scan all rows in section 2 — both balance summary AND transaction format can coexist
+    for(let r=sec2;r<sec2+40;r++){
       const a=cellStr(0,r);
-      if(a==='Дата'){hasTxnFormat=true;break;}
-      if(a==='Валюта'){hasBalSummary=true;balHdrRow=r;break;}
+      if(a==='Дата'&&!hasTxnFormat){hasTxnFormat=true;}
+      if(a==='Валюта'&&balHdrRow<0){hasBalSummary=true;balHdrRow=r;}
     }
 
     if(hasTxnFormat){
@@ -1364,8 +1365,8 @@ function parseTinkoffBrokerXLSX(wb){
           let type,group,sub,desc;
           if(opLow.includes('пополнение')){type='transfer';group='Перевод';sub='Пополнение брокерского счёта';desc='Пополнение брокерского счёта';}
           else if(opLow.includes('вывод')){type='transfer';group='Перевод';sub='Вывод с брокерского счёта';desc='Вывод с брокерского счёта';}
-          else if(opLow.includes('дивид')){type='income';group='Инвестиционный доход';sub='Дивиденды';desc='Дивиденды: '+note.slice(0,50);}
-          else if(opLow.includes('купон')||opLow.includes('нкд')){type='income';group='Инвестиционный доход';sub='Купоны';desc='Купоны: '+note.slice(0,50);}
+          else if(opLow.includes('дивид')||(opLow.includes('выплата доход')&&note.toLowerCase().includes('акци'))){type='income';group='Инвестиционный доход';sub='Дивиденды';desc='Дивиденды: '+note.slice(0,50);}
+          else if(opLow.includes('купон')||opLow.includes('нкд')||opLow.includes('выплата доход')||(opLow.includes('корпоративн')&&note.toLowerCase().includes('облигац'))){type='income';group='Инвестиционный доход';sub='Купоны';desc='Купоны: '+note.slice(0,60);}
           else if(opLow.includes('покупка')||opLow.includes('продажа')||opLow.includes('сделка')){
             type='investment';group='Инвестиции';
             sub=net<0?'Покупка ценных бумаг':'Продажа ценных бумаг';
@@ -1441,7 +1442,8 @@ function parseTinkoffBrokerXLSX(wb){
     const holdings=[];
     for(let r3=hdrRow+1;r3<=maxRow;r3++){
       const name=cellStr(0,r3);
-      if(!name||name.match(/^[34]\./)|| name.startsWith('Итого'))break;
+      if(!name)continue; // skip pagination markers
+      if(name.match(/^[34]\./)|| name.startsWith('Итого'))break;
       const ticker=cellStr(cTicker,r3)||name.slice(0,8).toUpperCase();
       const isin=cellStr(cISIN,r3);
       const qtyOut=cellNum(cQtyOut,r3);
@@ -1473,7 +1475,8 @@ function parseTinkoffBrokerXLSX(wb){
       const meta={};
       for(let r3=hdrRow41+1;r3<=maxRow;r3++){
         const name=cellStr(0,r3);
-        if(!name||/^[4-9]\./.test(name)||name.startsWith('Итого'))break;
+        if(!name)continue; // skip pagination markers
+        if(/^[4-9]\./.test(name)||name.startsWith('Итого'))break;
         const isin41=cISIN41>=0?cellStr(cISIN41,r3):'';
         const tkr41=cTkr41>=0?cellStr(cTkr41,r3):'';
         const secType=cType>=0?cellStr(cType,r3):'';
