@@ -1393,7 +1393,7 @@ function parseTinkoffBrokerXLSX(wb){
       // Balance summary format: Валюта | ... | Входящий (col10) | Исходящий (col20)
       // Find column positions dynamically
       let colIn=-1,colOut=-1;
-      for(let c=0;c<=30;c++){
+      for(let c=0;c<=88;c++){
         const h=cellStr(c,balHdrRow);
         if(h.startsWith('Входящий'))colIn=c;
         if(h.startsWith('Исходящий'))colOut=c;
@@ -1490,6 +1490,90 @@ function parseTinkoffBrokerXLSX(wb){
         return h;
       });
       break;
+    }
+  }
+
+
+  // ── Section 1.1: Parse actual trades → enrich holdings with avgPrice ─────
+  // Also create trade log for each buy (to compute weighted avg cost)
+  {
+    let sec11=-1;
+    for(let r=0;r<=maxRow;r++){
+      if(cellStr(0,r).startsWith('1.1 Информация о совершенных')){ sec11=r; break; }
+    }
+    if(sec11>=0){
+      // Find column header row
+      let hdr11=-1;
+      for(let r=sec11+1;r<sec11+5;r++){
+        if(cellStr(0,r).includes('Номер сделки')){ hdr11=r; break; }
+      }
+      if(hdr11>=0){
+        // Locate columns dynamically
+        let c11Date=-1,c11Time=-1,c11Type=-1,c11Name=-1,c11Ticker=-1,c11Qty=-1,c11Price=-1,c11Total=-1,c11CommBr=-1,c11CommEx=-1,c11CommCl=-1;
+        for(let c=0;c<=88;c++){
+          const h=cellStr(c,hdr11);
+          if(h==='Дата заключения')c11Date=c;
+          else if(h==='Время')c11Time=c;
+          else if(h==='Вид сделки')c11Type=c;
+          else if(/^Наименование.*актива/.test(h))c11Name=c;
+          else if(h==='Код актива')c11Ticker=c;
+          else if(h==='Количество')c11Qty=c;
+          else if(/^Цена за единицу/.test(h))c11Price=c;
+          else if(/^Сумма сделки$/.test(h)||h==='Сумма (без НКД)')c11Total=c;
+          else if(/^Комиссия.*брокера/.test(h))c11CommBr=c;
+          else if(/^Комиссия.*биржи/.test(h))c11CommEx=c;
+          else if(/^Комиссия.*клир/.test(h))c11CommCl=c;
+        }
+        // Fallback known column positions from T-Bank format
+        if(c11Date<0)c11Date=8; if(c11Time<0)c11Time=9;
+        if(c11Type<0)c11Type=15; if(c11Name<0)c11Name=17;
+        if(c11Ticker<0)c11Ticker=19; if(c11Qty<0)c11Qty=26;
+        if(c11Price<0)c11Price=21; if(c11Total<0)c11Total=34;
+        if(c11CommBr<0)c11CommBr=39; if(c11CommEx<0)c11CommEx=45; if(c11CommCl<0)c11CommCl=50;
+
+        // Build trade map: ticker → [{date, type, qty, price, total}]
+        const tradesByTicker={};
+        let sec12start=maxRow+1;
+        for(let r=hdr11+1;r<=maxRow;r++){
+          const dateStr=cellStr(c11Date,r);
+          if(!dateStr){ continue; } // pagination marker
+          if(dateStr.startsWith('1.2')||dateStr.startsWith('2.'))break;
+          if(!dateStr.match(/^\d{2}\.\d{2}\.\d{4}$/))continue;
+          const ticker=cellStr(c11Ticker,r);
+          const name=cellStr(c11Name,r);
+          const type=cellStr(c11Type,r); // Покупка or Продажа
+          const qty=cellNum(c11Qty,r);
+          const price=cellNum(c11Price,r);
+          const total=cellNum(c11Total,r);
+          const commBr=cellNum(c11CommBr,r);
+          const commEx=cellNum(c11CommEx,r);
+          const commCl=cellNum(c11CommCl,r);
+          if(!ticker||qty===0)continue;
+          if(!tradesByTicker[ticker])tradesByTicker[ticker]=[];
+          tradesByTicker[ticker].push({date:dateStr,type,qty,price,total,comm:commBr+commEx+commCl,name});
+        }
+        // Enrich holdings with avgPrice (weighted avg cost of current open positions)
+        if(DB.investments&&DB.investments[accNum]){
+          DB.investments[accNum].holdings=DB.investments[accNum].holdings.map(h=>{
+            const trades=tradesByTicker[h.ticker]||tradesByTicker[h.isin];
+            if(!trades||!trades.length)return h;
+            // Compute weighted avg buy price for current qty
+            let runQty=0,runCost=0;
+            for(const t of trades){
+              if(t.type==='Покупка'||t.type==='Buy'||t.type.toLowerCase().includes('покупк')){
+                runQty+=t.qty; runCost+=t.total+t.comm;
+              } else {
+                // Sell — reduce position (FIFO approximation)
+                const frac=Math.min(t.qty,runQty)/Math.max(runQty,1);
+                runCost-=runCost*frac;
+                runQty-=t.qty;
+              }
+            }
+            if(runQty>0)h.avgPrice=Math.round(runCost/runQty*100)/100;
+            return h;
+          });
+        }
+      }
     }
   }
 
@@ -4386,6 +4470,7 @@ function pageInvestments(){
         +(h.ticker?'<div style="font-size:11px;color:var(--muted)">'+h.ticker+(h.isin?' · '+h.isin:'')+'</div>':'')+'</td>'
         +'<td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--muted)">'+type+'</span></td>'
         +'<td style="text-align:right">'+h.qty.toLocaleString('ru-RU')+'</td>'
+        +'<td style="text-align:right;color:var(--muted);font-size:12px">'+(h.avgPrice?fmtMoney(h.avgPrice):'—')+'</td>'
         +'<td style="text-align:right"><input type="number" value="'+(price||'')+'" placeholder="Цена ₽" '
         +'oninput="setInvestPrice(this.dataset.key,this.value)" data-key="'+priceKey+'" '
         +'style="width:100px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font);text-align:right"></td>'
@@ -4408,7 +4493,7 @@ function pageInvestments(){
     +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+allHoldings.length+'</div><div style="font-size:12px;color:var(--muted)">Позиций</div></div>'
     +'</div>'
     +'<div class="card"><div class="tbl-wrap"><table>'
-    +'<thead><tr><th>Актив</th><th>Тип</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Цена ₽</th><th style="text-align:right">Стоимость</th></tr></thead>'
+    +'<thead><tr><th>Актив</th><th>Тип</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Ср. цена</th><th style="text-align:right">Текущая ₽</th><th style="text-align:right">Стоимость</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div></div>';
 }
 function setInvestPrice(key,val){
