@@ -1925,36 +1925,66 @@ function parseVTBCreditPDF(pages) {
       const [y0, y1] = [dateYs[i], dateYs[i+1]];
       const band = pageWords.filter(w => w.top >= y0-2 && w.top < y1);
 
-      let opDate=null, signedAmt=null, isCredit=null, isProcessing=false;
-      const descWords = [];
+      let opDate=null, isProcessing=false;
+      const descWords=[], allAmts=[], curCodes=[];
+      const KNOWN_CURRENCIES=['RUB','BYN','USD','EUR','KZT','KGS','CNY','GBP','TRY','THB','AED','UZS'];
 
       for(const w of band) {
         const {x, text, top} = w;
-        if(x < 50 && /^\d{2}\.\d{2}\.\d{4}$/.test(text)) {
+        if(x < 55 && /^\d{2}\.\d{2}\.\d{4}$/.test(text)) {
           if(!opDate) opDate = text;
-        } else if(text === 'обработке' && x > 90) {
+        } else if(text==='обработке' && x > 90) {
           isProcessing = true;
-        } else if(x >= 175 && x <= 260) {
-          const val = parseFloat(text.replace(/,/g,''));
-          if(!isNaN(val) && Math.abs(val) > 0.01) {
-            signedAmt = Math.abs(val); isCredit = val > 0;
-          }
+        } else if(KNOWN_CURRENCIES.includes(text) && x < 500) {
+          curCodes.push({x, cur:text, top});
+        } else if(x >= 100 && x <= 460 && /^-?[\d]+[,.]?[\d]*$/.test(text.replace(/\s/g,''))) {
+          const val = parseFloat(text.replace(/,/g,'.').replace(/\s/g,''));
+          if(!isNaN(val) && Math.abs(val) > 0) allAmts.push({x, val, top});
         } else if(x > 460 && text.length > 1 &&
-          !['RUB','0.00','0','Задолженность','Описание','Расход','Приход','Поступление','Комиссия'].includes(text) &&
+          !KNOWN_CURRENCIES.includes(text) &&
+          !['0.00','0','Задолженность','Описание','Расход','Приход','Поступление','Комиссия'].includes(text) &&
           !/^[\d.,]+$/.test(text)) {
           descWords.push({top, x, text});
         }
       }
 
-      if(!opDate || signedAmt===null) continue;
+      if(!opDate || !allAmts.length) continue;
+
+      // Find primary (billing) amount: leftmost in 175-280 range
+      const primaryAmts = allAmts.filter(a => a.x >= 150 && a.x <= 290);
+      if(!primaryAmts.length) continue;
+      primaryAmts.sort((a,b)=>a.x-b.x);
+      const primaryAmt = primaryAmts[0];
+      const signedAmt = Math.abs(primaryAmt.val);
+      const isCredit = primaryAmt.val > 0;
+
+      // Detect foreign currency: look for non-RUB currency code in band
+      const foreignCurEntry = curCodes.find(c => c.cur !== 'RUB');
+      let curOp='RUB', amtOpRaw=signedAmt, amtRubFinal=null;
+
+      if(foreignCurEntry) {
+        curOp = foreignCurEntry.cur;
+        amtOpRaw = signedAmt; // this is the foreign currency amount
+        // RUB amount: look for a larger amount in the band (RUB is usually bigger)
+        const rubAmts = allAmts.filter(a => a.x > primaryAmt.x + 30 && a.val > signedAmt * 0.5);
+        if(rubAmts.length) {
+          rubAmts.sort((a,b)=>a.x-b.x);
+          amtRubFinal = rubAmts[0].val;
+        }
+      }
 
       descWords.sort((a,b) => a.top!==b.top ? a.top-b.top : a.x-b.x);
-      let desc = descWords.map(w=>w.text).join(' ')
-        .replace(/\s+/g,' ').trim();
+      let desc = descWords.map(w=>w.text).join(' ').replace(/\s+/g,' ').trim();
+
+      // Append currency info to desc if foreign
+      if(curOp !== 'RUB') {
+        desc = desc + (desc?' ':'') + '['+amtOpRaw.toFixed(2)+' '+curOp+']';
+      }
 
       const dateISO = toISO(opDate);
       const month = dateISO.slice(0,7);
-      const amtRub = isCredit ? signedAmt : -signedAmt;
+      const rubAmt = amtRubFinal || signedAmt;
+      const amtRub = isCredit ? rubAmt : -rubAmt;
       const descLow = desc.toLowerCase();
 
       const isOwnTransfer = descLow.includes('перевод между своими') || descLow.includes('перечисление средств');
@@ -1971,7 +2001,7 @@ function parseVTBCreditPDF(pages) {
         card: accountNum ? '***'+accountNum.slice(-4) : '',
         account: accountNum,
         bankCat: isCredit ? 'Приход' : 'Расход',
-        amtOp: amtRub, curOp: 'RUB', amtRub,
+        amtOp: isCredit ? amtOpRaw : -amtOpRaw, curOp, amtRub,
         status: isProcessing ? 'В обработке' : 'OK', source: 'vtb_credit_pdf',
         counterparty: desc, counterpartyINN: '', counterpartyAcc: '',
         manualCategory: false, linkedTo: null, linkedAccount: null,
