@@ -2397,6 +2397,17 @@ async function saveAllNow(){
       const r=await ghPut('data/rules.json',JSON.stringify({rules:DB.rules,customGroups:DB.customGroups||{}},null,2),'Save rules — '+date);
       if(!r.ok)errors.push('rules ('+r.status+')');
     }catch(e){errors.push('rules: '+e.message);}
+    // Delete from GitHub any periods that were deleted locally
+    try{
+      const dp=JSON.parse(localStorage.getItem('ff_deleted_periods')||'[]');
+      if(dp.length){
+        if(btn)btn.textContent='⏳ удаляем...';
+        for(const p of dp){
+          await ghDeleteFile('data/'+p+'.json','Delete period '+p+' — '+date);
+        }
+        localStorage.removeItem('ff_deleted_periods');
+      }
+    }catch(e){}
     if(errors.length){
       console.error('saveAllNow errors:',errors);
       toast('Ошибки: '+errors.join(' | '),'err');
@@ -4321,12 +4332,16 @@ async function loadFromGithub(){
       const files=await lr.json();
       const ghPeriods=new Set(files.filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)).map(f=>f.name.replace('.json','')));
       for(const p of Object.keys(DB.periods)){if(!ghPeriods.has(p))delete DB.periods[p];}
-      // Load from GitHub ONLY periods we don't have locally.
-      // Prevents stale GitHub cache from overwriting fresh local data.
-      // Deletions still sync via ghPeriods check above.
+      // Load from GitHub ONLY periods we don't have locally
+      // AND that weren't explicitly deleted by the user.
       const blobBase='https://api.github.com/repos/'+user+'/'+repo+'/git/blobs/';
+      let deletedPeriods=new Set();
+      try{deletedPeriods=new Set(JSON.parse(localStorage.getItem('ff_deleted_periods')||'[]'));}catch(e){}
       await Promise.all(files
-        .filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)&&f.sha&&!DB.periods[f.name.replace('.json','')])
+        .filter(f=>{
+          const key=f.name.replace('.json','');
+          return f.name.match(/^\d{4}-\d{2}\.json$/)&&f.sha&&!DB.periods[key]&&!deletedPeriods.has(key);
+        })
         .map(async f=>{
           const dr=await fetch(blobBase+f.sha,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.raw+json'}});
           if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();
@@ -4371,13 +4386,20 @@ function delPeriod(p){
   delete DB.periods[p];
   const ps=Object.keys(DB.periods).sort().reverse();
   currentPeriod=ps[0]||null;
+  // Track deleted periods so loadFromGithub won't reload them
+  try{
+    const dp=JSON.parse(localStorage.getItem('ff_deleted_periods')||'[]');
+    if(!dp.includes(p))dp.push(p);
+    localStorage.setItem('ff_deleted_periods',JSON.stringify(dp));
+  }catch(e){}
   saveLocal();refreshUI();
   const{token}=ghCfg();
   if(token){
-    toast('Удаляем из GitHub...','info');
     ghDeleteFile('data/'+p+'.json','Delete period '+p+' — '+_ghDate())
       .then(()=>toast('Период '+fmtMonth(p)+' удалён ✓','ok'))
-      .catch(()=>toast('Удалено локально (нет сети)','ok'));
+      .catch(()=>toast('Удалено локально','ok'));
+  }else{
+    toast('Период удалён локально','ok');
   }
 }
 
