@@ -688,7 +688,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Транспорт",
-      "sub": "Такси/Общественный транспорт"
+      "sub": "Такси/Общественный транспорт",
+      "confirmed": true
     },
     {
       "id": "lwnvsf5b",
@@ -713,7 +714,8 @@
       "isCreditCard": true,
       "type": "expense",
       "group": "Транспорт",
-      "sub": "Такси/Общественный транспорт"
+      "sub": "Такси/Общественный транспорт",
+      "confirmed": true
     },
     {
       "id": "kbu8kohs",
