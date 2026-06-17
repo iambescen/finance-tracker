@@ -1415,7 +1415,8 @@
       "linkedAccount": null,
       "group": "Здоровье",
       "sub": "Визиты врача/платные услуги",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "nitt2m7t",
