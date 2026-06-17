@@ -4506,7 +4506,8 @@
       "linkedAccount": null,
       "group": "Предпринимательство",
       "sub": "Банковские комиссии ИП",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "rz7d0daz",
@@ -4531,7 +4532,8 @@
       "linkedAccount": "40802810500004846488",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "q1qmk8be",
@@ -4556,7 +4558,8 @@
       "linkedAccount": null,
       "group": "Предпринимательство",
       "sub": "Банковские комиссии ИП",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "n1kbbm2e",
@@ -4637,7 +4640,8 @@
       "linkedAccount": null,
       "group": "Доход",
       "sub": "Дивиденды/купоны/курсовая разница",
-      "type": "income"
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "5m6ljg3o",
