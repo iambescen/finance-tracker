@@ -4612,7 +4612,8 @@
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "u24805r6",
