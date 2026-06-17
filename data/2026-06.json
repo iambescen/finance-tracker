@@ -3645,11 +3645,11 @@
       "counterparty": "Клиника",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Прочее",
-      "sub": "Прочие расходы",
+      "group": "Здоровье",
+      "sub": "Визиты врача/платные услуги",
       "type": "expense"
     },
     {
