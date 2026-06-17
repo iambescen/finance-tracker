@@ -2114,7 +2114,8 @@
       "linkedAccount": "8607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "wsna8gnz",
