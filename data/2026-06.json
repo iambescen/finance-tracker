@@ -3901,7 +3901,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "290bgmtk",
@@ -3929,7 +3930,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "nixpf519",
