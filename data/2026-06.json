@@ -4409,7 +4409,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "2m2ohhx1",
