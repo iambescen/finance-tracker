@@ -17,12 +17,13 @@
       "counterparty": "1242080005060273",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "i9yaa3c9",
@@ -47,7 +48,8 @@
       "linkedAccount": "8607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "vkjany5a",
@@ -67,12 +69,13 @@
       "counterparty": "Б",
       "counterpartyINN": "",
       "counterpartyAcc": "0557",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "cio6dl6s",
