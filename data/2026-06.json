@@ -3375,7 +3375,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "p5o71z77",
