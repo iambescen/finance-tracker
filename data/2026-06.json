@@ -3787,7 +3787,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "xnfdaops",
@@ -3902,7 +3903,8 @@
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "o64ztszf",
@@ -3959,7 +3961,8 @@
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "podtwnqb",
@@ -4161,7 +4164,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "s5mtqfj3",
@@ -4218,7 +4222,8 @@
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "wah9fwy9",
@@ -4275,7 +4280,8 @@
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "rmca9ewp",
@@ -4299,7 +4305,8 @@
       "linkedAccount": "tinkoff_broker_2007721129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "1sv0wb0g",
@@ -4323,7 +4330,8 @@
       "linkedAccount": "tinkoff_broker_2030060362",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "rm2rqjqg",
@@ -4426,7 +4434,8 @@
       "linkedAccount": "40817810690179282810",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "paqvolye",
