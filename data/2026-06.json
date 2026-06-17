@@ -1202,7 +1202,8 @@
       "linkedAccount": "40802810500004846488",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "bhfl68fv",
