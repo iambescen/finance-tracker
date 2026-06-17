@@ -3179,7 +3179,8 @@
       "linkedAccount": "tinkoff_broker_2007721129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "xr4j8vdo",
@@ -3203,7 +3204,8 @@
       "linkedAccount": "tinkoff_broker_2030060362",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "u82pohb8",
