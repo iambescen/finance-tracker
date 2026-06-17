@@ -3952,12 +3952,12 @@
       "counterparty": "Будущее",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": "cash_me",
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод"
     },
     {
       "id": "cqwi1qqx",
