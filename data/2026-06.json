@@ -4357,7 +4357,8 @@
       "linkedAccount": "vtb_broker_1XC7I",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "ljz8yhfk",
