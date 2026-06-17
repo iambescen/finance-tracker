@@ -3588,12 +3588,13 @@
       "counterparty": "Пополнение. ОКУ \"ЦЕНТР СОЦИАЛЬНЫХ ВЫПЛАТ\". Социальные выплаты",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Прочие доходы",
-      "type": "income"
+      "sub": "Пособия/вычеты",
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "ctv9z5s9",
