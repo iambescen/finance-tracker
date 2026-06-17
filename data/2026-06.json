@@ -3957,7 +3957,8 @@
       "linkedAccount": "manual_1781696257225",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "cqwi1qqx",
