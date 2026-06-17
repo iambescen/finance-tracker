@@ -3843,16 +3843,35 @@ function renderDashCharts(){
   if(capCanvas){
     const hist=calcTotalBalanceHistory();
     if(hist){
-      const months=Object.keys(hist).sort();
-      if(months.length){
+      const allMonths=Object.keys(hist).sort();
+      // Фильтруем по выбранному диапазону дашборда
+      let capMonths;
+      if(range==='all'){
+        capMonths=allMonths;
+      } else if(range==='year'){
+        const y=currentPeriod.split('-')[0];
+        capMonths=allMonths.filter(m=>m.startsWith(y));
+      } else if(range==='quarter'){
+        const[y,mo]=currentPeriod.split('-').map(Number);
+        const qs=mo-((mo-1)%3);
+        // текущий квартал + 3 предыдущих = 12 месяцев, но минимум квартал
+        const qStart=`${y}-${String(qs).padStart(2,'0')}`;
+        const qEnd=`${y}-${String(Math.min(qs+2,12)).padStart(2,'0')}`;
+        capMonths=allMonths.filter(m=>m>=qStart&&m<=qEnd);
+      } else {
+        // month: скользящие 12 месяцев до currentPeriod включительно
+        const idx=allMonths.indexOf(currentPeriod);
+        capMonths=idx>=0?allMonths.slice(Math.max(0,idx-11),idx+1):allMonths.slice(-12);
+      }
+      if(capMonths.length){
         const investNow=Object.values(DB.investPrices||{}).length
           ?Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0)
             .reduce((s,h)=>s+h.qty*(DB.investPrices[h.isin||h.ticker]||0),0):0;
-        const cashSeries=months.map(m=>Math.round(hist[m].end));
-        const withInvest=months.map((m,i)=>cashSeries[i]+(i===months.length-1?investNow:0));
+        const cashSeries=capMonths.map(m=>Math.round(hist[m].end));
+        const withInvest=capMonths.map((m,i)=>cashSeries[i]+(i===capMonths.length-1?investNow:0));
         const ds=[{label:'Капитал (счета)',data:cashSeries,borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,0.12)',fill:true,tension:0.3,pointRadius:2,borderWidth:2}];
         if(investNow)ds.push({label:'+ инвестиции (текущие)',data:withInvest,borderColor:'#16a34a',borderDash:[5,4],fill:false,tension:0.3,pointRadius:2,borderWidth:2});
-        charts.capital=new Chart(capCanvas,{type:'line',data:{labels:months.map(fmtMonth),datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:axisOpts,y:axisOpts},plugins:{legend:legOpts,tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+Math.round(ctx.parsed.y).toLocaleString('ru-RU')+' ₽'}}}}});
+        charts.capital=new Chart(capCanvas,{type:'line',data:{labels:capMonths.map(fmtMonth),datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:axisOpts,y:axisOpts},plugins:{legend:legOpts,tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+Math.round(ctx.parsed.y).toLocaleString('ru-RU')+' ₽'}}}}});
       }
     }
   }
