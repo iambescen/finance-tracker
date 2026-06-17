@@ -4665,7 +4665,8 @@
       "linkedAccount": null,
       "group": "Доход",
       "sub": "Дивиденды/купоны/курсовая разница",
-      "type": "income"
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "2tsrgyub",
