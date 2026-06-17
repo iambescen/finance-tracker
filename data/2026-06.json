@@ -2535,7 +2535,8 @@
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "u0y4xxky",
@@ -2620,7 +2621,8 @@
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "r0n2jr44",
