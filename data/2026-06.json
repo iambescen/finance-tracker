@@ -2348,7 +2348,8 @@
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "35uru4lf",
@@ -2376,7 +2377,8 @@
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "ww0xl7ax",
@@ -2432,7 +2434,8 @@
       "linkedAccount": "0993",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "kghqp1e7",
