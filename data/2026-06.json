@@ -2643,7 +2643,8 @@
       "linkedAccount": "40802810100000077444",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "tvgh5urd",
@@ -2700,7 +2701,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "viuyv6vx",
@@ -2815,7 +2817,8 @@
       "linkedAccount": "4129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "2edtn2bf",
@@ -2864,7 +2867,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "mbooqiby",
@@ -2941,7 +2945,8 @@
       "linkedAccount": "40802810100000077444",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "8kbw3uv9",
