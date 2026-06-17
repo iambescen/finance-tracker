@@ -164,12 +164,12 @@
       "counterparty": "1242080005127466",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод"
     },
     {
       "id": "n22u731x",
@@ -188,12 +188,13 @@
       "counterparty": "1241110001117932",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "o245uizg",
@@ -217,7 +218,8 @@
       "linkedAccount": "1242080005127466",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "42041eed",
@@ -240,12 +242,13 @@
       "counterparty": "Пакет X5",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
-      "sub": "Банковские комиссии",
-      "type": "expense"
+      "sub": "Подписки на сервисы",
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "vd35gby1",
@@ -273,7 +276,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "xuo1is78",
@@ -329,7 +333,8 @@
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "4iq80ub4",
@@ -435,7 +440,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "fx5eo2hy",
