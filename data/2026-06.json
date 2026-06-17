@@ -3476,12 +3476,12 @@
       "counterparty": "Сбербанк",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "group": "Прочее",
-      "sub": "Прочие расходы",
-      "type": "expense"
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "type": "transfer"
     },
     {
       "id": "er9wbnuf",
