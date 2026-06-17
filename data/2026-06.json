@@ -2236,7 +2236,8 @@
       "linkedAccount": "1242080005127466",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "gvb104ll",
@@ -2292,7 +2293,8 @@
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "vcmr9kv6",
