@@ -92,12 +92,12 @@
       "counterparty": "Погашение Погашение ипотеки",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод"
     },
     {
       "id": "hqzss52m",
@@ -121,7 +121,8 @@
       "linkedAccount": null,
       "type": "expense",
       "group": "Жильё",
-      "sub": "Аренда/Ипотека (платёж)"
+      "sub": "Аренда/Ипотека (платёж)",
+      "confirmed": true
     },
     {
       "id": "6d00p2jt",
@@ -145,7 +146,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Погашение тела ипотеки"
+      "sub": "Погашение тела ипотеки",
+      "confirmed": true
     },
     {
       "id": "0pnzzkux",
