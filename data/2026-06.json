@@ -848,12 +848,13 @@
       "counterparty": "ОСФР ПО ОРЛОВСКОЙ ОБЛАСТИ (ОСФР ПО ОРЛОВСКОЙ ОБЛАСТИ)",
       "counterpartyINN": "5753002380",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Прочие доходы"
+      "sub": "Пособия/вычеты",
+      "confirmed": true
     },
     {
       "id": "wv0whtir",
