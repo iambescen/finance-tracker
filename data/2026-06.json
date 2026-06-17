@@ -4689,7 +4689,8 @@
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Дивиденды/купоны/курсовая разница",
+      "confirmed": true
     },
     {
       "id": "e95bqkf0",
