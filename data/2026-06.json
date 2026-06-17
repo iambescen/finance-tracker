@@ -3107,7 +3107,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "tbbmatjm",
@@ -3131,7 +3132,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "8eru945k",
@@ -3155,7 +3157,8 @@
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Дивиденды/купоны/курсовая разница",
+      "confirmed": true
     },
     {
       "id": "4kbpogq7",
