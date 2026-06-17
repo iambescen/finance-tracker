@@ -1272,12 +1272,13 @@
       "counterparty": "Бочаров Дмитрий Юрьевич",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "tw01u03s",
