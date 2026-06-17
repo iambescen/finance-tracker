@@ -2446,7 +2446,11 @@ function detectPDFBank(lines) {
   if(text.includes('цифра банк') || text.includes('6506000327')) return 'cifra';
   if(text.includes('выдача кредита по договору') || (text.includes('погашение кредита по договору') && text.includes('погашение процентов по договору'))) return 'vtb_mortgage';
   if(text.includes('банк втб') || text.includes('втб (пао)') || (text.includes('втб') && text.includes('филиал'))) return 'vtb';
-  if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff')) return 'tinkoff_pdf';
+  if(text.includes('тинькофф') || text.includes('т-банк') || text.includes('tinkoff') ||
+     (text.includes('tbank') && !text.includes('отчет о сделках') && !text.includes('брокер:'))) return 'tinkoff_pdf';
+  // ТБанк Брокер: «отчет о сделках и операциях» + «ао «тбанк» или tbank.ru
+  if((text.includes('тбанк') || text.includes('tbank') || text.includes('7710140679')) &&
+     (text.includes('отчет о сделках') || text.includes('сделках и операциях') || text.includes('брокер:'))) return 'tinkoff_broker';
   return 'unknown';
 }
 
