@@ -4310,7 +4310,8 @@
       "linkedAccount": "40817810690179282810",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "5y7cbed9",
