@@ -3351,7 +3351,8 @@
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Налоги с инвестиций"
+      "sub": "Налоги с инвестиций",
+      "confirmed": true
     },
     {
       "id": "cdrrib19",
