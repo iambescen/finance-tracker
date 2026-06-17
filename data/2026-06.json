@@ -3083,7 +3083,8 @@
       "linkedAccount": null,
       "type": "expense",
       "group": "Жильё",
-      "sub": "Аренда/Ипотека (платёж)"
+      "sub": "Аренда/Ипотека (платёж)",
+      "confirmed": true
     },
     {
       "id": "qrgues23",
