@@ -1331,7 +1331,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "v9h52z5m",
@@ -1382,12 +1383,13 @@
       "counterparty": "AVITO",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Прочие доходы",
-      "type": "income"
+      "sub": "Возвраты",
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "c32876ht",
