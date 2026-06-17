@@ -1105,7 +1105,8 @@
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "r04owt4s",
@@ -1129,7 +1130,8 @@
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Налоги с инвестиций"
+      "sub": "Налоги с инвестиций",
+      "confirmed": true
     },
     {
       "id": "kc9xf308",
@@ -1153,7 +1155,8 @@
       "linkedAccount": "40817810690179282810",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "o9eubeq0",
