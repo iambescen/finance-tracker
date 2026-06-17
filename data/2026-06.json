@@ -4041,7 +4041,8 @@
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "pfb3p3x1",
