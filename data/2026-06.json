@@ -2084,12 +2084,13 @@
       "counterparty": "1242080005060273",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "1c99geab",
