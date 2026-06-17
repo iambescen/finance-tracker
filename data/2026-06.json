@@ -1227,7 +1227,8 @@
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Выручка от услуг/курсов/товаров"
+      "sub": "Выручка от услуг/курсов/товаров",
+      "confirmed": true
     },
     {
       "id": "5okcsoi2",
