@@ -3565,7 +3565,8 @@
       "linkedAccount": null,
       "group": "Питание",
       "sub": "Продукты/супермаркеты",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "ywsfl88z",
