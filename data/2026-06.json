@@ -3481,7 +3481,8 @@
       "linkedAccount": "00001",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "er9wbnuf",
