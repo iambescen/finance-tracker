@@ -23,7 +23,7 @@
       "type": "transfer",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "confirmed": false
+      "confirmed": true
     },
     {
       "id": "i9yaa3c9",
