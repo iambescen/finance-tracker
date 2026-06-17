@@ -1279,7 +1279,8 @@
       "linkedAccount": "40802810100000077444",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "5169vdf1",
@@ -1388,7 +1389,8 @@
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "x27o367n",
@@ -1474,7 +1476,8 @@
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "on79f2ub",
@@ -1523,7 +1526,8 @@
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "em89seyg",
@@ -1753,7 +1757,8 @@
       "linkedAccount": "vtb_broker_1XC7I",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "ok7x41if",
@@ -1810,7 +1815,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "ey6knjmn",
@@ -2310,7 +2316,8 @@
       "linkedAccount": "40817810947008058607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "s0x0zapj",
@@ -2367,7 +2374,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "0ytviu9r",
@@ -2453,7 +2461,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "55i8uidt",
