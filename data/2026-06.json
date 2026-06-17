@@ -3059,7 +3059,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Погашение тела кредита"
+      "sub": "Погашение тела кредита",
+      "confirmed": true
     },
     {
       "id": "4w6vz5z2",
