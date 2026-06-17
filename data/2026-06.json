@@ -3621,7 +3621,8 @@
       "linkedAccount": null,
       "group": "Питание",
       "sub": "Продукты/супермаркеты",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "95t2vi3c",
