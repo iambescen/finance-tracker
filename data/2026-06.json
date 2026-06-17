@@ -876,12 +876,13 @@
       "counterparty": "Мария Л.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "type": "expense",
+      "group": "Прочее",
+      "sub": "Прочие расходы",
+      "confirmed": true
     },
     {
       "id": "dzpskrfj",
