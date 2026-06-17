@@ -2834,7 +2834,8 @@
       "linkedAccount": "40802810500004846488",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "bbclcp76",
@@ -2859,7 +2860,8 @@
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Выручка от услуг/курсов/товаров"
+      "sub": "Выручка от услуг/курсов/товаров",
+      "confirmed": true
     },
     {
       "id": "t8lzu1s5",
