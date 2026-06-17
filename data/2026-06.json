@@ -3650,7 +3650,8 @@
       "linkedAccount": null,
       "group": "Здоровье",
       "sub": "Визиты врача/платные услуги",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "jj6wcj3t",
@@ -3678,7 +3679,8 @@
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "1oep4str",
@@ -3734,7 +3736,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "8e5em8wu",
@@ -3762,7 +3765,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "f4njymlj",
