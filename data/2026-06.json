@@ -4713,7 +4713,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "05fk25em",
