@@ -1081,7 +1081,8 @@
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "j583qmon",
