@@ -2212,7 +2212,8 @@
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "qmagnbxs",
