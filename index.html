@@ -151,6 +151,8 @@ tr:hover td{background:var(--bg3)}
 .act-btn:hover{color:var(--text)}
 .confirm-btn{color:var(--muted2)}
 .confirm-btn.confirmed{color:var(--income);font-weight:700}
+@keyframes confirmFlash{0%{background:color-mix(in srgb,var(--income) 20%,transparent)}100%{background:transparent}}
+.tx-confirmed-flash{animation:confirmFlash 0.6s ease-out}
 .needs-attn td{background:color-mix(in srgb,var(--expense) 4%,transparent)}
 .tx-selected td{background:color-mix(in srgb,var(--accent) 7%,transparent)!important}
 .group-hdr{background:var(--bg3);cursor:pointer;user-select:none}
@@ -270,6 +272,7 @@ tr:hover td{background:var(--bg3)}
 <div class="topbar">
   <div class="logo">Семейный<em> портфель</em></div>
   <div class="topbar-right">
+    <button id="onlyConfirmedBtn" class="theme-btn" onclick="toggleOnlyConfirmed()" title="Только подтверждённые операции в отчётах">○</button>
     <button id="loadFromGhBtn" class="theme-btn" onclick="loadFromGithubManual()" title="Загрузить данные из GitHub">📥</button>
     <button id="saveAllBtn" class="theme-btn" onclick="saveAllNow()" title="Сохранить всё в GitHub">💾</button>
     <button class="theme-btn" onclick="openGhModal()" title="Настройки GitHub">⚙️</button>
@@ -539,14 +542,14 @@ let DB={
   rules:[],
   customGroups:{}
 };
-let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,reportRange='month',reportYear=null,reportQuarter=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set();
+let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,reportRange='month',reportYear=null,reportQuarter=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set(),onlyConfirmed=false;
 
 function uid(){return Math.random().toString(36).slice(2,10);}
 function parseAmt(s){if(!s) return 0;return parseFloat(String(s).replace(/\s/g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
 function toISO(raw){const s=String(raw||'').split(' ')[0];const p=s.split('.');if(p.length===3&&p[2].length===4)return p[2]+'-'+p[1]+'-'+p[0];return s;}
 function fmtMoney(n,sign=false){const a=Math.abs(n),s=a.toLocaleString('ru-RU',{maximumFractionDigits:0});if(sign&&n>0)return '+'+s+' ₽';if(n<0)return '−'+s+' ₽';return s+' ₽';}
 function fmtMonth(ym){if(!ym)return '';const[y,m]=ym.split('-');return['','Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][+m]+' '+y;}
-function getTxns(p){return DB.periods[p]?.transactions||[];}
+function getTxns(p){const txs=DB.periods[p]?.transactions||[];return onlyConfirmed?txs.filter(t=>t.confirmed===true):txs;}
 function accLabel(accNum){
   if(!accNum)return '—';
   const k=String(accNum).replace(/\*/g,'').trim();
@@ -3491,6 +3494,11 @@ function ingest(newTxns){
       if(tx.manualCategory||PROTECTED.includes(tx.source))continue;
       const c=applyCategForTx(tx);
       tx.group=c.g;tx.sub=c.s;tx.type=c.t;
+      // Автоподтверждение: если совпало с user-defined правилом — сразу confirmed
+      if(!tx.confirmed){
+        const hasRule=DB.rules.some(r=>(r.type==='inn'&&tx.counterpartyINN&&tx.counterpartyINN===r.value)||(r.type==='keyword'&&r.value&&(tx.desc||'').toLowerCase().includes(r.value.toLowerCase())));
+        if(hasRule)tx.confirmed=true;
+      }
       // Resolve linkedAccount from counterpartyAcc when we can confirm it's our account
       if(tx.type==='transfer'&&!tx.linkedAccount&&tx.counterpartyAcc){
         const ctgKey=String(tx.counterpartyAcc).replace(/[*\s]/g,'');
@@ -4063,6 +4071,7 @@ function pageTxns(){
     +'<select id="txAccount" onchange="filterTxns()" style="'+sel+'"><option value="">Все счета</option>'+accOpts+'</select>'
     +'<input type="text" id="txCounterparty" placeholder="Контрагент..." value="'+txFilterCounterparty+'" oninput="txFilterCounterparty=this.value;filterTxns()" style="width:130px">'
     +'<button class="unconf-btn'+(txShowUnconfirmed?' active':'')+'" onclick="txShowUnconfirmed=!txShowUnconfirmed;this.classList.toggle(\'active\');filterTxns()" title="Только неподтверждённые">⚠ Не разобрано'+(unconfTotal?' ('+unconfTotal+')':' ✓')+' </button>'
+    +'<button class="btn sm" onclick="findDuplicates()" title="Найти дубликаты" style="font-size:12px;padding:4px 10px">🔍 Дубликаты</button>'
     +'<select id="txGroupSel" onchange="txGroupBy=this.value;txExpandedGroups.clear();filterTxns()" style="'+sel+'"><option value="none">Список</option><option value="counterparty"'+(txGroupBy==='counterparty'?' selected':'')+'>По контрагенту</option><option value="desc"'+(txGroupBy==='desc'?' selected':'')+'>По описанию</option></select>'
     +'<span class="tbl-count" id="txCount"></span>'
     +'</div>'
@@ -4281,7 +4290,24 @@ function confirmTx(txId){
   const found=findTxAndPeriod(txId);if(!found)return;
   found.tx.confirmed=!found.tx.confirmed;
   savePeriod(found.period,'Confirm tx');
-  filterTxns();
+  // Визуальный фидбек без полного ре-рендера
+  const row=document.querySelector('tr[data-txid="'+txId+'"]');
+  if(row&&!onlyConfirmed){
+    const isConf=found.tx.confirmed;
+    // Обновить класс строки
+    row.classList.toggle('needs-attn',!isConf);
+    row.classList.toggle('tx-confirmed-flash',true);
+    setTimeout(()=>row.classList.remove('tx-confirmed-flash'),600);
+    // Обновить кнопку подтверждения
+    const btn=row.querySelector('.confirm-btn');
+    if(btn){
+      btn.textContent=isConf?'✓':'○';
+      btn.classList.toggle('confirmed',isConf);
+      btn.title=isConf?'Подтверждено':'Подтвердить';
+    }
+  } else {
+    filterTxns();
+  }
 }
 
 function toggleBulkSelect(txId){
@@ -4546,6 +4572,31 @@ function deleteTx(txId, period){
   const row=document.querySelector('tr[data-txid="'+txId+'"]');
   if(row){row.remove();}else{filterTxns();}
   refreshUI();
+}
+
+function findDuplicates(){
+  const allPArr=Object.keys(DB.periods).sort().reverse();
+  const allTxns=allPArr.flatMap(p=>getTxns(p).map(t=>({...t,_period:p})));
+  // Группируем по ключу: дата + сумма + описание (первые 20 символов)
+  const groups={};
+  for(const t of allTxns){
+    const key=t.date+'|'+Math.round(Math.abs(t.amtRub))+'|'+(t.desc||'').slice(0,20).toLowerCase();
+    if(!groups[key])groups[key]=[];
+    groups[key].push(t);
+  }
+  const dupGroups=Object.values(groups).filter(g=>g.length>1);
+  if(!dupGroups.length){toast('Дубликатов не найдено ✓','ok');return;}
+  // Выделить все дубликаты кроме первого в каждой группе
+  txBulkSelected.clear();
+  let count=0;
+  for(const g of dupGroups){
+    for(let i=1;i<g.length;i++){txBulkSelected.add(g[i].id);count++;}
+  }
+  filterTxns();
+  // Показать сообщение
+  toast('Найдено '+dupGroups.length+' групп дубликатов, выделено '+count+' лишних. Проверь и нажми 🗑 Удалить','ok');
+  // Переключиться на страницу операций
+  if(currentPage!=='transactions'){navigateTo('transactions');renderPage();}
 }
 
 function bulkDeleteSelected(){
@@ -5578,6 +5629,19 @@ async function saveToGithub(){
     toast('Сохранено в GitHub ✓','ok');
   }catch(e){toast('Ошибка: '+e.message,'err');}
   if(btnEl){btnEl.textContent='↑ GitHub';btnEl.disabled=false;}
+}
+
+function toggleOnlyConfirmed(){
+  onlyConfirmed=!onlyConfirmed;
+  const btn=document.getElementById('onlyConfirmedBtn');
+  if(btn){
+    btn.textContent=onlyConfirmed?'✓':'○';
+    btn.title=onlyConfirmed?'Режим: только подтверждённые (нажмите чтобы показать все)':'Режим: все операции (нажмите чтобы показать только подтверждённые)';
+    btn.style.color=onlyConfirmed?'var(--income)':'';
+    btn.style.borderColor=onlyConfirmed?'var(--income)':'';
+  }
+  renderPage();
+  toast(onlyConfirmed?'Отчёты: только подтверждённые операции ✓':'Отчёты: все операции','ok');
 }
 
 async function loadFromGithubManual(){
