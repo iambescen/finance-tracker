@@ -7012,8 +7012,26 @@ function learnFromAIResults(results){
 }
 
 function importFromAI(){
-  const json=prompt('Вставь JSON ответ от Claude:');
-  if(!json)return;
+  document.getElementById('aiImportModal').style.display='flex';
+  const ta=document.getElementById('aiImportText');
+  ta.value='';
+  document.getElementById('aiImportCount').textContent='';
+  ta.oninput=()=>{
+    try{
+      const clean=ta.value.replace(/```json|```/g,'').trim();
+      const arr=JSON.parse(clean);
+      document.getElementById('aiImportCount').textContent='Распознано объектов: '+arr.length;
+    }catch(e){
+      document.getElementById('aiImportCount').textContent=ta.value.length>10?'⚠ Невалидный JSON':'';
+    }
+  };
+  setTimeout(()=>ta.focus(),100);
+}
+
+function _applyAIJson(andConfirm){
+  const json=document.getElementById('aiImportText').value;
+  document.getElementById('aiImportModal').style.display='none';
+  if(!json.trim())return;
   try{
     const clean=json.replace(/```json|```/g,'').trim();
     const results=JSON.parse(clean);
@@ -7028,33 +7046,27 @@ function importFromAI(){
       found.tx.group=r.group||found.tx.group;
       found.tx.sub=r.sub||found.tx.sub;
       found.tx.manualCategory=true;
+      if(andConfirm)found.tx.confirmed=true;
       periods.add(found.period);
       applied++;
     }
     for(const p of periods)savePeriod(p,'AI import');
     saveLocal();
-    toast('Применено '+applied+' изменений'+(skipped?' · не найдено: '+skipped:''),'ok');
+    toast('Применено '+applied+(andConfirm?' и подтверждено':'')+' операций'+(skipped?' · не найдено: '+skipped:''),'ok');
     filterTxns();refreshUI();
-
-    // Предложить подтвердить
-    if(applied>0&&confirm('Подтвердить все изменённые операции?')){
-      for(const r of results){
-        if(!r.id)continue;
-        const found=findTxAndPeriod(r.id);
-        if(found)found.tx.confirmed=true;
-      }
-      for(const p of periods)savePeriod(p,'AI confirm');
-      saveLocal();
-      toast('Операции подтверждены ✓','ok');
-      filterTxns();
-
-      // Обучение — создаём правила из подтверждённых результатов
+    if(andConfirm){
       const learned=learnFromAIResults(results);
-      if(learned===0)toast('Новых правил не добавлено (все уже есть)','ok');
+      if(learned>0)toast('Создано '+learned+' новых правил 🧠','ok');
     }
   }catch(e){
     toast('Ошибка парсинга JSON: '+e.message,'err');
+    console.error(e);
   }
+}
+function importFromAISubmit(){_applyAIJson(false);}
+function importFromAISubmitAndConfirm(){_applyAIJson(true);}
+function importFromAICancel(){
+  document.getElementById('aiImportModal').style.display='none';
 }
 </script>
 
@@ -7290,6 +7302,22 @@ function deleteLendPayment(lIdx,pIdx){
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn primary" onclick="saveLendPayment()">Сохранить</button>
       <button class="btn" onclick="document.getElementById('lendPayModal').style.display='none'">Отмена</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Модал импорта от AI -->
+<div id="aiImportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border-radius:var(--r);width:600px;padding:24px;max-height:90vh;display:flex;flex-direction:column">
+    <h3 style="margin:0 0 12px;font-size:18px">📋 Импорт от AI</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Вставь JSON-ответ от Claude целиком. Принимается массив объектов с полями id, type, group, sub.</p>
+    <textarea id="aiImportText" style="flex:1;min-height:300px;font-size:12px;font-family:monospace;padding:10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);resize:vertical" placeholder='[{"id":"abc123","type":"expense","group":"Питание","sub":"Рестораны/кафе","confidence":"high","comment":""}]'></textarea>
+    <div id="aiImportCount" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn primary" onclick="importFromAISubmit()">✓ Применить</button>
+      <button class="btn primary" style="background:var(--income);border-color:var(--income)" onclick="importFromAISubmitAndConfirm()">✓ Применить и подтвердить</button>
+      <button class="btn" onclick="importFromAICancel()">Отмена</button>
     </div>
   </div>
 </div>
