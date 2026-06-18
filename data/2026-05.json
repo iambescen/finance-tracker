@@ -18,12 +18,13 @@
       "counterparty": "Б",
       "counterpartyINN": "",
       "counterpartyAcc": "8607",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "rdywtgmc",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "tzd39x3x",
@@ -43,12 +44,13 @@
       "counterparty": "SBERBANK ONL@IN VKLAD-KARTA. Операция по счету ****8607",
       "counterpartyINN": "",
       "counterpartyAcc": "8607",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "w2m1te0o",
       "linkedAccount": "40817810947008058607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "yoipwq6k",
@@ -68,12 +70,13 @@
       "counterparty": "Ш",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Прочие доходы"
+      "sub": "Возвраты",
+      "confirmed": true
     },
     {
       "id": "w2m1te0o",
@@ -92,12 +95,13 @@
       "counterparty": "БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ Наименование услуги: Пере",
       "counterpartyINN": "",
       "counterpartyAcc": "40817810947008058607",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "tzd39x3x",
       "linkedAccount": "40817810947008058607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "lmg0xjyx",
@@ -120,12 +124,13 @@
       "counterparty": "Пополнение через Платёжный конструктор",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "0ytviu9r",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "b1rm1zm1",
@@ -148,12 +153,13 @@
       "counterparty": "Пополнение Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "ge6f74cr",
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "rdywtgmc",
@@ -176,12 +182,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "fgdcu3i6",
       "linkedAccount": "40817810947008058607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "ztxsf7fe",
@@ -356,12 +363,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "0mafmtaz",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "ge6f74cr",
@@ -380,12 +388,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "b1rm1zm1",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "1kvy1ejw",
@@ -408,12 +417,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "0mafmtaz",
@@ -436,12 +446,13 @@
       "counterparty": "Пополнение Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "fy03bar4",
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "e1ozng5w",
@@ -464,12 +475,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "pj4evn43",
@@ -648,12 +660,13 @@
       "counterparty": "Выплата купона по облигации АФК Система обб2П12",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница",
-      "type": "income"
+      "sub": "Купоны",
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "xs31zh25",
@@ -672,12 +685,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Купоны",
+      "confirmed": true
     },
     {
       "id": "qt2sjzqw",
@@ -778,12 +792,13 @@
       "counterparty": "Александр М.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "a87q8fqj",
       "linkedAccount": "0829",
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "type": "income",
+      "group": "Доход",
+      "sub": "Возвраты",
+      "confirmed": true
     },
     {
       "id": "be05rsg8",
@@ -806,12 +821,13 @@
       "counterparty": "cozypay.tech",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Подписки на сервисы",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "lrv1lkb2",
@@ -1016,12 +1032,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "5xoa6cy8",
@@ -1044,12 +1061,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "w6f2duaq",
@@ -1250,12 +1268,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Прочие доходы"
+      "sub": "Кэшбэк/проценты на остаток",
+      "confirmed": true
     },
     {
       "id": "uadirvq5",
@@ -1278,12 +1297,13 @@
       "counterparty": "Пополнение Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "ido4vnn2",
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "mmhwv0jw",
@@ -1536,12 +1556,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "uadirvq5",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "asmvitjj",
@@ -1560,12 +1581,13 @@
       "counterparty": "БЕЗЦЕННЫХ ВЛАДИСЛАВ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40817810400000461363",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "az1mhd7s",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "ilr94sya",
@@ -1588,12 +1610,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "jhyzxb41",
@@ -1616,12 +1639,13 @@
       "counterparty": "Выплата купона по облигации А101 обб1П02",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница",
-      "type": "income"
+      "sub": "Купоны",
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "yb2dil1x",
@@ -1644,12 +1668,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "2wbgj61n",
@@ -1672,12 +1697,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "usql189z",
@@ -1700,12 +1726,13 @@
       "counterparty": "Васильки",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Питание",
       "sub": "Рестораны/кафе",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "ac34sn2i",
@@ -1728,12 +1755,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "kwl5po9h",
@@ -1752,12 +1780,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Купоны",
+      "confirmed": true
     },
     {
       "id": "im67czxa",
@@ -1776,12 +1805,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "ow8lqm4j",
@@ -1904,12 +1934,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "vvfjexmj",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "7daaqb9q",
@@ -1932,12 +1963,13 @@
       "counterparty": "Алиса С.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "type": "income",
+      "group": "Доход",
+      "sub": "Возвраты",
+      "confirmed": true
     },
     {
       "id": "bftknw5k",
@@ -1960,12 +1992,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "5b1go06z",
@@ -1988,12 +2021,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "isaf38i3",
@@ -2016,12 +2050,13 @@
       "counterparty": "Яндекс Такси",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Транспорт",
       "sub": "Такси/Общественный транспорт",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "y3e5pk3n",
@@ -2092,12 +2127,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "j6jj45js",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Снятие наличных",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "j6jj45js",
@@ -2116,12 +2152,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "65np7egw",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "znbixvte",
@@ -2165,12 +2202,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "asmvitjj",
       "linkedAccount": "40802810100000077444",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "hwql2jzf",
@@ -2189,12 +2227,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "qtq0b97v",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "qtq0b97v",
@@ -2213,12 +2252,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "hwql2jzf",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "mbgrz0q8",
@@ -2237,12 +2277,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "9ffplyo6",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "rzgdfeur",
@@ -2265,12 +2306,13 @@
       "counterparty": "Снятие в банкомате Т-Банк",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "38qgbhuw",
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Снятие наличных"
+      "sub": "Снятие наличных",
+      "confirmed": true
     },
     {
       "id": "38qgbhuw",
@@ -2293,12 +2335,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "rzgdfeur",
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "23rgdpvz",
@@ -2350,12 +2393,13 @@
       "counterparty": "Пополнение. ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "znbixvte",
       "linkedAccount": "4129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "blm0fmbg",
@@ -2378,12 +2422,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "65mpfg6c",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "9ffplyo6",
@@ -2406,12 +2451,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "mbgrz0q8",
       "linkedAccount": "0149",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "95naoyi1",
@@ -2434,12 +2480,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "poa9rtu8",
@@ -2462,12 +2509,13 @@
       "counterparty": "Зачисление кэшбэка",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
       "sub": "Кэшбэк/проценты на остаток",
-      "type": "income"
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "3s2kax6d",
@@ -2490,12 +2538,13 @@
       "counterparty": "Яндекс Такси",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Транспорт",
       "sub": "Такси/Общественный транспорт",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "saa7wl32",
@@ -2518,12 +2567,13 @@
       "counterparty": "Снятие в банкомате Т-Банк",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "hodvvjyi",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Снятие наличных"
+      "sub": "Снятие наличных",
+      "confirmed": true
     },
     {
       "id": "12kvpfv5",
@@ -2546,12 +2596,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "3t28kfyi",
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "a87q8fqj",
@@ -2574,12 +2625,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "sgv9avh1",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "hodvvjyi",
@@ -2602,12 +2654,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "saa7wl32",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "3t28kfyi",
@@ -2630,12 +2683,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "12kvpfv5",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "pq3ebvr4",
@@ -2658,12 +2712,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "y1hfgtqh",
@@ -2686,12 +2741,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "uo2xc85j",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "uo2xc85j",
@@ -2714,12 +2770,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "y1hfgtqh",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "w50ynlcb",
@@ -2742,12 +2799,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "bus5a51b",
       "linkedAccount": "tinkoff_broker_2007721129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "vvfjexmj",
@@ -2770,12 +2828,13 @@
       "counterparty": "Пополнение Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "pfwopxsm",
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "y4kf8p35",
@@ -2798,12 +2857,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "23rgdpvz",
       "linkedAccount": "4129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "d2g2ms4g",
@@ -2826,12 +2886,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "rae4olqm",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "rae4olqm",
@@ -2854,12 +2915,13 @@
       "counterparty": "Пополнение. ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "d2g2ms4g",
       "linkedAccount": "4129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "tu54f18b",
@@ -2882,12 +2944,13 @@
       "counterparty": "Сравни.ру",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
-      "sub": "Банковские комиссии",
-      "type": "expense"
+      "sub": "Подписки на сервисы",
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "oygrfs13",
@@ -2910,12 +2973,13 @@
       "counterparty": "BeGet",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Интернет/хостинг",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "q3ygdtu7",
@@ -2938,12 +3002,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "65mpfg6c",
@@ -2966,12 +3031,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "blm0fmbg",
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "4hs3m91p",
@@ -2994,12 +3060,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "v98rb40b",
@@ -3200,12 +3267,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810100000077444",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "ie3mbmrg",
       "linkedAccount": "40802810100000077444",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "whrpsw5o",
@@ -3224,12 +3292,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810100000077444",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "5h5sld15",
       "linkedAccount": "40802810100000077444",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "qa5dmnz3",
@@ -3248,12 +3317,13 @@
       "counterparty": "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ \"АЙТИКОМ\"",
       "counterpartyINN": "7714407563",
       "counterpartyAcc": "40702810226020004054",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
       "sub": "Выручка от услуг/курсов/товаров",
-      "type": "income"
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "ie3mbmrg",
@@ -3272,12 +3342,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810500004846488",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "3hhlsbmu",
       "linkedAccount": "40802810500004846488",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "mv0t2gll",
@@ -3296,12 +3367,13 @@
       "counterparty": "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ \"АЙТИКОМ КОНСАЛТИНГ\"",
       "counterpartyINN": "7714445390",
       "counterpartyAcc": "40702810326020005791",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
       "sub": "Выручка от услуг/курсов/товаров",
-      "type": "income"
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "5h5sld15",
@@ -3320,12 +3392,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810500004846488",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "whrpsw5o",
       "linkedAccount": "40802810500004846488",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "te50o7lh",
@@ -3402,12 +3475,13 @@
       "counterparty": "Выплата купона по облигации ГТЛК обб2П12",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница",
-      "type": "income"
+      "sub": "Купоны",
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "919vtbk5",
@@ -3430,12 +3504,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "yjhcyuop",
@@ -3458,12 +3533,13 @@
       "counterparty": "Пополнение Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "59lmvs37",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "59lmvs37",
@@ -3486,12 +3562,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "yjhcyuop",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "bdrnzuqg",
@@ -3514,12 +3591,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "3hg50srh",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "6hl3fun8",
@@ -3542,12 +3620,13 @@
       "counterparty": "Emex",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Транспорт",
       "sub": "Обслуживание авто",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "kctlmm6f",
@@ -3570,12 +3649,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "kjqxvuqx",
@@ -3594,12 +3674,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Купоны",
+      "confirmed": true
     },
     {
       "id": "3nmkiwds",
@@ -3774,12 +3855,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "qmjl19dn",
       "linkedAccount": "40802810100000077444",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "rm4wwn95",
@@ -3798,12 +3880,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Купоны",
+      "confirmed": true
     },
     {
       "id": "70bqra6e",
@@ -3978,12 +4061,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "a1hfbm7a",
@@ -4006,12 +4090,13 @@
       "counterparty": "Т-Мобайл",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Мобильная связь",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "5j120dxt",
@@ -4160,12 +4245,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "yvfuhzpo",
@@ -4184,12 +4270,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "dj07ncj7",
@@ -4208,12 +4295,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "gx2kj8ji",
@@ -4232,12 +4320,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Налоги с инвестиций"
+      "sub": "Налоги с инвестиций",
+      "confirmed": true
     },
     {
       "id": "bpthoduc",
@@ -4334,12 +4423,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "snugf635",
@@ -4358,12 +4448,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "qmjl19dn",
@@ -4382,12 +4473,13 @@
       "counterparty": "БЕЗЦЕННЫХ ВЛАДИСЛАВ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40817810400000461363",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "qqogbiyi",
       "linkedAccount": "tinkoff_broker_2144988854",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "w6je64s2",
@@ -4406,12 +4498,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "te50o7lh",
       "linkedAccount": "4129",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "riy6xd6a",
@@ -4434,12 +4527,13 @@
       "counterparty": "Пополнение. ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "tcb1yytg",
       "linkedAccount": "4129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "3hg50srh",
@@ -4462,12 +4556,13 @@
       "counterparty": "Пополнение. ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "bdrnzuqg",
       "linkedAccount": "4129",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "tdyi2ouh",
@@ -4486,12 +4581,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "bus5a51b",
@@ -4510,12 +4606,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "w50ynlcb",
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "4fr8i5g2",
@@ -4534,12 +4631,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "cubxsir3",
@@ -4792,12 +4890,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "hee30wcc",
       "linkedAccount": "vtb_broker_1XC7I",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "qvmys08a",
@@ -4816,12 +4915,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "9adylmpg",
@@ -4840,12 +4940,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Комиссии брокера"
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "64hcclb9",
@@ -4864,12 +4965,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Инвестиции",
-      "sub": "Налоги с инвестиций"
+      "sub": "Налоги с инвестиций",
+      "confirmed": true
     },
     {
       "id": "hee30wcc",
@@ -4888,12 +4990,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "wtw8k9o7",
       "linkedAccount": "vtb_broker_1XC7I",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "d1jtleie",
@@ -4994,12 +5097,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "azxvnxjv",
@@ -5022,12 +5126,13 @@
       "counterparty": "Суточно.ру",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Развлечения/Отдых",
       "sub": "Путешествия/отпуск",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "jm8e7ldd",
@@ -5050,12 +5155,13 @@
       "counterparty": "Суточно.ру",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Развлечения/Отдых",
       "sub": "Путешествия/отпуск",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "jvh1yror",
@@ -5078,12 +5184,13 @@
       "counterparty": "Суточно.ру",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Развлечения/Отдых",
       "sub": "Путешествия/отпуск",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "bjc6nczv",
@@ -5106,12 +5213,13 @@
       "counterparty": "Суточно.ру",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Развлечения/Отдых",
       "sub": "Путешествия/отпуск",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "ubqxn9s0",
@@ -5134,12 +5242,13 @@
       "counterparty": "Суточно.ру",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Развлечения/Отдых",
       "sub": "Путешествия/отпуск",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "kdydyt4s",
@@ -5314,12 +5423,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810100000077444",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "pkw194ve",
       "linkedAccount": "40802810100000077444",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "pkw194ve",
@@ -5338,12 +5448,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810500004846488",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "siwpcd7o",
       "linkedAccount": "40802810500004846488",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "yw5psp18",
@@ -5362,12 +5473,13 @@
       "counterparty": "АО \"ИНФОЗАЩИТА\"",
       "counterpartyINN": "7719672244",
       "counterpartyAcc": "40702810124480000366",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
       "sub": "Выручка от услуг/курсов/товаров",
-      "type": "income"
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "mazho3kn",
@@ -5387,12 +5499,13 @@
       "counterparty": "Погашение Погашение ипотеки",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Погашение тела ипотеки",
+      "confirmed": true
     },
     {
       "id": "v0aunnes",
@@ -5411,12 +5524,13 @@
       "counterparty": "Банк ВТБ (ипотека)",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Жильё",
-      "sub": "Аренда/Ипотека (платёж)"
+      "sub": "Проценты по ипотеке",
+      "confirmed": true
     },
     {
       "id": "ffmlhz8c",
@@ -5435,12 +5549,13 @@
       "counterparty": "Банк ВТБ (ипотека)",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Погашение тела ипотеки"
+      "sub": "Погашение тела ипотеки",
+      "confirmed": true
     },
     {
       "id": "krkyri18",
@@ -5463,12 +5578,13 @@
       "counterparty": "Пакет X5",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Подписки на сервисы",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "9ybx8p8w",
@@ -5491,12 +5607,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "d2vzn7p5",
@@ -5515,12 +5632,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Купоны",
+      "confirmed": true
     },
     {
       "id": "smijvn9m",
@@ -5539,12 +5657,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Купоны",
+      "confirmed": true
     },
     {
       "id": "5m77ksbj",
@@ -5667,12 +5786,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "ct7ni7rc",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Снятие наличных",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "ct7ni7rc",
@@ -5691,12 +5811,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "2hq4ojlp",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "b4j4040h",
@@ -5719,12 +5840,13 @@
       "counterparty": "Снятие в банкомате Т-Банк",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "zgrrdpts",
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Снятие наличных"
+      "sub": "Снятие наличных",
+      "confirmed": true
     },
     {
       "id": "zgrrdpts",
@@ -5747,12 +5869,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "b4j4040h",
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "rs9orikd",
@@ -5771,12 +5894,13 @@
       "counterparty": "ОСФР ПО ОРЛОВСКОЙ ОБЛАСТИ (ОСФР ПО ОРЛОВСКОЙ ОБЛАСТИ)",
       "counterpartyINN": "5753002380",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Прочие доходы"
+      "sub": "Пособия/вычеты",
+      "confirmed": true
     },
     {
       "id": "dg2sjjd6",
@@ -5799,12 +5923,13 @@
       "counterparty": "ONLIPAY",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Подписки на сервисы",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "r34raosy",
@@ -5827,12 +5952,13 @@
       "counterparty": "Снятие в банкомате Т-Банк",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "h0c3sxsw",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Снятие наличных"
+      "sub": "Снятие наличных",
+      "confirmed": true
     },
     {
       "id": "6vi0eyny",
@@ -5855,12 +5981,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "45xwd4wc",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "45xwd4wc",
@@ -5883,12 +6010,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "6vi0eyny",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "h0c3sxsw",
@@ -5911,12 +6039,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "r34raosy",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "jfnk21wl",
@@ -5939,12 +6068,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "bpzapoqk",
@@ -6067,12 +6197,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "xhdbq0xb",
       "linkedAccount": "vtb_broker_1XC7I",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "xhdbq0xb",
@@ -6091,12 +6222,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "qlwt6zf8",
       "linkedAccount": "vtb_broker_1XC7I",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "1rf79d1q",
@@ -6115,12 +6247,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "ukkhiii2",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "ukkhiii2",
@@ -6139,12 +6272,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "1rf79d1q",
       "linkedAccount": "7513",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "4ekypqqd",
@@ -6167,12 +6301,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "v5oo95gk",
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "v5oo95gk",
@@ -6195,12 +6330,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "4ekypqqd",
       "linkedAccount": "7513",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "0tm0jyad",
@@ -6219,12 +6355,13 @@
       "counterparty": "Цифра банк",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "5tmjf24g",
@@ -6243,12 +6380,13 @@
       "counterparty": "Цифра банк",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "lt84a4o4",
@@ -6267,12 +6405,13 @@
       "counterparty": "Цифра банк",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "p60rexhf",
@@ -6291,12 +6430,13 @@
       "counterparty": "Цифра Брокер",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "lq9hdqko",
@@ -6315,12 +6455,13 @@
       "counterparty": "Цифра Брокер",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Инвестиции",
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "dl69enwv",
@@ -6339,12 +6480,13 @@
       "counterparty": "Цифра Брокер",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Инвестиции",
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "dy48vxs8",
@@ -6363,12 +6505,13 @@
       "counterparty": "Цифра Брокер",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Инвестиции",
+      "sub": "Комиссии брокера",
+      "confirmed": true
     },
     {
       "id": "u6rk59zq",
@@ -6387,12 +6530,13 @@
       "counterparty": "Цифра Брокер",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "mxpcwuy9",
@@ -6411,12 +6555,13 @@
       "counterparty": "Цифра Брокер",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "2y3r4z19",
@@ -6435,12 +6580,13 @@
       "counterparty": "Цифра банк",
       "counterpartyINN": "6506000327",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "b9q8tc6p",
@@ -6463,12 +6609,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "2zg3yajb",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "od57xvnt",
@@ -6491,12 +6638,13 @@
       "counterparty": "Пополнение Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "lf7gmgqq",
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "sacqnb17",
@@ -6519,12 +6667,13 @@
       "counterparty": "Выплата купона по облигации МТС обб2П018",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница",
-      "type": "income"
+      "sub": "Купоны",
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "adx8b5mf",
@@ -6547,12 +6696,13 @@
       "counterparty": "Пополнение Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "bnghg8nh",
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "2zg3yajb",
@@ -6575,12 +6725,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "b9q8tc6p",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "nginsc6w",
@@ -6603,12 +6754,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "a0nd8kgy",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "a0nd8kgy",
@@ -6631,12 +6783,13 @@
       "counterparty": "Татьяна Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "nginsc6w",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "bz71r5cn",
@@ -6655,12 +6808,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "income",
       "group": "Доход",
-      "sub": "Дивиденды/купоны/курсовая разница"
+      "sub": "Купоны",
+      "confirmed": true
     },
     {
       "id": "darzcdgu",
@@ -6758,12 +6912,13 @@
       "counterparty": "БЕЗЦЕННЫХ ТАТЬЯНА ВЛАДИМИРОВНА",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "xao4gdfo",
       "linkedAccount": "40817810690179282810",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "xao4gdfo",
@@ -6783,12 +6938,13 @@
       "counterparty": "Вывод денежных средств с брокерского счета 30601 по распоряжению от 2026-05-13",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "rxypp7eb",
       "linkedAccount": "40817810690179282810",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Вывод с брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "24slxn7w",
@@ -6807,12 +6963,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "i2v2uofu",
@@ -6831,12 +6988,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Вывод с брокерского счёта"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "syyxjox2",
@@ -6855,12 +7013,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "income",
-      "group": "Доход",
-      "sub": "Прочие доходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "1i1bmgyk",
@@ -6879,12 +7038,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "type": "transfer",
+      "group": "Перевод",
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "bnghg8nh",
@@ -6903,12 +7063,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "adx8b5mf",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "lf7gmgqq",
@@ -6927,12 +7088,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "od57xvnt",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "degk5ufg",
@@ -7055,12 +7217,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Подписки на сервисы",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "4pl0ka2z",
@@ -7083,12 +7246,13 @@
       "counterparty": "Подписка Pro",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Подписки на сервисы",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "tugn8bqx",
@@ -7111,12 +7275,13 @@
       "counterparty": "Подписка Pro",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Сервисы/Связь",
       "sub": "Подписки на сервисы",
-      "type": "expense"
+      "type": "expense",
+      "confirmed": true
     },
     {
       "id": "yvgj1kas",
@@ -7239,12 +7404,13 @@
       "counterparty": "1241110000658493",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
-      "group": "Прочее",
-      "sub": "Прочие расходы"
+      "group": "Сервисы/Связь",
+      "sub": "Подписки на сервисы",
+      "confirmed": true
     },
     {
       "id": "epliedrm",
@@ -8617,12 +8783,13 @@
       "counterparty": "Ежемесячное пособие по уходу за ребенком лицам, подлежащим обязательному социальному страхованию на случай временной нетрудоспособности и в связи с материнством",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
-      "type": "transfer",
-      "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "type": "income",
+      "group": "Доход",
+      "sub": "Пособия/вычеты",
+      "confirmed": true
     },
     {
       "id": "29h9ny6w",
@@ -8745,12 +8912,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "14p1i4w9",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "h9c0tkn0",
@@ -8769,12 +8937,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810100000077444",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "bzks5l1g",
       "linkedAccount": "40802810100000077444",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "bzks5l1g",
@@ -8793,12 +8962,13 @@
       "counterparty": "ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ БЕЗЦЕННЫХ ВЛАДИСЛАВ КОНСТАНТИНОВИЧ",
       "counterpartyINN": "570701153846",
       "counterpartyAcc": "40802810500004846488",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "h9c0tkn0",
       "linkedAccount": "40802810500004846488",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "4mkqngnr",
@@ -8817,12 +8987,13 @@
       "counterparty": "ПРОФЭС",
       "counterpartyINN": "7707456672",
       "counterpartyAcc": "40703810400810000248",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "group": "Доход",
       "sub": "Выручка от услуг/курсов/товаров",
-      "type": "income"
+      "type": "income",
+      "confirmed": true
     },
     {
       "id": "99pm88e2",
@@ -9415,12 +9586,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "8fjsgrn6",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Сделка на бирже"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "g4ltmepa",
@@ -9939,12 +10111,13 @@
       "counterparty": "",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "e06ltr8x",
       "linkedAccount": "40802810100000077444",
       "group": "Перевод",
       "sub": "Внутренний перевод",
-      "type": "transfer"
+      "type": "transfer",
+      "confirmed": true
     },
     {
       "id": "mpdlw2qu",
@@ -10048,12 +10221,13 @@
       "counterparty": "SBERBANK ONL@IN VKLAD-KARTA. Операция по счету ****8607",
       "counterpartyINN": "",
       "counterpartyAcc": "8607",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "lfxxffva",
       "linkedAccount": "40817810947008058607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "lue14of6",
@@ -10446,12 +10620,13 @@
       "counterparty": "Между своими счетами",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "y2uvmi1t",
       "linkedAccount": "8555",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "zyfmw039",
@@ -10474,12 +10649,13 @@
       "counterparty": "Владислав Б.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "lue14of6",
       "linkedAccount": "40817810947008058607",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "y8yfdygx",
@@ -10647,12 +10823,13 @@
       "counterparty": "Вывод со Счета под ключ",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "9syrewgh",
       "linkedAccount": "tinkoff_broker_2144988854",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "8qo4g1ne",
@@ -10758,12 +10935,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "czszxabp",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "moazpog4",
@@ -10807,12 +10985,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "9i512n5w",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "kr9t35qq",
@@ -10831,12 +11010,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "r52uybyf",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "dpjxv6q9",
@@ -10855,12 +11035,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "l4el9qqd",
       "linkedAccount": "tinkoff_broker_2006039107",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "t725a5eb",
@@ -10879,12 +11060,13 @@
       "counterparty": "АО ТБанк",
       "counterpartyINN": "7710140679",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "lqurmgo6",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Пополнение брокерского счёта",
+      "confirmed": true
     },
     {
       "id": "qkl83u8u",
@@ -11060,12 +11242,13 @@
       "counterparty": "Б",
       "counterpartyINN": "",
       "counterpartyAcc": "8369",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "a7yiyxky",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "ktvck6x7",
@@ -11084,12 +11267,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "6m7wkmm1",
       "linkedAccount": "0829",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "o9fo5kr7",
@@ -11108,12 +11292,13 @@
       "counterparty": "ВТБ",
       "counterpartyINN": "7702070139",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "p6m7cjs9",
       "linkedAccount": "40817810690179282810",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Пополнение брокерского счёта"
+      "sub": "Сделка на бирже",
+      "confirmed": true
     },
     {
       "id": "lct0yygw",
@@ -11165,12 +11350,13 @@
       "counterparty": "Елена М.",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": "jsfyohoz",
       "linkedAccount": "tinkoff_main",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Внутренний перевод"
+      "sub": "Внутренний перевод",
+      "confirmed": true
     },
     {
       "id": "znmaiz1l",
