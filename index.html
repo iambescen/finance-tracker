@@ -4072,7 +4072,8 @@ function pageTxns(){
     +'<input type="text" id="txCounterparty" placeholder="Контрагент..." value="'+txFilterCounterparty+'" oninput="txFilterCounterparty=this.value;filterTxns()" style="width:130px">'
     +'<button class="unconf-btn'+(txShowUnconfirmed?' active':'')+'" onclick="txShowUnconfirmed=!txShowUnconfirmed;this.classList.toggle(\'active\');filterTxns()" title="Только неподтверждённые">⚠ Не разобрано'+(unconfTotal?' ('+unconfTotal+')':' ✓')+' </button>'
     +'<button class="btn sm" onclick="findDuplicates()" title="Найти дубликаты" style="font-size:12px;padding:4px 10px">🔍 Дубликаты</button>'
-    +'<button class="btn sm primary" onclick="openAiCateg()" title="AI-категоризация неподтверждённых" style="font-size:12px;padding:4px 10px">🤖 Разобрать</button>'
+    +'<button class="btn sm" onclick="exportForAI()" title="Экспорт неподтверждённых для AI-разбора в Claude.ai" style="font-size:12px;padding:4px 10px">🤖 Экспорт для AI</button>'
+    +'<button class="btn sm" onclick="importFromAI()" title="Импорт результатов AI-разбора" style="font-size:12px;padding:4px 10px">📋 Импорт от AI</button>'
     +'<select id="txGroupSel" onchange="txGroupBy=this.value;txExpandedGroups.clear();filterTxns()" style="'+sel+'"><option value="none">Список</option><option value="counterparty"'+(txGroupBy==='counterparty'?' selected':'')+'>По контрагенту</option><option value="desc"'+(txGroupBy==='desc'?' selected':'')+'>По описанию</option></select>'
     +'<span class="tbl-count" id="txCount"></span>'
     +'</div>'
@@ -6846,6 +6847,120 @@ function applyAiResults(confirm=false){
 }
 
 function applyAiResultsConfirmed(){applyAiResults(true);}
+</script>
+
+
+<script>
+// ── AI Export / Import ───────────────────────────────────────────────────────
+
+function exportForAI(){
+  // Берём те же операции что и в таблице (с учётом фильтров), только неподтверждённые
+  saveTxFilters();
+  const search=txFilterSearch.toLowerCase();
+  const group=txFilterGroup;
+  const type=txFilterType;
+  const account=txFilterAccount;
+  const ctgF=txFilterCounterparty.toLowerCase();
+  const allPArr=Object.keys(DB.periods).sort().reverse();
+  const allTxns=(txAllPeriods
+    ?allPArr.flatMap(p=>getTxns(p).map(t=>({...t,_period:p})))
+    :getTxns(currentPeriod).map(t=>({...t,_period:currentPeriod}))
+  );
+  const unconf=allTxns.filter(t=>{
+    if(t.confirmed)return false;
+    if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search))return false;
+    if(group&&t.group!==group)return false;
+    if(type&&t.type!==type)return false;
+    if(account&&t.account!==account&&t.linkedAccount!==account)return false;
+    if(ctgF&&!(t.counterparty||'').toLowerCase().includes(ctgF)&&!(t.counterpartyINN||'').includes(ctgF)&&!t.desc.toLowerCase().includes(ctgF))return false;
+    return true;
+  });
+  if(!unconf.length){toast('Нет неподтверждённых операций в текущем фильтре','ok');return;}
+
+  // Сформировать контекст счетов и категорий
+  const accounts=Object.values(DB.accounts).map(a=>
+    a.number+'|'+a.name+(a.owner==='wife'?' (Таня)':' (Влад)')+(a.isCredit?' [кредитная]':'')+(a.isBroker?' [брокерский]':'')
+  ).join('; ');
+  const expGroups=getExpenseGroups();
+  const cats=getAllGroups().map(g=>{
+    if(g==='Доход') return 'Доход: '+((DB.customGroups||{})['__income__']||CAT_TREE.income.subs).join(', ');
+    if(g==='Перевод') return 'Перевод: Внутренний перевод, Снятие наличных, Пополнение брокерского счёта, Вывод с брокерского счёта, Погашение тела ипотеки, Погашение процентов';
+    return g+': '+(expGroups[g]||[]).join(', ');
+  }).join(' | ');
+
+  // CSV
+  const header='id,date,desc,counterparty,amount,account,current_group,current_sub,current_type';
+  const rows=unconf.map(t=>[
+    t.id,
+    t.date,
+    '"'+(t.desc||'').replace(/"/g,"''")+'"',
+    '"'+(t.counterparty||'').replace(/"/g,"''")+'"',
+    Math.round(t.amtRub),
+    t.account||'',
+    '"'+(t.group||'')+'"',
+    '"'+(t.sub||'')+'"',
+    t.type||'expense'
+  ].join(','));
+
+  const prompt='СЧЕТА: '+accounts+'\n\nКАТЕГОРИИ: '+cats+'\n\nОПЕРАЦИИ (CSV):\n'+header+'\n'+rows.join('\n')
+    +'\n\nЗадача: категоризируй каждую операцию. Для каждой верни JSON объект в массиве:\n'
+    +'[{"id":"...","type":"expense|income|transfer","group":"...","sub":"...","confidence":"high|medium|low","comment":"вопрос если есть"}]\n'
+    +'Правила:\n'
+    +'1. Переводы между своими счетами = type:transfer, group:Перевод\n'
+    +'2. Погашение ипотеки/кредита = type:transfer, group:Перевод, sub:Погашение тела ипотеки или Погашение процентов\n'
+    +'3. Если не уверен — confidence:low и опиши вопрос в comment\n'
+    +'4. Можешь предложить новую подкатегорию — добавь (новое) в конце sub\n'
+    +'5. Отвечай ТОЛЬКО JSON массивом, без markdown и пояснений';
+
+  // Скачать как .txt файл с промптом
+  const blob=new Blob([prompt],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='ai-categorizaton-'+new Date().toISOString().slice(0,10)+'.txt';
+  a.click(); URL.revokeObjectURL(url);
+  toast('Файл скачан ('+unconf.length+' операций). Вставь в Claude.ai и получи JSON ответ','ok');
+}
+
+function importFromAI(){
+  const json=prompt('Вставь JSON ответ от Claude:');
+  if(!json)return;
+  try{
+    const clean=json.replace(/```json|```/g,'').trim();
+    const results=JSON.parse(clean);
+    if(!Array.isArray(results)){toast('Ошибка: ожидается массив JSON','err');return;}
+    const periods=new Set();
+    let applied=0, skipped=0;
+    for(const r of results){
+      if(!r.id)continue;
+      const found=findTxAndPeriod(r.id);
+      if(!found){skipped++;continue;}
+      found.tx.type=r.type||found.tx.type;
+      found.tx.group=r.group||found.tx.group;
+      found.tx.sub=r.sub||found.tx.sub;
+      found.tx.manualCategory=true;
+      periods.add(found.period);
+      applied++;
+    }
+    for(const p of periods)savePeriod(p,'AI import');
+    saveLocal();
+    toast('Применено '+applied+' изменений'+(skipped?' · не найдено: '+skipped:''),'ok');
+    filterTxns();refreshUI();
+    // Предложить подтвердить
+    if(applied>0&&confirm('Подтвердить все изменённые операции?')){
+      for(const r of results){
+        if(!r.id)continue;
+        const found=findTxAndPeriod(r.id);
+        if(found)found.tx.confirmed=true;
+      }
+      for(const p of periods)savePeriod(p,'AI confirm');
+      saveLocal();
+      toast('Операции подтверждены ✓','ok');
+      filterTxns();
+    }
+  }catch(e){
+    toast('Ошибка парсинга JSON: '+e.message,'err');
+  }
+}
 </script>
 
 </body>
