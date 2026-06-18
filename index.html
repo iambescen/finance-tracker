@@ -6921,6 +6921,57 @@ function exportForAI(){
   toast('Файл скачан ('+unconf.length+' операций). Вставь в Claude.ai и получи JSON ответ','ok');
 }
 
+function learnFromAIResults(results){
+  // Автоматически создаём правила из подтверждённых AI результатов
+  // Пропускаем low confidence и операции без изменений
+  let rulesAdded=0;
+  const existingINN=new Set(DB.rules.filter(r=>r.type==='inn').map(r=>r.value));
+  const existingKW=new Set(DB.rules.filter(r=>r.type==='keyword').map(r=>r.value.toLowerCase()));
+
+  for(const r of results){
+    if(r.confidence==='low')continue; // не учимся на неуверенных
+    if(!r.id||!r.group||!r.type)continue;
+    const found=findTxAndPeriod(r.id);
+    if(!found)continue;
+    const tx=found.tx;
+
+    // Правило по ИНН — самое точное
+    if(tx.counterpartyINN&&tx.counterpartyINN.length>=10&&!existingINN.has(tx.counterpartyINN)){
+      DB.rules.push({
+        type:'inn', value:tx.counterpartyINN,
+        group:r.group, sub:r.sub, txType:r.type,
+        label:tx.counterparty||tx.desc.slice(0,30),
+        source:'ai', createdAt:new Date().toISOString().slice(0,10)
+      });
+      existingINN.add(tx.counterpartyINN);
+      rulesAdded++;
+      continue;
+    }
+
+    // Правило по ключевому слову из описания (минимум 5 символов, не слишком общее)
+    const descWords=(tx.desc||'').toLowerCase();
+    // Берём самое информативное слово/фразу — от 6 до 25 символов
+    const kw=(tx.counterparty||'').toLowerCase().trim()||
+      descWords.replace(/[0-9№*]+/g,'').trim().slice(0,25).trim();
+    if(kw.length>=5&&!existingKW.has(kw)&&
+       !['перевод','оплата','списание','зачисление','покупка'].includes(kw)){
+      DB.rules.push({
+        type:'keyword', value:kw,
+        group:r.group, sub:r.sub, txType:r.type,
+        source:'ai', createdAt:new Date().toISOString().slice(0,10)
+      });
+      existingKW.add(kw);
+      rulesAdded++;
+    }
+  }
+
+  if(rulesAdded>0){
+    saveRules();
+    toast('Создано '+rulesAdded+' новых правил — следующие похожие операции будут распознаны автоматически 🧠','ok');
+  }
+  return rulesAdded;
+}
+
 function importFromAI(){
   const json=prompt('Вставь JSON ответ от Claude:');
   if(!json)return;
@@ -6945,6 +6996,7 @@ function importFromAI(){
     saveLocal();
     toast('Применено '+applied+' изменений'+(skipped?' · не найдено: '+skipped:''),'ok');
     filterTxns();refreshUI();
+
     // Предложить подтвердить
     if(applied>0&&confirm('Подтвердить все изменённые операции?')){
       for(const r of results){
@@ -6956,6 +7008,10 @@ function importFromAI(){
       saveLocal();
       toast('Операции подтверждены ✓','ok');
       filterTxns();
+
+      // Обучение — создаём правила из подтверждённых результатов
+      const learned=learnFromAIResults(results);
+      if(learned===0)toast('Новых правил не добавлено (все уже есть)','ok');
     }
   }catch(e){
     toast('Ошибка парсинга JSON: '+e.message,'err');
