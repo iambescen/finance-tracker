@@ -5559,15 +5559,46 @@ async function saveToGithub(){
 
 async function loadFromGithubManual(){
   const btn=document.getElementById('loadFromGhBtn');
-  const{token}=ghCfg();
+  const{user,repo,token}=ghCfg();
   if(!token){toast('Введите токен GitHub (🔧)','err');openGhModal();return;}
   if(btn){btn.disabled=true;btn.textContent='⏳';}
   try{
-    await loadFromGithub();
-    // Переключить на самый свежий период и перерисовать
+    const apiBase='https://api.github.com/repos/'+user+'/'+repo+'/contents/';
+    const apiHdr={Authorization:'token '+token,Accept:'application/vnd.github.raw+json'};
+    const apiLoad=async(path)=>{const r=await fetch(apiBase+path,{headers:apiHdr});return r.ok?r.json():null;};
+    // Загрузить все справочники принудительно
+    const[assets,accounts,rules]=await Promise.all([
+      apiLoad('data/assets.json'),apiLoad('data/accounts.json'),apiLoad('data/rules.json')
+    ]);
+    if(assets)DB.assets=assets;
+    if(accounts)DB.accounts=accounts; // полная перезапись
+    if(rules){
+      if(rules.rules)DB.rules=rules.rules;else if(Array.isArray(rules))DB.rules=rules;
+      if(rules.customGroups)DB.customGroups=rules.customGroups;
+    }
+    // Загрузить все периоды принудительно (полная перезапись)
+    const lr=await fetch('https://api.github.com/repos/'+user+'/'+repo+'/contents/data',
+      {headers:{Authorization:'token '+token,Accept:'application/vnd.github.v3+json'}});
+    if(lr.ok){
+      const files=await lr.json();
+      const blobBase='https://api.github.com/repos/'+user+'/'+repo+'/git/blobs/';
+      const periodFiles=files.filter(f=>f.name.match(/^\d{4}-\d{2}\.json$/)&&f.sha);
+      DB.periods={};
+      await Promise.all(periodFiles.map(async f=>{
+        const dr=await fetch(blobBase+f.sha,{headers:{Authorization:'token '+token,Accept:'application/vnd.github.raw+json'}});
+        if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();
+      }));
+    }
+    // Инвестиции
+    try{
+      const ri=await fetch(apiBase+'data/investments.json',{headers:apiHdr});
+      if(ri.ok){const inv=await ri.json();if(inv.prices)DB.investPrices=inv.prices;if(inv.holdings)DB.investments=inv.holdings;}
+    }catch(e){}
+    ensureCashAccounts();
     const periods=Object.keys(DB.periods).sort().reverse();
-    if(periods.length){currentPeriod=periods[0];}
-    renderPage();
+    if(periods.length)currentPeriod=periods[0];
+    saveLocal();refreshUI();renderPage();
+    toast('Данные загружены из GitHub','ok');
     if(btn){btn.textContent='✓';setTimeout(()=>{btn.disabled=false;btn.textContent='📥';},2000);}
   }catch(e){
     toast('Ошибка загрузки: '+e.message,'err');
