@@ -4073,6 +4073,7 @@ function pageTxns(){
     +'<select id="bulkType" style="'+sel+'"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer">Перевод</option></select>'
     +'<button class="btn primary" style="padding:4px 12px;font-size:12px" onclick="applyBulkCategory()">Применить</button>'
     +'<button class="btn" style="padding:4px 12px;font-size:12px" onclick="bulkConfirmVisible()">✓ Подтвердить всё</button>'
+    +'<button class="btn" style="padding:4px 12px;font-size:12px;background:var(--expense);color:#fff;border-color:var(--expense)" onclick="bulkDeleteSelected()">🗑 Удалить</button>'
     +'<button class="btn" style="padding:4px 8px;font-size:12px;opacity:0.6" onclick="clearBulkSelect()">✕ Снять</button>'
     +'</div>'
     +'<table><thead><tr>'
@@ -4202,7 +4203,7 @@ function filterTxns(){
     }
 
     const rowCls=(isConf?'':'needs-attn')+(isSel?' tx-selected':'');
-    rows.push(_sep+'<tr class="'+rowCls+'">'+chk
+    rows.push(_sep+'<tr class="'+rowCls+'" data-txid="'+t.id+'">'+chk
       +'<td style="color:var(--muted);white-space:nowrap;font-size:12px">'+t.dateDisplay+'</td>'
       +'<td style="max-width:220px"><div style="font-size:12px;line-height:1.4;word-break:break-word;white-space:normal">'+t.desc+'</div>'+(t.counterparty&&!isT?ctgSpan:'')+'</td>'
       +'<td style="min-width:120px">'+accCell+'</td>'
@@ -4540,6 +4541,28 @@ function deleteTx(txId, period){
   if(!DB.periods[p])return;
   DB.periods[p].transactions=(DB.periods[p].transactions||[]).filter(t=>t.id!==txId);
   savePeriod(p,'Delete tx').then(ok=>toast(ok?'Операция удалена ✓':'Удалено локально','ok'));
+  txBulkSelected.delete(txId);
+  // Удалить строку из DOM без перерисовки — сохраняем скролл и фильтры
+  const row=document.querySelector('tr[data-txid="'+txId+'"]');
+  if(row){row.remove();}else{filterTxns();}
+  refreshUI();
+}
+
+function bulkDeleteSelected(){
+  if(!txBulkSelected.size)return;
+  if(!confirm('Удалить '+txBulkSelected.size+' операций?'))return;
+  const periods=new Set();
+  for(const txId of txBulkSelected){
+    const found=findTxAndPeriod(txId);if(!found)continue;
+    DB.periods[found.period].transactions=(DB.periods[found.period].transactions||[]).filter(t=>t.id!==txId);
+    periods.add(found.period);
+    const row=document.querySelector('tr[data-txid="'+txId+'"]');
+    if(row)row.remove();
+  }
+  const n=txBulkSelected.size;
+  txBulkSelected.clear();
+  for(const p of periods)savePeriod(p,'Bulk delete');
+  toast('Удалено '+n+' операций ✓','ok');
   filterTxns();refreshUI();
 }
 
