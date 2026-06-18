@@ -41,12 +41,12 @@
       "counterparty": "Банк ВТБ (ипотека)",
       "counterpartyINN": "",
       "counterpartyAcc": "",
-      "manualCategory": false,
+      "manualCategory": true,
       "linkedTo": null,
       "linkedAccount": null,
       "type": "expense",
       "group": "Жильё",
-      "sub": "Аренда/Ипотека (платёж)"
+      "sub": "Проценты по ипотеке"
     },
     {
       "id": "gcohedmp",
