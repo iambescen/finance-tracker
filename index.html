@@ -6289,14 +6289,10 @@ function updateBottomNav(page){
 }
 
 
-// Auto-configure GitHub token
+// Auto-configure GitHub defaults (no token stored in code)
 (function(){
-  if(!localStorage.getItem('gh_token')){
-    const t=['github_pat_11CFUWDNA0g','EabA3gwQUE8_5jW17z3TOXnAOxxFiXAN4s2euYUgIiJEYLjYrjud3atGL2FYSK2x8LGBdVf'].join('');
-    localStorage.setItem('gh_token',t);
-    localStorage.setItem('gh_user','iambescen');
-    localStorage.setItem('gh_repo','financetracker');
-  }
+  if(!localStorage.getItem('gh_user')) localStorage.setItem('gh_user','iambescen');
+  if(!localStorage.getItem('gh_repo')) localStorage.setItem('gh_repo','financetracker');
 })();
 
 
