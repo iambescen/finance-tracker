@@ -6672,11 +6672,25 @@ function updateBottomNav(page){
 let _aiResults=[];
 
 function openAiCateg(){
+  // Берём только те операции что видны в таблице с учётом текущих фильтров
+  saveTxFilters();
+  const search=txFilterSearch.toLowerCase();
+  const group=txFilterGroup;
+  const type=txFilterType;
+  const account=txFilterAccount;
+  const ctgF=txFilterCounterparty.toLowerCase();
   const allPArr=Object.keys(DB.periods).sort().reverse();
-  const unconf=allPArr.flatMap(p=>
-    (DB.periods[p]?.transactions||[]).filter(t=>!t.confirmed).map(t=>({...t,_period:p}))
-  );
-  if(!unconf.length){toast('Нет неподтверждённых операций','ok');return;}
+  const allTxns=(txAllPeriods?allPArr.flatMap(p=>getTxns(p).map(t=>({...t,_period:p}))):getTxns(currentPeriod).map(t=>({...t,_period:currentPeriod})));
+  const unconf=allTxns.filter(t=>{
+    if(t.confirmed)return false;
+    if(search&&!t.desc.toLowerCase().includes(search)&&!t.group.toLowerCase().includes(search)&&!(t.counterparty||'').toLowerCase().includes(search))return false;
+    if(group&&t.group!==group)return false;
+    if(type&&t.type!==type)return false;
+    if(account&&t.account!==account&&t.linkedAccount!==account)return false;
+    if(ctgF&&!(t.counterparty||'').toLowerCase().includes(ctgF)&&!(t.counterpartyINN||'').includes(ctgF)&&!t.desc.toLowerCase().includes(ctgF))return false;
+    return true;
+  });
+  if(!unconf.length){toast('Нет неподтверждённых операций в текущем фильтре','ok');return;}
   _aiResults=[];
   const modal=document.getElementById('aiCategModal');
   modal.style.display='block';
