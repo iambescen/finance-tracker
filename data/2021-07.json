@@ -47,7 +47,8 @@
       "linkedAccount": null,
       "type": "expense",
       "group": "Жильё",
-      "sub": "Проценты по ипотеке"
+      "sub": "Проценты по ипотеке",
+      "confirmed": true
     },
     {
       "id": "gcohedmp",
