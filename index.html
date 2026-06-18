@@ -361,7 +361,7 @@ tr:hover td{background:var(--bg3)}
   <div class="modal">
     <h3>Настройки GitHub</h3>
     <div class="field"><label>Username</label><input type="text" id="ghUser" placeholder="iambescen"></div>
-    <div class="field"><label>Репозиторий</label><input type="text" id="ghRepo" placeholder="finance-tracker"></div>
+    <div class="field"><label>Репозиторий</label><input type="text" id="ghRepo" placeholder="financetracker"></div>
     <div class="field"><label>Personal Access Token</label><input type="password" id="ghToken" placeholder="ghp_..."></div>
     <div class="modal-actions">
       <button class="btn" onclick="document.getElementById('ghModal').classList.remove('open')">Отмена</button>
@@ -5431,7 +5431,7 @@ function saveAssets(){
 }
 
 // ── GitHub ──
-function ghCfg(){return{user:localStorage.getItem('gh_user')||'iambescen',repo:localStorage.getItem('gh_repo')||'finance-tracker',token:localStorage.getItem('gh_token')||''};}
+function ghCfg(){return{user:localStorage.getItem('gh_user')||'iambescen',repo:localStorage.getItem('gh_repo')||'financetracker',token:localStorage.getItem('gh_token')||''};}
 function openGhModal(){const c=ghCfg();document.getElementById('ghUser').value=c.user;document.getElementById('ghRepo').value=c.repo;document.getElementById('ghToken').value=c.token;document.getElementById('ghModal').classList.add('open');}
 function saveGhModal(){localStorage.setItem('gh_user',document.getElementById('ghUser').value.trim());localStorage.setItem('gh_repo',document.getElementById('ghRepo').value.trim());localStorage.setItem('gh_token',document.getElementById('ghToken').value.trim());document.getElementById('ghModal').classList.remove('open');toast('Настройки сохранены','ok');}
 
@@ -6295,7 +6295,7 @@ function updateBottomNav(page){
     const t=['github_pat_11CFUWDNA0g','EabA3gwQUE8_5jW17z3TOXnAOxxFiXAN4s2euYUgIiJEYLjYrjud3atGL2FYSK2x8LGBdVf'].join('');
     localStorage.setItem('gh_token',t);
     localStorage.setItem('gh_user','iambescen');
-    localStorage.setItem('gh_repo','finance-tracker');
+    localStorage.setItem('gh_repo','financetracker');
   }
 })();
 
