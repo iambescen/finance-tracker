@@ -5564,7 +5564,7 @@ async function loadFromGithubManual(){
   if(btn){btn.disabled=true;btn.textContent='⏳';}
   try{
     await loadFromGithub();
-    renderAll();
+    renderPage();
     toast('Данные загружены из GitHub','ok');
     if(btn){btn.textContent='✓';setTimeout(()=>{btn.disabled=false;btn.textContent='⬇';},2000);}
   }catch(e){
