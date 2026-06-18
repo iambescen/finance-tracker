@@ -70,7 +70,8 @@
       "linkedAccount": "mortgage_vtb",
       "type": "transfer",
       "group": "Перевод",
-      "sub": "Погашение тела ипотеки"
+      "sub": "Погашение тела ипотеки",
+      "confirmed": true
     }
   ]
 }
