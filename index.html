@@ -270,7 +270,8 @@ tr:hover td{background:var(--bg3)}
 <div class="topbar">
   <div class="logo">Семейный<em> портфель</em></div>
   <div class="topbar-right">
-    <button id="saveAllBtn" class="btn sm" onclick="saveAllNow()" title="Сохранить всё в GitHub" style="gap:5px;display:inline-flex;align-items:center">💾 Сохранить</button>
+    <button id="loadFromGhBtn" class="btn sm ghost" onclick="loadFromGithubManual()" title="Загрузить данные из GitHub">⬇</button>
+    <button id="saveAllBtn" class="btn sm" onclick="saveAllNow()" title="Сохранить всё в GitHub">💾</button>
     <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub">⚙</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
@@ -3509,7 +3510,7 @@ async function saveAllNow(){
   const btn=document.getElementById('saveAllBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Сохраняем...';}
   const{token}=ghCfg();
-  if(!token){toast('Настройте GitHub токен (⚙)','err');if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}return;}
+  if(!token){toast('Настройте GitHub токен (⚙)','err');if(btn){btn.disabled=false;btn.textContent='💾';}return;}
   const errors=[];
   try{
     const date=_ghDate();
@@ -3569,14 +3570,14 @@ async function saveAllNow(){
     if(errors.length){
       console.error('saveAllNow errors:',errors);
       toast('Ошибки: '+errors.join(' | '),'err');
-      if(btn){btn.textContent='⚠ Ошибка';setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Сохранить';},3000);}
+      if(btn){btn.textContent='⚠';setTimeout(()=>{btn.disabled=false;btn.textContent='💾';},3000);}
     }else{
       toast('✓ Всё сохранено ('+periods.length+' периодов)','ok');
-      if(btn){btn.textContent='✓ Готово';setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Сохранить';},2000);}
+      if(btn){btn.textContent='✓';setTimeout(()=>{btn.disabled=false;btn.textContent='💾';},2000);}
     }
   }catch(e){
     toast('Критическая ошибка: '+e.message,'err');
-    if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}
+    if(btn){btn.disabled=false;btn.textContent='💾';}
   }
 }
 
@@ -5556,6 +5557,21 @@ async function saveToGithub(){
   if(btnEl){btnEl.textContent='↑ GitHub';btnEl.disabled=false;}
 }
 
+async function loadFromGithubManual(){
+  const btn=document.getElementById('loadFromGhBtn');
+  const{token}=ghCfg();
+  if(!token){toast('Введите токен GitHub (⚙)','err');openGhModal();return;}
+  if(btn){btn.disabled=true;btn.textContent='⏳';}
+  try{
+    await loadFromGithub();
+    renderAll();
+    toast('Данные загружены из GitHub','ok');
+    if(btn){btn.textContent='✓';setTimeout(()=>{btn.disabled=false;btn.textContent='⬇';},2000);}
+  }catch(e){
+    toast('Ошибка загрузки: '+e.message,'err');
+    if(btn){btn.textContent='⚠';setTimeout(()=>{btn.disabled=false;btn.textContent='⬇';},3000);}
+  }
+}
 async function loadFromGithub(){
   const{user,repo,token}=ghCfg();if(!token)return;
   // Always use authenticated API — raw.githubusercontent.com is CDN-cached (stale up to minutes)
