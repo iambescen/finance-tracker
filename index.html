@@ -4809,10 +4809,38 @@ function pageAccounts(){
       if(tx.account&&(!lastTxDate[tx.account]||tx.date>lastTxDate[tx.account]))
         lastTxDate[tx.account]=tx.date;
 
+  // Группировка по банку
+  const bankOrder={'Наличные':0,'Сбербанк':1,'ТБанк':2,'ВТБ':3,'Бакай Банк':4,'Цифра Банк':5};
+  const bankGroups={};
+  accs.forEach(acc=>{
+    // Определить короткое имя банка из acc.bank
+    let bk=acc.bank||'Прочее';
+    if(bk.includes('Сбер')||bk.includes('СБ')||bk.includes('Sber'))bk='Сбербанк';
+    else if(bk.includes('ТБ')||bk.includes('ТБанк')||bk.includes('Tinkoff')||bk.includes('Т-Банк')||bk.includes('АО ТБанк')||bk.includes('Тинькофф'))bk='ТБанк';
+    else if(bk.includes('ВТБ')||bk.includes('VTB'))bk='ВТБ';
+    else if(bk.includes('Бакай'))bk='Бакай Банк';
+    else if(bk.includes('Цифра')||bk.includes('Cifra'))bk='Цифра Банк';
+    else if(bk.includes('Наличные')||bk.includes('cash')||bk.includes('Cash'))bk='Наличные';
+    else if(bk.includes('ББ')||bk.includes('Бест'))bk='ТБанк';
+    if(!bankGroups[bk])bankGroups[bk]=[];
+    bankGroups[bk].push(acc);
+  });
+  // Сортировать банки: сначала известные по порядку, потом остальные по алфавиту
+  const sortedBanks=Object.keys(bankGroups).sort((a,b)=>{
+    const oa=bankOrder[a]??99, ob=bankOrder[b]??99;
+    if(oa!==ob)return oa-ob;
+    return a.localeCompare(b,'ru');
+  });
+  // Внутри каждого банка — по имени счёта
+  sortedBanks.forEach(bk=>bankGroups[bk].sort((a,b)=>(a.name||'').localeCompare(b.name||'','ru')));
+
   return '<div class="page-header"><div class="page-title">Счета</div><div class="page-actions"><button class="btn sm primary" onclick="openAddAccountModal()">+ Добавить счёт</button></div>'
     +'<div style="font-size:13px;color:var(--muted2)">Введите текущий остаток — система посчитает историю балансов</div></div>'
-    +'<div class="card"><div class="card-title">Список счетов</div>'
-    +(accs.length?accs.map(acc=>{
+    +(accs.length?sortedBanks.map(bk=>{
+      const bankAccs=bankGroups[bk];
+      return '<div class="card" style="margin-bottom:16px">'
+        +'<div class="card-title" style="display:flex;align-items:center;gap:8px">'+bk+'<span style="font-size:12px;color:var(--muted);font-weight:400">'+bankAccs.length+' '+((bankAccs.length===1)?'счёт':'счетов')+'</span></div>'
+        +bankAccs.map(acc=>{
       const cur=acc.currency||'RUB';
       const sym=curSymbol[cur]||cur;
       return '<div style="display:grid;grid-template-columns:130px 1fr 100px 80px 100px 90px 160px auto;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">'
@@ -4834,9 +4862,10 @@ function pageAccounts(){
           +'<div>'+'<input type="number" placeholder="Остаток" value="'+(acc.balanceAnchor?.value??acc.currentBalance??'')+'" data-acc="'+acc.number+'" data-field="currentBalance" onchange="updateAccBalance(this)" style="'+inputStyle+';width:110px">'+'</div>'+(computeCurrentBalance(acc.number)!=null&&acc.balanceAnchor?.date?'<div style="font-size:11px;color:var(--accent);margin-top:2px">~'+computeCurrentBalance(acc.number).toLocaleString('ru-RU',{maximumFractionDigits:0})+' '+sym+' сейчас</div>':'')  
           +'<span style="font-size:13px;color:var(--muted2);font-weight:500">'+sym+'</span>'
         +'</div>'
-        +'<div style="display:flex;gap:6px;justify-content:flex-end">'          +'<button onclick="openEditAccount(\''+acc.number+'\')" title="Редактировать счёт" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px 6px">✎</button>'          +(acc.manual?'<button onclick="deleteAccount(\''+acc.number+'\')" title="Удалить счёт" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:13px;padding:4px 8px;border-radius:var(--r);border:1px solid var(--border)">✕</button>':'')        +'</div>'        +'</div>';    }).join('')
+        +'<div style="display:flex;gap:6px;justify-content:flex-end">'          +'<button onclick="openEditAccount(\''+acc.number+'\')" title="Редактировать счёт" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px 6px">✎</button>'          +(acc.manual?'<button onclick="deleteAccount(\''+acc.number+'\')" title="Удалить счёт" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:13px;padding:4px 8px;border-radius:var(--r);border:1px solid var(--border)">✕</button>':'')        +'</div>'        +'</div>';    }).join('')+'</div>';
+    }).join('')
       :'<div style="color:var(--muted);padding:20px 0;text-align:center">Счета появятся после загрузки выписок</div>')
-    +'</div>';
+    ;
 }
 
 function updateAccBalance(el){
