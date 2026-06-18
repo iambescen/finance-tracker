@@ -7011,6 +7011,16 @@ function learnFromAIResults(results){
   return rulesAdded;
 }
 
+function aiImportFromFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('aiImportText').value=e.target.result;
+    document.getElementById('aiImportText').oninput();
+  };
+  reader.readAsText(file);
+  input.value='';
+}
 function importFromAI(){
   document.getElementById('aiImportModal').style.display='flex';
   const ta=document.getElementById('aiImportText');
@@ -7312,7 +7322,12 @@ function deleteLendPayment(lIdx,pIdx){
   <div style="background:var(--bg2);border-radius:var(--r);width:600px;padding:24px;max-height:90vh;display:flex;flex-direction:column">
     <h3 style="margin:0 0 12px;font-size:18px">📋 Импорт от AI</h3>
     <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Вставь JSON-ответ от Claude целиком. Принимается массив объектов с полями id, type, group, sub.</p>
-    <textarea id="aiImportText" style="flex:1;min-height:300px;font-size:12px;font-family:monospace;padding:10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);resize:vertical" placeholder='[{"id":"abc123","type":"expense","group":"Питание","sub":"Рестораны/кафе","confidence":"high","comment":""}]'></textarea>
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <button class="btn sm" onclick="document.getElementById('aiImportFile').click()">📁 Загрузить JSON файл</button>
+      <input type="file" id="aiImportFile" accept=".json,.txt" style="display:none" onchange="aiImportFromFile(this)">
+      <span style="font-size:12px;color:var(--muted)">или вставь текст ниже</span>
+    </div>
+    <textarea id="aiImportText" style="flex:1;min-height:250px;font-size:12px;font-family:monospace;padding:10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);resize:vertical" placeholder='[{"id":"abc123","type":"expense","group":"Питание","sub":"Рестораны/кафе","confidence":"high","comment":""}]'></textarea>
     <div id="aiImportCount" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn primary" onclick="importFromAISubmit()">✓ Применить</button>
