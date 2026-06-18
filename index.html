@@ -272,7 +272,7 @@ tr:hover td{background:var(--bg3)}
   <div class="topbar-right">
     <button id="loadFromGhBtn" class="btn sm ghost" onclick="loadFromGithubManual()" title="Загрузить данные из GitHub">⬇</button>
     <button id="saveAllBtn" class="btn sm" onclick="saveAllNow()" title="Сохранить всё в GitHub">💾</button>
-    <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub">⚙</button>
+    <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub"> 🔧</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
 </div>
@@ -5542,7 +5542,7 @@ function saveInvestments(msg){
 
 
 async function saveToGithub(){
-  const{token}=ghCfg();if(!token){toast('Введите токен GitHub (кнопка ⚙)','err');openGhModal();return;}
+  const{token}=ghCfg();if(!token){toast('Введите токен GitHub (🔧)','err');openGhModal();return;}
   try{
     const date=new Date().toLocaleDateString('ru-RU');
     for(const[period,data]of Object.entries(DB.periods)){
@@ -5560,7 +5560,7 @@ async function saveToGithub(){
 async function loadFromGithubManual(){
   const btn=document.getElementById('loadFromGhBtn');
   const{token}=ghCfg();
-  if(!token){toast('Введите токен GitHub (⚙)','err');openGhModal();return;}
+  if(!token){toast('Введите токен GitHub (🔧)','err');openGhModal();return;}
   if(btn){btn.disabled=true;btn.textContent='⏳';}
   try{
     await loadFromGithub();
