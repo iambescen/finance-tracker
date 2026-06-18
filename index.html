@@ -270,9 +270,9 @@ tr:hover td{background:var(--bg3)}
 <div class="topbar">
   <div class="logo">Семейный<em> портфель</em></div>
   <div class="topbar-right">
-    <button id="loadFromGhBtn" class="btn sm ghost" onclick="loadFromGithubManual()" title="Загрузить данные из GitHub">⬇</button>
-    <button id="saveAllBtn" class="btn sm" onclick="saveAllNow()" title="Сохранить всё в GitHub">💾</button>
-    <button class="btn sm ghost" onclick="openGhModal()" title="Настройки GitHub"> 🔧</button>
+    <button id="loadFromGhBtn" class="theme-btn" onclick="loadFromGithubManual()" title="Загрузить данные из GitHub">📥</button>
+    <button id="saveAllBtn" class="theme-btn" onclick="saveAllNow()" title="Сохранить всё в GitHub">💾</button>
+    <button class="theme-btn" onclick="openGhModal()" title="Настройки GitHub">⚙️</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
 </div>
@@ -5566,10 +5566,10 @@ async function loadFromGithubManual(){
     await loadFromGithub();
     renderPage();
     toast('Данные загружены из GitHub','ok');
-    if(btn){btn.textContent='✓';setTimeout(()=>{btn.disabled=false;btn.textContent='⬇';},2000);}
+    if(btn){btn.textContent='✓';setTimeout(()=>{btn.disabled=false;btn.textContent='📥';},2000);}
   }catch(e){
     toast('Ошибка загрузки: '+e.message,'err');
-    if(btn){btn.textContent='⚠';setTimeout(()=>{btn.disabled=false;btn.textContent='⬇';},3000);}
+    if(btn){btn.textContent='⚠';setTimeout(()=>{btn.disabled=false;btn.textContent='📥';},3000);}
   }
 }
 async function loadFromGithub(){
