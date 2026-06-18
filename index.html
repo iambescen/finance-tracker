@@ -2154,7 +2154,10 @@ async function processBakayRows(worksheet) {
     const row = [];
     for (let c = range.s.c; c <= range.e.c; c++) {
       const cell = worksheet[XLSX.utils.encode_cell({r, c})];
-      row.push(cell ? cell.v : null);
+      let v = cell ? cell.v : null;
+      // Strip leading/trailing single quotes (Bakay exports strings as '...')
+      if(typeof v === 'string' && v.startsWith("'") && v.endsWith("'") && v.length > 1) v = v.slice(1, -1);
+      row.push(v);
     }
     rows.push(row);
   }
@@ -2171,7 +2174,7 @@ async function processBakayRows(worksheet) {
         currency = 'KGS';
       }
     }
-    if (row[0] === '№ dok.' || row[0] === '№ doc.' || (row[1] === 'Дата' && row[3] === 'Дебет')) {
+    if (row[0] === '№ dok.' || row[0] === '№ doc.' || row[0] === '№ dok.' || String(row[0]||'').startsWith('№ д') || (row[1] === 'Дата' && row[3] === 'Дебет')) {
       headerRow = i;
       break;
     }
@@ -3425,7 +3428,8 @@ function processFile(file){
         const wb=XLSX.read(e.target.result,{type:'array'});
         const ws=wb.Sheets[wb.SheetNames[0]];
         const cell=ws['A4']||ws['B6']||{};
-        const isBakay=String(ws['A4']?.v||'').trim()==='Сводная выписка по счету'||String(ws['A4']?.v||'').includes('Сводная выписка');
+        const _bakayV=String(ws['A4']?.v||'').trim().replace(/^'|'$/g,'');
+        const isBakay=_bakayV==='Сводная выписка по счету'||_bakayV.includes('Сводная выписка');
         const isTraderNet=(ws['A1']&&String(ws['A1'].v||'').includes('Операция №'))&&(wb.SheetNames[0]==='sheet');
         const isVTBBroker=wb.SheetNames.some(n=>n==='brokerage_report');
         const isTinkoffBroker=wb.SheetNames.some(n=>n==='broker_rep');
