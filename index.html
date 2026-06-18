@@ -5564,8 +5564,10 @@ async function loadFromGithubManual(){
   if(btn){btn.disabled=true;btn.textContent='⏳';}
   try{
     await loadFromGithub();
+    // Переключить на самый свежий период и перерисовать
+    const periods=Object.keys(DB.periods).sort().reverse();
+    if(periods.length){currentPeriod=periods[0];}
     renderPage();
-    toast('Данные загружены из GitHub','ok');
     if(btn){btn.textContent='✓';setTimeout(()=>{btn.disabled=false;btn.textContent='📥';},2000);}
   }catch(e){
     toast('Ошибка загрузки: '+e.message,'err');
