@@ -293,6 +293,7 @@ tr:hover td{background:var(--bg3)}
     <div class="nav-item" id="nav-accounts" onclick="showPage('accounts')">▣ Счета</div>
     <div class="nav-item" id="nav-assets" onclick="showPage('assets')">◈ Активы и долги</div>
     <div class="nav-item" id="nav-loans" onclick="showPage('loans')">⊘ Кредиты</div>
+    <div class="nav-item" id="nav-lends" onclick="showPage('lends')">⟳ Долги</div>
     <div class="nav-item" id="nav-investments" onclick="showPage('investments')">◆ Инвестиции</div>
     <div class="nav-item" id="nav-rules" onclick="showPage('rules')">⊞ Правила</div>
     <div class="nav-divider"></div>
@@ -408,6 +409,7 @@ tr:hover td{background:var(--bg3)}
       <div class="nav-item" onclick="showPage('accounts');closeNavDrawer()">▣ Счета</div>
       <div class="nav-item" onclick="showPage('assets');closeNavDrawer()">◈ Активы и долги</div>
       <div class="nav-item" onclick="showPage('loans');closeNavDrawer()">⊘ Кредиты</div>
+      <div class="nav-item" onclick="showPage('lends');closeNavDrawer()">⟳ Долги</div>
     <div class="nav-item" onclick="showPage('investments');closeNavDrawer()">◆ Инвестиции</div>
       <div class="nav-item" onclick="showPage('rules');closeNavDrawer()">⊞ Правила</div>
     </div>
@@ -3735,6 +3737,7 @@ function renderPage(){
   else if(currentPage==='investments')c.innerHTML=pageInvestments();
   else if(currentPage==='rules')c.innerHTML=pageRules();
   else if(currentPage==='loans')c.innerHTML=pageLoans();
+  else if(currentPage==='lends'){c.innerHTML=pageLends();bindLendsEvents();}
   if(currentPage==='dashboard')renderDashCharts();
 }
 
@@ -7054,6 +7057,242 @@ function importFromAI(){
   }
 }
 </script>
+
+
+<script>
+// ── Lends (выданные займы) ───────────────────────────────────────────────────
+
+function saveLends(){
+  saveLocal();
+  const{user,repo,token}=ghCfg();
+  if(!token)return;
+  ghPut('data/lends.json',JSON.stringify(DB.lends,null,2),'Save lends').catch(()=>{});
+}
+
+function pageLends(){
+  const lends=DB.lends||[];
+  const total=lends.filter(l=>l.status!=='closed').reduce((s,l)=>s+lendBalance(l),0);
+  const totalProfit=lends.filter(l=>l.status!=='closed').reduce((s,l)=>s+lendAccruedInterest(l),0);
+
+  let html='<div class="page-header"><div class="page-title">⟳ Долги выданные</div>'
+    +'<div class="page-actions"><button class="btn sm primary" onclick="openAddLend()">+ Добавить займ</button></div></div>';
+
+  // Итоговая карточка
+  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">'
+    +'<div class="card" style="text-align:center"><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Выдано всего</div>'
+    +'<div style="font-size:24px;font-weight:700;color:var(--accent);margin-top:8px">'+lends.filter(l=>l.status!=='closed').reduce((s,l)=>s+l.amount,0).toLocaleString('ru-RU')+'  ₽</div></div>'
+    +'<div class="card" style="text-align:center"><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Остаток к возврату</div>'
+    +'<div style="font-size:24px;font-weight:700;color:var(--expense);margin-top:8px">'+Math.round(total).toLocaleString('ru-RU')+' ₽</div></div>'
+    +'<div class="card" style="text-align:center"><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Начислено процентов</div>'
+    +'<div style="font-size:24px;font-weight:700;color:var(--income);margin-top:8px">+'+Math.round(totalProfit).toLocaleString('ru-RU')+' ₽</div></div>'
+    +'</div>';
+
+  if(!lends.length){
+    return html+'<div class="card"><div style="color:var(--muted);padding:40px 0;text-align:center">Займов нет — нажмите «+ Добавить займ»</div></div>';
+  }
+
+  lends.forEach((l,idx)=>{
+    const balance=lendBalance(l);
+    const accrued=lendAccruedInterest(l);
+    const paid=lendTotalPaid(l);
+    const statusColor=l.status==='active'?'var(--income)':l.status==='overdue'?'var(--expense)':'var(--muted)';
+    const statusLabel=l.status==='active'?'Активен':l.status==='overdue'?'Просрочен':'Закрыт';
+    const progress=l.amount>0?Math.min(100,Math.round(paid/( l.amount+(l.rate?l.amount*l.rate/100*daysBetween(l.dateFrom,l.dateTo||new Date().toISOString().slice(0,10))/365:0))*100)):0;
+
+    html+='<div class="card" style="margin-bottom:16px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">'
+        +'<div>'
+          +'<div style="font-size:18px;font-weight:600">'+l.debtor+'</div>'
+          +'<div style="font-size:13px;color:var(--muted);margin-top:2px">Выдан '+fmtDateRu(l.dateFrom)+(l.dateTo?' · срок до '+fmtDateRu(l.dateTo):'')+(l.rate?' · '+l.rate+'% год.':'')+'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px;align-items:center">'
+          +'<span style="font-size:12px;font-weight:600;color:'+statusColor+';border:1px solid '+statusColor+';border-radius:12px;padding:2px 10px">'+statusLabel+'</span>'
+          +'<button onclick="openEditLend('+idx+')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px">✎</button>'
+          +'<button onclick="deleteLend('+idx+')" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:13px;padding:4px">✕</button>'
+        +'</div>'
+      +'</div>'
+
+      // Цифры
+      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">'
+        +'<div><div style="font-size:11px;color:var(--muted)">Сумма займа</div><div style="font-size:16px;font-weight:600">'+l.amount.toLocaleString('ru-RU')+' ₽</div></div>'
+        +'<div><div style="font-size:11px;color:var(--muted)">Уплачено</div><div style="font-size:16px;font-weight:600;color:var(--income)">'+Math.round(paid).toLocaleString('ru-RU')+' ₽</div></div>'
+        +'<div><div style="font-size:11px;color:var(--muted)">Остаток</div><div style="font-size:16px;font-weight:600;color:var(--expense)">'+Math.round(balance).toLocaleString('ru-RU')+' ₽</div></div>'
+        +'<div><div style="font-size:11px;color:var(--muted)">Проценты начислены</div><div style="font-size:16px;font-weight:600;color:var(--accent)">+'+Math.round(accrued).toLocaleString('ru-RU')+' ₽</div></div>'
+      +'</div>'
+
+      // Прогресс-бар
+      +'<div style="background:var(--bg3);border-radius:4px;height:6px;margin-bottom:16px"><div style="background:var(--income);height:100%;border-radius:4px;width:'+progress+'%;transition:width .3s"></div></div>'
+
+      // История платежей
+      +'<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--muted2)">История платежей</div>'
+      +(l.payments&&l.payments.length
+        ?'<div style="display:grid;grid-template-columns:100px 120px 1fr auto;gap:6px;font-size:12px">'
+          +'<div style="color:var(--muted);font-weight:600">Дата</div><div style="color:var(--muted);font-weight:600">Сумма</div><div style="color:var(--muted);font-weight:600">Комментарий</div><div></div>'
+          +l.payments.map((p,pi)=>'<div>'+fmtDateRu(p.date)+'</div>'
+            +'<div style="color:var(--income);font-weight:500">+'+p.amount.toLocaleString('ru-RU')+' ₽</div>'
+            +'<div style="color:var(--muted)">'+( p.note||'—')+'</div>'
+            +'<button onclick="deleteLendPayment('+idx+','+pi+')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;padding:2px 4px">✕</button>'
+          ).join('')
+          +'</div>'
+        :'<div style="color:var(--muted);font-size:12px">Платежей нет</div>')
+      +'<button onclick="openAddLendPayment('+idx+')" class="btn sm" style="margin-top:10px">+ Добавить платёж</button>'
+      +'</div>';
+  });
+
+  return html;
+}
+
+function bindLendsEvents(){}
+
+// Вычисления
+function daysBetween(d1,d2){
+  return Math.max(0,Math.round((new Date(d2)-new Date(d1))/86400000));
+}
+function fmtDateRu(iso){
+  if(!iso)return '—';
+  const[y,m,d]=iso.split('-');
+  return d+'.'+m+'.'+y;
+}
+function lendAccruedInterest(l){
+  if(!l.rate||l.status==='closed')return 0;
+  const days=daysBetween(l.dateFrom, l.status==='closed'?l.closedAt:new Date().toISOString().slice(0,10));
+  return l.amount*l.rate/100*days/365;
+}
+function lendTotalPaid(l){
+  return (l.payments||[]).reduce((s,p)=>s+p.amount,0);
+}
+function lendBalance(l){
+  if(l.status==='closed')return 0;
+  return Math.max(0, l.amount + lendAccruedInterest(l) - lendTotalPaid(l));
+}
+
+// Модал добавления займа
+function openAddLend(){
+  document.getElementById('lendModalTitle').textContent='Новый займ';
+  document.getElementById('lendIdx').value='';
+  document.getElementById('lendDebtor').value='';
+  document.getElementById('lendAmount').value='';
+  document.getElementById('lendDateFrom').value=new Date().toISOString().slice(0,10);
+  document.getElementById('lendDateTo').value='';
+  document.getElementById('lendRate').value='';
+  document.getElementById('lendNote').value='';
+  document.getElementById('lendStatus').value='active';
+  document.getElementById('lendModal').style.display='flex';
+}
+function openEditLend(idx){
+  const l=DB.lends[idx];
+  document.getElementById('lendModalTitle').textContent='Редактировать займ';
+  document.getElementById('lendIdx').value=idx;
+  document.getElementById('lendDebtor').value=l.debtor||'';
+  document.getElementById('lendAmount').value=l.amount||'';
+  document.getElementById('lendDateFrom').value=l.dateFrom||'';
+  document.getElementById('lendDateTo').value=l.dateTo||'';
+  document.getElementById('lendRate').value=l.rate||'';
+  document.getElementById('lendNote').value=l.note||'';
+  document.getElementById('lendStatus').value=l.status||'active';
+  document.getElementById('lendModal').style.display='flex';
+}
+function saveLendModal(){
+  const idx=document.getElementById('lendIdx').value;
+  const l={
+    debtor:document.getElementById('lendDebtor').value.trim(),
+    amount:parseFloat(document.getElementById('lendAmount').value)||0,
+    dateFrom:document.getElementById('lendDateFrom').value,
+    dateTo:document.getElementById('lendDateTo').value||null,
+    rate:parseFloat(document.getElementById('lendRate').value)||0,
+    note:document.getElementById('lendNote').value.trim(),
+    status:document.getElementById('lendStatus').value,
+    payments:idx!==''?(DB.lends[+idx].payments||[]):[]
+  };
+  if(!l.debtor||!l.amount){toast('Укажите имя и сумму','err');return;}
+  if(idx!=='')DB.lends[+idx]=l;
+  else DB.lends.push(l);
+  saveLends();
+  document.getElementById('lendModal').style.display='none';
+  renderPage();
+  toast('Займ сохранён ✓','ok');
+}
+function deleteLend(idx){
+  if(!confirm('Удалить займ?'))return;
+  DB.lends.splice(idx,1);
+  saveLends();
+  renderPage();
+}
+
+// Платежи
+function openAddLendPayment(idx){
+  document.getElementById('lendPayIdx').value=idx;
+  document.getElementById('lendPayDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('lendPayAmount').value='';
+  document.getElementById('lendPayNote').value='';
+  document.getElementById('lendPayModal').style.display='flex';
+}
+function saveLendPayment(){
+  const idx=+document.getElementById('lendPayIdx').value;
+  const p={
+    date:document.getElementById('lendPayDate').value,
+    amount:parseFloat(document.getElementById('lendPayAmount').value)||0,
+    note:document.getElementById('lendPayNote').value.trim()
+  };
+  if(!p.amount){toast('Укажите сумму','err');return;}
+  if(!DB.lends[idx].payments)DB.lends[idx].payments=[];
+  DB.lends[idx].payments.push(p);
+  DB.lends[idx].payments.sort((a,b)=>a.date.localeCompare(b.date));
+  // Автоматически закрыть если остаток = 0
+  if(lendBalance(DB.lends[idx])<=0)DB.lends[idx].status='closed';
+  saveLends();
+  document.getElementById('lendPayModal').style.display='none';
+  renderPage();
+  toast('Платёж добавлен ✓','ok');
+}
+function deleteLendPayment(lIdx,pIdx){
+  DB.lends[lIdx].payments.splice(pIdx,1);
+  saveLends();
+  renderPage();
+}
+</script>
+
+<!-- Модал займа -->
+<div id="lendModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border-radius:var(--r);width:440px;padding:24px;max-height:90vh;overflow-y:auto">
+    <h3 id="lendModalTitle" style="margin:0 0 20px;font-size:18px">Займ</h3>
+    <input type="hidden" id="lendIdx">
+    <div class="form-group"><label>Должник</label><input id="lendDebtor" type="text" placeholder="Имя Фамилия" style="width:100%"></div>
+    <div class="form-group"><label>Сумма займа, ₽</label><input id="lendAmount" type="number" placeholder="500000" style="width:100%"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>Дата выдачи</label><input id="lendDateFrom" type="date" style="width:100%"></div>
+      <div class="form-group"><label>Срок возврата</label><input id="lendDateTo" type="date" style="width:100%"></div>
+    </div>
+    <div class="form-group"><label>Ставка, % годовых (0 = беспроцентный)</label><input id="lendRate" type="number" step="0.1" placeholder="16" style="width:100%"></div>
+    <div class="form-group"><label>Статус</label>
+      <select id="lendStatus" style="width:100%">
+        <option value="active">Активен</option>
+        <option value="overdue">Просрочен</option>
+        <option value="closed">Закрыт</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Примечание</label><input id="lendNote" type="text" placeholder="Необязательно" style="width:100%"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn primary" onclick="saveLendModal()">Сохранить</button>
+      <button class="btn" onclick="document.getElementById('lendModal').style.display='none'">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модал платежа -->
+<div id="lendPayModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border-radius:var(--r);width:360px;padding:24px">
+    <h3 style="margin:0 0 20px;font-size:18px">Добавить платёж</h3>
+    <input type="hidden" id="lendPayIdx">
+    <div class="form-group"><label>Дата</label><input id="lendPayDate" type="date" style="width:100%"></div>
+    <div class="form-group"><label>Сумма, ₽</label><input id="lendPayAmount" type="number" placeholder="50000" style="width:100%"></div>
+    <div class="form-group"><label>Комментарий</label><input id="lendPayNote" type="text" placeholder="Необязательно" style="width:100%"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn primary" onclick="saveLendPayment()">Сохранить</button>
+      <button class="btn" onclick="document.getElementById('lendPayModal').style.display='none'">Отмена</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
