@@ -4815,13 +4815,16 @@ function pageAccounts(){
   accs.forEach(acc=>{
     // Определить короткое имя банка из acc.bank
     let bk=acc.bank||'Прочее';
-    if(bk.includes('Сбер')||bk.includes('СБ')||bk.includes('Sber'))bk='Сбербанк';
-    else if(bk.includes('ТБ')||bk.includes('ТБанк')||bk.includes('Tinkoff')||bk.includes('Т-Банк')||bk.includes('АО ТБанк')||bk.includes('Тинькофф'))bk='ТБанк';
-    else if(bk.includes('ВТБ')||bk.includes('VTB'))bk='ВТБ';
+    // Определяем банк по полю bank и по source/number счёта
+    const src=acc.source||'';
+    const num=String(acc.number||'');
+    if(bk.includes('Наличные')||num==='cash_me'||num==='cash_wife')bk='Наличные';
+    else if(bk.includes('Сбер')||bk.startsWith('СБ')||src.includes('sber'))bk='Сбербанк';
+    else if(bk.includes('ВТБ')||bk.startsWith('ВТБ')||bk.includes('Ипотека ВТБ')||src.includes('vtb'))bk='ВТБ';
+    else if(bk.includes('ТБ')||bk.startsWith('ТБ ')||bk.includes('ТБанк')||bk.includes('Тинькофф')||bk.includes('Tinkoff')||bk.includes('Т-Банк')||bk.includes('АО ТБанк')||src.includes('tinkoff'))bk='ТБанк';
     else if(bk.includes('Бакай'))bk='Бакай Банк';
-    else if(bk.includes('Цифра')||bk.includes('Cifra'))bk='Цифра Банк';
-    else if(bk.includes('Наличные')||bk.includes('cash')||bk.includes('Cash'))bk='Наличные';
-    else if(bk.includes('ББ')||bk.includes('Бест'))bk='ТБанк';
+    else if(bk.includes('Цифра')||bk.includes('Cifra')||src.includes('cifra')||src.includes('tradernet'))bk='Цифра Банк';
+    else if(bk.includes('ББ')||bk.includes('Бест'))bk='ББ (Кыргызстан)';
     if(!bankGroups[bk])bankGroups[bk]=[];
     bankGroups[bk].push(acc);
   });
