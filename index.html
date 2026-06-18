@@ -4072,6 +4072,7 @@ function pageTxns(){
     +'<input type="text" id="txCounterparty" placeholder="Контрагент..." value="'+txFilterCounterparty+'" oninput="txFilterCounterparty=this.value;filterTxns()" style="width:130px">'
     +'<button class="unconf-btn'+(txShowUnconfirmed?' active':'')+'" onclick="txShowUnconfirmed=!txShowUnconfirmed;this.classList.toggle(\'active\');filterTxns()" title="Только неподтверждённые">⚠ Не разобрано'+(unconfTotal?' ('+unconfTotal+')':' ✓')+' </button>'
     +'<button class="btn sm" onclick="findDuplicates()" title="Найти дубликаты" style="font-size:12px;padding:4px 10px">🔍 Дубликаты</button>'
+    +'<button class="btn sm primary" onclick="openAiCateg()" title="AI-категоризация неподтверждённых" style="font-size:12px;padding:4px 10px">🤖 Разобрать</button>'
     +'<select id="txGroupSel" onchange="txGroupBy=this.value;txExpandedGroups.clear();filterTxns()" style="'+sel+'"><option value="none">Список</option><option value="counterparty"'+(txGroupBy==='counterparty'?' selected':'')+'>По контрагенту</option><option value="desc"'+(txGroupBy==='desc'?' selected':'')+'>По описанию</option></select>'
     +'<span class="tbl-count" id="txCount"></span>'
     +'</div>'
@@ -6626,5 +6627,212 @@ function updateBottomNav(page){
     </div>
   </div>
 </div>
+
+<!-- ── AI Categorization Modal ── -->
+<div class="modal-bg" id="aiCategModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto">
+  <div style="background:var(--bg2);border-radius:var(--r);max-width:900px;margin:32px auto;padding:24px;position:relative">
+    <h3 style="margin:0 0 16px;font-size:18px">🤖 AI-категоризация операций</h3>
+    <div id="aiCategStatus" style="font-size:13px;color:var(--muted);margin-bottom:12px"></div>
+    <div id="aiCategProgress" style="display:none;margin-bottom:16px">
+      <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
+        <div id="aiProgressBar" style="background:var(--accent);height:100%;width:0%;transition:width 0.3s"></div>
+      </div>
+      <div id="aiProgressText" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
+    </div>
+    <div id="aiCategResults" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        <span id="aiResultCount" style="font-size:13px;font-weight:600;color:var(--accent)"></span>
+        <button class="btn sm primary" onclick="applyAiResults()">✓ Применить всё</button>
+        <button class="btn sm" onclick="applyAiResultsConfirmed()">✓ Применить и подтвердить</button>
+        <button class="btn sm" style="opacity:0.6" onclick="closeAiModal()">Отмена</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px" id="aiResultsTable">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="padding:6px 4px;text-align:left;width:24px"><input type="checkbox" id="aiSelectAll" onchange="aiToggleAll(this.checked)" checked></th>
+              <th style="padding:6px 4px;text-align:left">Дата</th>
+              <th style="padding:6px 4px;text-align:left">Описание</th>
+              <th style="padding:6px 4px;text-align:left">Сумма</th>
+              <th style="padding:6px 4px;text-align:left">Было</th>
+              <th style="padding:6px 4px;text-align:left">AI предлагает</th>
+              <th style="padding:6px 4px;text-align:left">Уверенность</th>
+              <th style="padding:6px 4px;text-align:left">Комментарий</th>
+            </tr>
+          </thead>
+          <tbody id="aiResultsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── AI Categorization ────────────────────────────────────────────────────────
+let _aiResults=[];
+
+function openAiCateg(){
+  const allPArr=Object.keys(DB.periods).sort().reverse();
+  const unconf=allPArr.flatMap(p=>
+    (DB.periods[p]?.transactions||[]).filter(t=>!t.confirmed).map(t=>({...t,_period:p}))
+  );
+  if(!unconf.length){toast('Нет неподтверждённых операций','ok');return;}
+  _aiResults=[];
+  const modal=document.getElementById('aiCategModal');
+  modal.style.display='block';
+  document.getElementById('aiCategStatus').textContent='Найдено '+unconf.length+' неподтверждённых операций. Отправляю в Claude...';
+  document.getElementById('aiCategProgress').style.display='block';
+  document.getElementById('aiCategResults').style.display='none';
+  runAiCateg(unconf);
+}
+
+function closeAiModal(){
+  document.getElementById('aiCategModal').style.display='none';
+}
+
+async function runAiCateg(txns){
+  const BATCH=50;
+  const total=txns.length;
+  let done=0;
+
+  // Подготовить контекст: категории и счета
+  const cats=getAllGroups();
+  const expGroups=getExpenseGroups();
+  const catContext=cats.map(g=>{
+    if(g==='Доход') return 'Доход: '+((DB.customGroups||{})['__income__']||CAT_TREE.income.subs).join(', ');
+    if(g==='Перевод') return 'Перевод: Внутренний перевод, Снятие наличных, Пополнение брокерского счёта, Вывод с брокерского счёта, Погашение тела ипотеки, Погашение процентов';
+    return g+': '+(expGroups[g]||[]).join(', ');
+  }).join('\n');
+
+  const accounts=Object.values(DB.accounts).map(a=>
+    a.number+'|'+a.name+(a.owner==='wife'?' (Таня)':' (Влад)')+(a.isCredit?' [кредитная]':'')+(a.isBroker?' [брокерский]':'')
+  ).join('\n');
+
+  for(let i=0;i<txns.length;i+=BATCH){
+    const batch=txns.slice(i,i+BATCH);
+    const pct=Math.round(done/total*100);
+    document.getElementById('aiProgressBar').style.width=pct+'%';
+    document.getElementById('aiProgressText').textContent='Обрабатываю '+done+' из '+total+'...';
+    document.getElementById('aiCategStatus').textContent='Батч '+(Math.floor(i/BATCH)+1)+' из '+Math.ceil(total/BATCH)+'...';
+
+    const txList=batch.map((t,idx)=>
+      idx+'|'+t.date+'|'+(t.desc||'')+' / '+(t.counterparty||'')+'|'+Math.round(t.amtRub)+'₽|'+t.account+'|текущая: '+t.group+' / '+t.sub
+    ).join('\n');
+
+    const prompt=`Ты помощник по категоризации банковских операций для семейного бюджета.
+
+СПИСОК СЧЕТОВ (номер|название|владелец):
+${accounts}
+
+ДОСТУПНЫЕ КАТЕГОРИИ (группа: подкатегории):
+${catContext}
+
+ПРАВИЛА:
+1. Переводы между своими счетами (одинаковые последние 4 цифры, или счёт→тот же счёт) = тип "transfer", группа "Перевод", подкатегория "Внутренний перевод"
+2. Погашение ипотеки/кредита = тип "transfer", группа "Перевод", подкатегория соответствующая
+3. Пополнение/снятие брокерского = тип "transfer", группа "Перевод"  
+4. Если не уверен — поставь confidence "low" и опиши вопрос в comment
+5. Если видишь подозрительное (сумма не та, дубль) — отметь в comment
+6. Можешь предложить НОВУЮ подкатегорию если существующие не подходят — добавь "(новое)" в конце
+
+ОПЕРАЦИИ (idx|дата|описание / контрагент|сумма|счёт|текущая категория):
+${txList}
+
+Ответь ТОЛЬКО JSON массивом без markdown, каждый элемент:
+{"idx":0,"type":"expense|income|transfer","group":"группа","sub":"подкатегория","confidence":"high|medium|low","comment":""}
+Если текущая категория уже правильная — всё равно верни элемент.`;
+
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-6',
+          max_tokens:4000,
+          messages:[{role:'user',content:prompt}]
+        })
+      });
+      const data=await resp.json();
+      const text=data.content?.[0]?.text||'[]';
+      const clean=text.replace(/```json|```/g,'').trim();
+      const results=JSON.parse(clean);
+      for(const r of results){
+        const tx=batch[r.idx];
+        if(tx)_aiResults.push({
+          tx,
+          oldGroup:tx.group, oldSub:tx.sub, oldType:tx.type,
+          newType:r.type, newGroup:r.group, newSub:r.sub,
+          confidence:r.confidence, comment:r.comment||'',
+          changed:(r.group!==tx.group||r.sub!==tx.sub||r.type!==tx.type)
+        });
+      }
+    }catch(e){
+      console.error('AI batch error',e);
+      // Добавить без изменений
+      for(const tx of batch)_aiResults.push({tx,oldGroup:tx.group,oldSub:tx.sub,oldType:tx.type,newType:tx.type,newGroup:tx.group,newSub:tx.sub,confidence:'low',comment:'Ошибка AI: '+e.message,changed:false});
+    }
+
+    done+=batch.length;
+  }
+
+  document.getElementById('aiProgressBar').style.width='100%';
+  document.getElementById('aiProgressText').textContent='Готово!';
+  showAiResults();
+}
+
+function showAiResults(){
+  const tbody=document.getElementById('aiResultsBody');
+  const changed=_aiResults.filter(r=>r.changed).length;
+  document.getElementById('aiResultCount').textContent=
+    'Обработано '+_aiResults.length+' операций · изменений: '+changed+' · вопросов: '+_aiResults.filter(r=>r.confidence==='low').length;
+
+  tbody.innerHTML=_aiResults.map((r,i)=>{
+    const confColor=r.confidence==='high'?'var(--income)':r.confidence==='medium'?'var(--accent)':'var(--expense)';
+    const rowBg=r.confidence==='low'?'background:color-mix(in srgb,var(--expense) 8%,transparent)':r.changed?'background:color-mix(in srgb,var(--accent) 6%,transparent)':'';
+    return '<tr style="border-bottom:1px solid var(--border);'+rowBg+'">'
+      +'<td style="padding:5px 4px"><input type="checkbox" class="ai-cb" data-idx="'+i+'" checked></td>'
+      +'<td style="padding:5px 4px;color:var(--muted);white-space:nowrap">'+r.tx.date+'</td>'
+      +'<td style="padding:5px 4px;max-width:200px;font-size:11px;word-break:break-word">'+(r.tx.desc||'').slice(0,60)+'</td>'
+      +'<td style="padding:5px 4px;white-space:nowrap">'+Math.round(r.tx.amtRub).toLocaleString('ru-RU')+'₽</td>'
+      +'<td style="padding:5px 4px;font-size:11px;color:var(--muted)">'+r.oldGroup+' / '+r.oldSub+'</td>'
+      +'<td style="padding:5px 4px;font-size:11px;font-weight:'+(r.changed?'600':'400')+';color:'+(r.changed?'var(--accent)':'inherit')+'">'+r.newGroup+' / '+r.newSub+'</td>'
+      +'<td style="padding:5px 4px;color:'+confColor+';font-weight:600;font-size:11px">'+r.confidence+'</td>'
+      +'<td style="padding:5px 4px;font-size:11px;color:var(--muted);max-width:180px">'+r.comment+'</td>'
+      +'</tr>';
+  }).join('');
+
+  document.getElementById('aiCategResults').style.display='block';
+  document.getElementById('aiCategProgress').style.display='none';
+  document.getElementById('aiCategStatus').textContent='Результаты готовы. Проверь и применяй.';
+}
+
+function aiToggleAll(checked){
+  document.querySelectorAll('.ai-cb').forEach(cb=>cb.checked=checked);
+}
+
+function applyAiResults(confirm=false){
+  const cbs=document.querySelectorAll('.ai-cb');
+  const periods=new Set();
+  let applied=0;
+  cbs.forEach(cb=>{
+    if(!cb.checked)return;
+    const r=_aiResults[+cb.dataset.idx];
+    if(!r)return;
+    r.tx.group=r.newGroup; r.tx.sub=r.newSub; r.tx.type=r.newType;
+    r.tx.manualCategory=true;
+    if(confirm)r.tx.confirmed=true;
+    periods.add(r.tx._period);
+    applied++;
+  });
+  for(const p of periods)savePeriod(p,'AI categorize');
+  saveLocal();
+  toast('Применено '+applied+' изменений'+(confirm?' и подтверждено':''),'ok');
+  closeAiModal();
+  filterTxns();refreshUI();
+}
+
+function applyAiResultsConfirmed(){applyAiResults(true);}
+</script>
+
 </body>
 </html>
