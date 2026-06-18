@@ -76,7 +76,7 @@
       "type": "income",
       "group": "Доход",
       "sub": "Возвраты",
-      "confirmed": false
+      "confirmed": true
     },
     {
       "id": "w2m1te0o",
