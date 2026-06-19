@@ -5850,7 +5850,7 @@ function delPeriod(p){
 
 // ── Storage ──
 function saveLocal(){try{localStorage.setItem('ff_db',JSON.stringify(DB));}catch(e){}}
-function loadLocal(){try{const d=localStorage.getItem('ff_db');if(d){const p=JSON.parse(d);DB.periods=p.periods||{};DB.assets=p.assets||DB.assets;DB.accounts=p.accounts||{};DB.rules=p.rules||[];DB.customGroups=p.customGroups||{};DB.investments=p.investments||{};DB.investPrices=p.investPrices||{};}}catch(e){}}
+function loadLocal(){try{const d=localStorage.getItem('ff_db');if(d){const p=JSON.parse(d);DB.periods=p.periods||{};DB.assets=p.assets||DB.assets;DB.accounts=p.accounts||{};DB.rules=p.rules||[];DB.customGroups=p.customGroups||{};DB.investments=p.investments||{};DB.investPrices=p.investPrices||{};DB.lends=p.lends||[];}}catch(e){}}
 
 function ensureCashAccounts(){
   if(!DB.accounts[CASH_ACCOUNTS.me])
@@ -7085,6 +7085,7 @@ function importFromAICancel(){
 // ── Lends (выданные займы) ───────────────────────────────────────────────────
 
 function saveLends(){
+  if(!DB.lends)DB.lends=[];
   saveLocal();
   const{user,repo,token}=ghCfg();
   if(!token)return;
@@ -7215,6 +7216,7 @@ function openEditLend(idx){
   document.getElementById('lendModal').style.display='flex';
 }
 function saveLendModal(){
+  if(!DB.lends)DB.lends=[];
   const idx=document.getElementById('lendIdx').value;
   const l={
     debtor:document.getElementById('lendDebtor').value.trim(),
@@ -7224,7 +7226,7 @@ function saveLendModal(){
     rate:parseFloat(document.getElementById('lendRate').value)||0,
     note:document.getElementById('lendNote').value.trim(),
     status:document.getElementById('lendStatus').value,
-    payments:idx!==''?(DB.lends[+idx].payments||[]):[]
+    payments:idx!==''?((DB.lends[+idx]||{}).payments||[]):[]
   };
   if(!l.debtor||!l.amount){toast('Укажите имя и сумму','err');return;}
   if(idx!=='')DB.lends[+idx]=l;
