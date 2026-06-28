@@ -13,21 +13,22 @@
 
 /* ── Light theme (default) ── */
 :root,[data-theme="light"]{
-  --bg:#f5f5f3;
+  --bg:#f4f6f4;
   --bg2:#ffffff;
-  --bg3:#f0eeeb;
-  --bg4:#e8e6e2;
+  --bg3:#eef1ee;
+  --bg4:#e2e8e2;
   --border:#e2e0dc;
   --border2:#d0cdc8;
   --text:#1a1916;
   --muted:#999691;
   --muted2:#6b6965;
-  --accent:#4f46e5;
-  --accent-soft:rgba(79,70,229,0.08);
-  --income:#16a34a;
-  --income-soft:rgba(22,163,74,0.08);
-  --expense:#dc2626;
-  --expense-soft:rgba(220,38,38,0.08);
+  --accent:#1a5c4a;
+  --accent-soft:rgba(26,92,74,0.08);
+  --accent2:#e8a020;
+  --income:#1a5c4a;
+  --income-soft:rgba(26,92,74,0.08);
+  --expense:#c0392b;
+  --expense-soft:rgba(192,57,43,0.08);
   --transfer:#92400e;
   --transfer-soft:rgba(146,64,14,0.08);
   --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
@@ -45,12 +46,13 @@
   --text:#e8e6e2;
   --muted:#5a5856;
   --muted2:#8a8885;
-  --accent:#6366f1;
-  --accent-soft:rgba(99,102,241,0.1);
-  --income:#22c55e;
-  --income-soft:rgba(34,197,94,0.08);
-  --expense:#ef4444;
-  --expense-soft:rgba(239,68,68,0.08);
+  --accent:#2d7a5f;
+  --accent-soft:rgba(45,122,95,0.12);
+  --accent2:#e8a020;
+  --income:#2d7a5f;
+  --income-soft:rgba(45,122,95,0.1);
+  --expense:#e05252;
+  --expense-soft:rgba(224,82,82,0.1);
   --transfer:#d97706;
   --transfer-soft:rgba(217,119,6,0.08);
   --shadow:none;
@@ -61,8 +63,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 /* ── Layout ── */
 .app{display:grid;grid-template-rows:52px 1fr;height:100vh}
 .topbar{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:var(--shadow)}
-.logo{font-size:15px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
-.logo em{color:var(--accent);font-style:normal;font-weight:400}
+.logo{font-size:15px;font-weight:800;letter-spacing:-0.6px;color:var(--text)}
+.logo em{color:var(--accent);font-style:normal;font-weight:500}
 .topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
 .body{display:grid;grid-template-columns:204px 1fr;min-height:calc(100vh - 48px)}
 .sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto;min-height:calc(100vh - 48px);display:flex;flex-direction:column;position:sticky;top:48px;max-height:calc(100vh - 48px)}
@@ -72,7 +74,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .nav-label{font-size:10px;font-weight:600;letter-spacing:0.7px;color:var(--muted);text-transform:uppercase;padding:10px 16px 4px}
 .nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin:0 6px 1px;border-radius:var(--r);cursor:pointer;color:var(--muted2);font-size:13px;transition:all 0.12s}
 .nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600;border-left:3px solid var(--accent);padding-left:13px}
 .nav-divider{height:1px;background:var(--border);margin:8px 10px}
 .period-list{padding:0 6px;flex:1;overflow-y:auto;min-height:0}
 .period-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--muted2);transition:all 0.12s;margin-bottom:1px}
@@ -99,8 +101,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .delta.up{color:var(--income)}.delta.down{color:var(--expense)}
 
 /* ── Page header ── */
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.page-title{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:8px;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-0.4px;color:var(--text)}
 .page-actions{display:flex;gap:8px;align-items:center}
 
 /* ── Buttons ── */
@@ -256,19 +258,22 @@ tr:hover td{background:var(--bg3)}
     gap:3px;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:500;
   }
   /* Rate bar */
-  .rate-bar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap}
-  .rate-bar-val{font-weight:700;color:var(--text)}
-  .rate-bar-label{color:var(--muted);font-size:11px}
-  .rate-bar-actions{display:flex;gap:6px;margin-left:auto}
-  .rate-bar-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--muted);font-family:var(--font)}
+  .rate-bar{display:flex;align-items:center;gap:0;padding:0 20px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;height:32px;overflow:hidden}
+  .rate-item{display:flex;align-items:center;gap:6px;padding:0 14px;height:100%;border-right:1px solid var(--border)}
+  .rate-item:first-child{padding-left:0}
+  .rate-bar-label{color:var(--muted);font-size:11px;white-space:nowrap}
+  .rate-bar-val{font-weight:600;color:var(--text);white-space:nowrap}
+  .rate-bar-date{color:var(--muted);font-size:11px;padding:0 14px}
+  .rate-bar-actions{display:flex;align-items:center;gap:4px;margin-left:auto;height:100%}
+  .rate-bar-btn{background:none;border:none;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--muted);font-family:var(--font);border-radius:4px}
   .rate-bar-btn:hover{background:var(--bg3);color:var(--text)}
-  .rate-bar-sep{width:1px;height:20px;background:var(--border)}
   /* App build badge */
-  #app-build{font-size:10px;color:var(--muted);font-family:monospace;opacity:.6;cursor:default;white-space:nowrap}
-  /* Мобильный: rate-bar компактный */
+  #app-build{font-size:10px;color:var(--muted);font-family:monospace;opacity:.55;cursor:default;white-space:nowrap}
+  /* Мобильный: rate-bar скрыть лейблы */
   @media(max-width:768px){
-    .rate-bar{padding:6px 12px;gap:8px}
-    .rate-bar-sep{display:none}
+    .rate-item{padding:0 10px}
+    .rate-bar-label{display:none}
+    .rate-bar-date{display:none}
   }
   /* Drawer overlay */
 
@@ -297,28 +302,22 @@ tr:hover td{background:var(--bg3)}
 </div>
 <!-- Rate bar -->
 <div class="rate-bar" id="rateBar">
-  <span class="rate-bar-label">USD / RUB</span>
-  <span class="rate-bar-val" id="rateUSD">—</span>
-  <div class="rate-bar-sep"></div>
-  <span class="rate-bar-label">EUR / RUB</span>
-  <span class="rate-bar-val" id="rateEUR">—</span>
-  <div class="rate-bar-sep"></div>
-  <span class="rate-bar-label">CNY / RUB</span>
-  <span class="rate-bar-val" id="rateCNY">—</span>
-  <div class="rate-bar-sep"></div>
-  <span class="rate-bar-label" id="rateDate" style="margin-left:4px"></span>
+  <div class="rate-item"><span class="rate-bar-label">USD</span><span class="rate-bar-val" id="rateUSD">—</span></div>
+  <div class="rate-item"><span class="rate-bar-label">EUR</span><span class="rate-bar-val" id="rateEUR">—</span></div>
+  <div class="rate-item"><span class="rate-bar-label">CNY</span><span class="rate-bar-val" id="rateCNY">—</span></div>
+  <span class="rate-bar-date" id="rateDate"></span>
   <div class="rate-bar-actions">
-    <button class="rate-bar-btn" onclick="fetchRateBar()" title="Обновить курсы">↻ Обновить</button>
+    <button class="rate-bar-btn" onclick="fetchRateBar()" title="Обновить курсы ЦБ РФ">↻</button>
     <button class="rate-bar-btn" onclick="toggleRateBarManual()" title="Ввести вручную">✎</button>
   </div>
 </div>
-<div id="rateBarManual" style="display:none;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;font-size:12px;flex-wrap:wrap">
+<div id="rateBarManual" style="display:none;padding:6px 20px;background:var(--bg2);border-bottom:1px solid var(--border);align-items:center;gap:10px;font-size:12px">
   <label style="color:var(--muted)">USD/RUB:</label>
   <input type="number" id="rateManualUSD" step="0.01" placeholder="85.00" style="width:80px;padding:3px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font)">
   <label style="color:var(--muted)">Дата:</label>
   <input type="date" id="rateManualDate" style="padding:3px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font)">
-  <button class="rate-bar-btn" style="color:var(--income)" onclick="saveManualRateBar()">✓ Сохранить</button>
-  <button class="rate-bar-btn" onclick="toggleRateBarManual()">✕</button>
+  <button class="rate-bar-btn" style="color:var(--income);border:1px solid var(--border);border-radius:4px" onclick="saveManualRateBar()">✓</button>
+  <button class="rate-bar-btn" style="border:1px solid var(--border);border-radius:4px" onclick="toggleRateBarManual()">✕</button>
 </div>
 <div class="body">
   <div class="sidebar">
