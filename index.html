@@ -5033,424 +5033,442 @@ function pageAssets(){
 }
 
 function pageInvestments(){
-  const tab=window._investTab||'portfolio';
-  const tabs=[
-    {id:'portfolio',label:'◈ Портфель'},
-    {id:'bonds',label:'⊡ Облигации'},
-    {id:'cashflow',label:'⊞ Денежный поток'},
-    {id:'analytics',label:'◉ Аналитика'}
-  ];
-  const tabBar='<div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0">'
-    +tabs.map(t=>'<button onclick="window._investTab=\''+t.id+'\';renderPage()" style="padding:10px 16px;font-size:13px;font-weight:'+(tab===t.id?'600':'400')+';color:'+(tab===t.id?'var(--accent)':'var(--muted)')+';background:none;border:none;border-bottom:2px solid '+(tab===t.id?'var(--accent)':'transparent')+';cursor:pointer;margin-bottom:-2px;font-family:var(--font)">'+t.label+'</button>').join('')
-    +'</div>';
-  const header='<div class="page-header"><div class="page-title">◆ Инвестиции</div>'
-    +'<div class="page-actions"><button class="btn sm" onclick="fetchMOEXPrices()">↻ Цены MOEX</button></div></div>'
-    +tabBar;
-
-  if(tab==='portfolio') return header+renderInvestPortfolio();
-  if(tab==='bonds') return header+renderInvestBonds();
-  if(tab==='cashflow') return header+renderInvestCashflow();
-  if(tab==='analytics') return header+renderInvestAnalytics();
-  return header;
+  const tab=window._investTab||'overview';
+  // Рендерим нужную вкладку
+  if(tab==='portfolio') return renderInvestPortfolioPage();
+  return renderInvestOverview();
 }
-function bindInvestmentsTabs(){}
 
-// ── Вкладка Портфель ────────────────────────────────────────────────────────
-function renderInvestPortfolio(){
+// ════════════════════════════════════════════════════════════
+// ВКЛАДКА ОБЗОР
+// ════════════════════════════════════════════════════════════
+function renderInvestOverview(){
+  const period=window._investPeriod||'all';
   const prices=DB.investPrices||{};
   const accounts=Object.entries(DB.investments||{});
-  if(!accounts.length){
-    return '<div class="card" style="text-align:center;padding:40px;color:var(--muted)">'
-      +'<div style="font-size:32px;margin-bottom:12px">📊</div>'
-      +'<div style="font-size:15px">Загрузите брокерский отчёт — данные появятся автоматически</div></div>';
+
+  // Фильтр периода
+  const now=new Date();
+  function inPeriod(dateStr){
+    if(period==='all')return true;
+    if(!dateStr)return false;
+    const d=new Date(dateStr);
+    if(period==='month')return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+    if(period==='quarter'){const q=Math.floor(now.getMonth()/3);return d.getFullYear()===now.getFullYear()&&Math.floor(d.getMonth()/3)===q;}
+    if(period==='year')return d.getFullYear()===now.getFullYear();
+    return true;
   }
 
-  // Сводные метрики
-  const allH=accounts.flatMap(([,a])=>a.holdings||[]).filter(h=>h.qty>0);
-  const totalVal=allH.reduce((s,h)=>s+(h.qty*(prices[h.isin||h.ticker]||0)),0);
-  const pnlH=allH.filter(h=>h.avgPrice&&(prices[h.isin||h.ticker]||0)>0);
-  const totalCost=pnlH.reduce((s,h)=>s+h.qty*h.avgPrice,0);
-  const totalPnl=pnlH.reduce((s,h)=>s+(h.qty*prices[h.isin||h.ticker]-h.qty*h.avgPrice),0);
-  const totalPnlPct=totalCost>0?totalPnl/totalCost*100:0;
-  const brokerCash=Object.keys(DB.investments||{}).reduce((s,id)=>s+(computeBrokerCash(id)||0),0);
-
-  // Группировка по типу
-  const typeOrder=['Фонд ликвидности','Облигация','Фонд','Акция (РФ)','Акция (США)','ПФИ','Прочее'];
-  const grouped={};
-  for(const[accId,data] of accounts){
-    const accName=DB.accounts[accId]?.name||accId;
-    for(const h of (data.holdings||[]).filter(h=>h.qty>0)){
-      const type=classifyHolding(h);
-      if(!grouped[type])grouped[type]=[];
-      grouped[type].push({...h,accName,accId});
+  // Считаем метрики по всем счетам
+  let totalVal=0,totalCost=0,totalPnl=0;
+  for(const[,data]of accounts){
+    for(const h of(data.holdings||[]).filter(h=>h.qty>0)){
+      const pk=h.isin||h.ticker;
+      const price=prices[pk]||0;
+      const val=h.qty*price;
+      totalVal+=val;
+      if(h.avgPrice&&price>0){totalCost+=h.qty*h.avgPrice;totalPnl+=val-h.qty*h.avgPrice;}
     }
   }
+  const pnlPct=totalCost>0?totalPnl/totalCost*100:0;
+  const brokerCash=Object.keys(DB.investments||{}).reduce((s,id)=>s+(computeBrokerCash(id)||0),0);
 
-  let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">'
-    +'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--accent)">'+fmtMoney(totalVal)+'</div><div style="font-size:11px;color:var(--muted)">Стоимость портфеля</div></div>'
-    +(totalCost>0?'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:'+(totalPnl>=0?'var(--income)':'var(--expense)')+'">'+(totalPnl>=0?'+':'')+fmtMoney(totalPnl)+'</div><div style="font-size:11px;color:var(--muted)">P&L ('+(totalPnlPct>=0?'+':'')+totalPnlPct.toFixed(1)+'%)</div></div>':'')
-    +(brokerCash>0?'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700">'+fmtMoney(brokerCash)+'</div><div style="font-size:11px;color:var(--muted)">Свободный кэш</div></div>':'')
-    +'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700">'+allH.length+'</div><div style="font-size:11px;color:var(--muted)">Позиций</div></div>'
+  // Панель фильтров периода
+  const periods=[['month','Месяц'],['quarter','Квартал'],['year','Год'],['all','Всё время']];
+  const filterBar='<div style="display:flex;gap:6px;flex-wrap:wrap">'
+    +periods.map(([v,l])=>'<button onclick="window._investPeriod=\''+v+'\';renderPage()" '
+      +'style="padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:var(--font);'
+      +(period===v?'background:var(--accent);color:#fff;border:none;font-weight:600':'background:var(--bg3);color:var(--muted);border:1px solid var(--border)')+'">'
+      +l+'</button>').join('')
     +'</div>';
 
-  // Таблица по группам
+  // Заголовок
+  let html='<div class="page-header"><div class="page-title">◆ Инвестиции</div>'
+    +'<div class="page-actions">'+filterBar
+    +'<button class="btn sm" onclick="fetchMOEXPrices()">↻ Цены MOEX</button>'
+    +'</div></div>';
+
+  // Метрики
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">'
+    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">'+fmtMoney(totalVal)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Стоимость портфеля</div></div>'
+    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:'+(totalPnl>=0?'var(--income)':'var(--expense)')+'">'+(totalPnl>=0?'+':'')+fmtMoney(totalPnl)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Доход (P&L)</div></div>'
+    +'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700;color:'+(pnlPct>=0?'var(--income)':'var(--expense)')+'">'+(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Доходность</div></div>'
+    +(brokerCash>0?'<div class="card" style="text-align:center"><div style="font-size:22px;font-weight:700">'+fmtMoney(brokerCash)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Свободный кэш</div></div>':'')
+    +'</div>';
+
+  if(!accounts.length){
+    return html+'<div class="card" style="text-align:center;padding:40px;color:var(--muted)">'
+      +'<div style="font-size:32px;margin-bottom:12px">📊</div>'
+      +'<div>Загрузите брокерский отчёт — данные появятся автоматически</div></div>';
+  }
+
+  // Таблица счетов
+  html+='<div class="card"><div class="card-title">Инвестиционные счета</div>'
+    +'<div class="tbl-wrap"><table style="font-size:13px">'
+    +'<thead><tr>'
+    +'<th>Счёт</th>'
+    +'<th style="text-align:right">Акции</th>'
+    +'<th style="text-align:right">Облигации</th>'
+    +'<th style="text-align:right">Фонды</th>'
+    +'<th style="text-align:right">Прочее</th>'
+    +'<th style="text-align:right">P&amp;L</th>'
+    +'<th style="text-align:right">Доходность</th>'
+    +'<th style="text-align:right">Итого</th>'
+    +'<th></th>'
+    +'</tr></thead><tbody>';
+
+  for(const[accId,data]of accounts){
+    const accName=DB.accounts[accId]?.name||accId;
+    const holdings=(data.holdings||[]).filter(h=>h.qty>0);
+    let byType={stocks:0,bonds:0,funds:0,other:0};
+    let accVal=0,accCost=0,accPnl=0;
+    for(const h of holdings){
+      const pk=h.isin||h.ticker;
+      const price=prices[pk]||0;
+      const val=h.qty*price;
+      accVal+=val;
+      const t=classifyHolding(h);
+      if(t==='Акция (США)'||t==='Акция (РФ)')byType.stocks+=val;
+      else if(t==='Облигация')byType.bonds+=val;
+      else if(t==='Фонд'||t==='Фонд ликвидности')byType.funds+=val;
+      else byType.other+=val;
+      if(h.avgPrice&&price>0){accCost+=h.qty*h.avgPrice;accPnl+=val-h.qty*h.avgPrice;}
+    }
+    const accPct=accCost>0?accPnl/accCost*100:0;
+    const cash=computeBrokerCash(accId)||0;
+    accVal+=cash;
+
+    html+='<tr style="cursor:pointer" onclick="window._investTab=\'portfolio\';window._investAcc=\''+accId+'\';renderPage()">'
+      +'<td><div style="font-weight:500">'+accName+'</div>'
+        +(DB.accounts[accId]?.owner?'<div style="font-size:11px;color:var(--muted)">'+(DB.accounts[accId].owner==='me'?'Влад':'Таня')+'</div>':'')+'</td>'
+      +'<td style="text-align:right;color:var(--muted);font-size:12px">'+(byType.stocks>0?fmtMoney(byType.stocks):'—')+'</td>'
+      +'<td style="text-align:right;color:var(--muted);font-size:12px">'+(byType.bonds>0?fmtMoney(byType.bonds):'—')+'</td>'
+      +'<td style="text-align:right;color:var(--muted);font-size:12px">'+(byType.funds>0?fmtMoney(byType.funds):'—')+'</td>'
+      +'<td style="text-align:right;color:var(--muted);font-size:12px">'+(byType.other>0?fmtMoney(byType.other):'—')+'</td>'
+      +'<td style="text-align:right;font-weight:500;color:'+(accPnl>=0?'var(--income)':'var(--expense)')+'">'+(accCost>0?(accPnl>=0?'+':'')+fmtMoney(accPnl):'—')+'</td>'
+      +'<td style="text-align:right;font-size:12px;color:'+(accPct>=0?'var(--income)':'var(--expense)')+'">'+(accCost>0?(accPct>=0?'+':'')+accPct.toFixed(1)+'%':'—')+'</td>'
+      +'<td style="text-align:right;font-weight:600">'+fmtMoney(accVal)+'</td>'
+      +'<td style="text-align:right"><button class="btn sm" onclick="event.stopPropagation();window._investTab=\'portfolio\';window._investAcc=\''+accId+'\';renderPage()">→</button></td>'
+      +'</tr>';
+  }
+
+  html+='</tbody>'
+    +'<tfoot><tr style="border-top:2px solid var(--border)">'
+    +'<td style="font-weight:600;padding:10px 12px">Итого</td>'
+    +'<td colspan="4"></td>'
+    +'<td style="text-align:right;font-weight:600;color:'+(totalPnl>=0?'var(--income)':'var(--expense)')+'">'+(totalCost>0?(totalPnl>=0?'+':'')+fmtMoney(totalPnl):'—')+'</td>'
+    +'<td style="text-align:right;font-weight:600;color:'+(pnlPct>=0?'var(--income)':'var(--expense)')+'">'+(totalCost>0?(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%':'—')+'</td>'
+    +'<td style="text-align:right;font-weight:700">'+fmtMoney(totalVal)+'</td>'
+    +'<td></td>'
+    +'</tr></tfoot>'
+    +'</table></div></div>';
+
+  return html;
+}
+
+// ════════════════════════════════════════════════════════════
+// ВКЛАДКА ПОРТФЕЛЬ (детальный — конкретный счёт)
+// ════════════════════════════════════════════════════════════
+function renderInvestPortfolioPage(){
+  const accId=window._investAcc;
+  const prices=DB.investPrices||{};
+  const data=DB.investments?.[accId];
+  const accName=DB.accounts[accId]?.name||accId;
+
+  // Подвкладки внутри портфеля
+  const subTab=window._investSubTab||'holdings';
+  const subTabs=[
+    {id:'holdings',label:'Активы'},
+    {id:'ops',label:'Операции'},
+    {id:'moex',label:'Данные MOEX'},
+    {id:'cashflow',label:'Денежный поток'}
+  ];
+
+  // Заголовок с навигацией назад
+  let html='<div class="page-header">'
+    +'<div style="display:flex;align-items:center;gap:12px">'
+      +'<button onclick="window._investTab=\'overview\';renderPage()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px">←</button>'
+      +'<div class="page-title">'+accName+'</div>'
+    +'</div>'
+    +'<div class="page-actions">'
+      +'<button class="btn sm" onclick="fetchMOEXPrices()">↻ Цены MOEX</button>'
+    +'</div></div>';
+
+  if(!data){
+    return html+'<div class="card" style="text-align:center;padding:40px;color:var(--muted)">Нет данных по счёту</div>';
+  }
+
+  const holdings=(data.holdings||[]).filter(h=>h.qty>0);
+
+  // Метрики счёта
+  let accVal=0,accCost=0,accPnl=0;
+  for(const h of holdings){
+    const pk=h.isin||h.ticker;const price=prices[pk]||0;
+    const val=h.qty*price;accVal+=val;
+    if(h.avgPrice&&price>0){accCost+=h.qty*h.avgPrice;accPnl+=val-h.qty*h.avgPrice;}
+  }
+  const accPct=accCost>0?accPnl/accCost*100:0;
+  const cash=computeBrokerCash(accId)||0;
+
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px">'
+    +'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--accent)">'+fmtMoney(accVal)+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Стоимость активов</div></div>'
+    +(accCost>0?'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:'+(accPnl>=0?'var(--income)':'var(--expense)')+'">'+(accPnl>=0?'+':'')+fmtMoney(accPnl)+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px">P&L</div></div>':'')
+    +(accCost>0?'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700;color:'+(accPct>=0?'var(--income)':'var(--expense)')+'">'+(accPct>=0?'+':'')+accPct.toFixed(1)+'%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Доходность</div></div>':'')
+    +(cash>0?'<div class="card" style="text-align:center"><div style="font-size:20px;font-weight:700">'+fmtMoney(cash)+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Свободный кэш</div></div>':'')
+    +'</div>';
+
+  // Подвкладки
+  html+='<div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0">'
+    +subTabs.map(t=>'<button onclick="window._investSubTab=\''+t.id+'\';renderPage()" '
+      +'style="padding:10px 16px;font-size:13px;font-weight:'+(subTab===t.id?'600':'400')+';color:'+(subTab===t.id?'var(--accent)':'var(--muted)')+';background:none;border:none;border-bottom:2px solid '+(subTab===t.id?'var(--accent)':'transparent')+';cursor:pointer;margin-bottom:-2px;font-family:var(--font)">'+t.label+'</button>'
+    ).join('')+'</div>';
+
+  if(subTab==='holdings') html+=renderPortfolioHoldings(holdings,prices);
+  else if(subTab==='ops') html+=renderPortfolioOps(accId);
+  else if(subTab==='moex') html+=renderPortfolioMOEX(holdings);
+  else if(subTab==='cashflow') html+=renderPortfolioCashflow(holdings);
+
+  return html;
+}
+
+// ── Активы счёта ─────────────────────────────────────────────────────────────
+function renderPortfolioHoldings(holdings,prices){
+  const typeOrder=['Фонд ликвидности','Облигация','Фонд','Акция (РФ)','Акция (США)','ПФИ','Прочее'];
+  const grouped={};
+  for(const h of holdings){
+    const t=classifyHolding(h);
+    if(!grouped[t])grouped[t]=[];
+    grouped[t].push(h);
+  }
+  const totalVal=holdings.reduce((s,h)=>s+(h.qty*(prices[h.isin||h.ticker]||0)),0);
+  let html='';
   for(const type of typeOrder){
-    const items=grouped[type];
-    if(!items||!items.length)continue;
+    const items=grouped[type];if(!items?.length)continue;
     const groupVal=items.reduce((s,h)=>s+(h.qty*(prices[h.isin||h.ticker]||0)),0);
-    const groupPct=totalVal>0?groupVal/totalVal*100:0;
+    const pct=totalVal>0?groupVal/totalVal*100:0;
+    const isBond=type==='Облигация';
     html+='<div class="card" style="margin-bottom:12px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-        +'<div style="font-weight:600;font-size:14px">'+type+'</div>'
-        +'<div style="font-size:12px;color:var(--muted)">'+fmtMoney(groupVal)+' · '+groupPct.toFixed(1)+'%</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        +'<div style="font-weight:600">'+type+'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+fmtMoney(groupVal)+' · '+pct.toFixed(1)+'%</div>'
       +'</div>'
-      +'<div class="tbl-wrap"><table style="font-size:13px">'
-      +'<thead><tr><th>Актив</th><th>Счёт</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Ср. цена</th><th style="text-align:right">Тек. цена ₽</th><th style="text-align:right">Стоимость</th><th style="text-align:right">P&amp;L</th></tr></thead>'
-      +'<tbody>';
+      +'<div class="tbl-wrap"><table style="font-size:12px"><thead><tr>'
+      +'<th>Инструмент</th><th style="text-align:right">Кол-во</th>'
+      +'<th style="text-align:right">Ср.цена</th>'
+      +(isBond?'<th style="text-align:right">Купон</th><th>Погашение</th>':'')
+      +'<th style="text-align:right">Тек.цена</th><th style="text-align:right">Стоимость</th><th style="text-align:right">P&amp;L</th>'
+      +'</tr></thead><tbody>';
     for(const h of items){
       const pk=h.isin||h.ticker;
       const price=prices[pk]||0;
       const val=h.qty*price;
       const hasPnl=h.avgPrice&&price>0;
-      const cost=hasPnl?h.qty*h.avgPrice:0;
-      const pnl=hasPnl?val-cost:null;
-      const pnlPct=hasPnl&&cost>0?pnl/cost*100:null;
+      const pnl=hasPnl?val-h.qty*h.avgPrice:null;
+      const pnlPct=hasPnl&&h.avgPrice>0?(price-h.avgPrice)/h.avgPrice*100:null;
+      const meta=DB.bondMeta?.[pk]||{};
       html+='<tr>'
         +'<td><div style="font-weight:500">'+h.name+'</div>'
-        +(h.ticker?'<div style="font-size:11px;color:var(--muted)">'+h.ticker+(h.isin?' · '+h.isin:'')+'</div>':'')+'</td>'
-        +'<td style="font-size:11px;color:var(--muted)">'+h.accName+'</td>'
+          +(h.ticker?'<div style="font-size:10px;color:var(--muted)">'+h.ticker+(h.isin?' · '+h.isin:'')+'</div>':'')+'</td>'
         +'<td style="text-align:right">'+h.qty.toLocaleString('ru-RU')+'</td>'
-        +'<td style="text-align:right;color:var(--muted);font-size:12px">'+(h.avgPrice?fmtMoney(h.avgPrice):'—')+'</td>'
+        +'<td style="text-align:right;color:var(--muted)">'+(h.avgPrice?fmtMoney(h.avgPrice):'—')+'</td>'
+        +(isBond?'<td style="text-align:right;color:var(--income)">'+(meta.coupon||h.coupon?fmtMoney(meta.coupon||h.coupon)+'₽':'—')+'</td>'
+          +'<td style="font-size:11px;color:var(--muted)">'+(meta.maturity||h.maturity||'—')+'</td>':'')
         +'<td style="text-align:right"><input type="number" value="'+(price||'')+'" placeholder="Цена" '
           +'oninput="setInvestPrice(this.dataset.key,this.value)" data-key="'+pk+'" '
-          +'style="width:90px;padding:3px 6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--font);text-align:right"></td>'
+          +'style="width:80px;padding:2px 6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--font);text-align:right"></td>'
         +'<td style="text-align:right;font-weight:500">'+(val>0?fmtMoney(val):'—')+'</td>'
-        +'<td style="text-align:right;font-size:12px;color:'+(pnl==null?'var(--muted)':pnl>=0?'var(--income)':'var(--expense)')+'">'
-          +(pnl==null?'—':(pnl>=0?'+':'')+fmtMoney(pnl)+(pnlPct!=null?'<div>'+(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%</div>':''))+'</td>'
+        +'<td style="text-align:right;color:'+(pnl==null?'var(--muted)':pnl>=0?'var(--income)':'var(--expense)')+'">'
+          +(pnl==null?'—':(pnl>=0?'+':'')+fmtMoney(pnl)
+            +(pnlPct!=null?'<div style="font-size:10px">'+(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%</div>':''))+'</td>'
         +'</tr>';
     }
     html+='</tbody></table></div></div>';
   }
+  if(!html)html='<div class="card" style="text-align:center;padding:32px;color:var(--muted)">Нет активов</div>';
   return html;
 }
 
-// Классификатор типа бумаги
-function classifyHolding(h){
-  const name=(h.name||'').toLowerCase();
-  const ticker=(h.ticker||'').toUpperCase();
-  const st=(h.secType||'').toLowerCase();
-  if(ticker==='LQDT'||name.includes('ликвидност')||name.includes('lqdt'))return'Фонд ликвидности';
-  if(st.includes('обл')||name.includes('обл')||name.includes('офз')||ticker.match(/^SU\d|^RU\d/))return'Облигация';
-  if(st.includes('пай')||st.includes('фонд')||name.includes('бпиф')||name.includes('finex')||name.includes('фонд')||ticker.match(/^FX|^TBND|^TMOS|^SBMX/))return'Фонд';
-  if(st.includes('пфи')||st.includes('фьюч'))return'ПФИ';
-  // Акции США — если ticker латинский без цифр и не ETF
-  if(/^[A-Z]{1,5}$/.test(ticker)&&!ticker.match(/^FX/))return'Акция (США)';
-  return'Прочее';
+// ── Операции по счёту ─────────────────────────────────────────────────────────
+function renderPortfolioOps(accId){
+  // Собираем операции из всех периодов по этому счёту
+  const ops=[];
+  for(const[,period]of Object.entries(DB.periods||{})){
+    for(const t of(period.transactions||[])){
+      if(t.account===accId||(t.linkedAccount===accId&&t.type==='transfer')){
+        ops.push(t);
+      }
+    }
+  }
+  ops.sort((a,b)=>b.date.localeCompare(a.date));
+  if(!ops.length)return'<div class="card" style="text-align:center;padding:32px;color:var(--muted)">Операций нет</div>';
+
+  let html='<div class="card"><div class="card-title">Операции по счёту ('+ops.length+')</div>'
+    +'<div class="tbl-wrap"><table style="font-size:12px"><thead><tr>'
+    +'<th>Дата</th><th>Описание</th><th>Категория</th><th style="text-align:right">Сумма</th>'
+    +'</tr></thead><tbody>';
+  for(const t of ops.slice(0,100)){
+    const amt=t.amount||t.amtOp||0;
+    const isIncome=t.type==='income'||(t.type==='transfer'&&t.linkedAccount&&t.account!==accId);
+    html+='<tr>'
+      +'<td style="white-space:nowrap;color:var(--muted)">'+t.date+'</td>'
+      +'<td><div>'+(t.description||t.desc||'—').slice(0,50)+'</div>'
+        +(t.counterparty?'<div style="font-size:10px;color:var(--muted)">'+t.counterparty.slice(0,40)+'</div>':'')+'</td>'
+      +'<td style="font-size:11px;color:var(--muted)">'+(t.sub||t.group||'—')+'</td>'
+      +'<td style="text-align:right;font-weight:500;color:'+(isIncome?'var(--income)':'var(--expense)')+'">'
+        +(isIncome?'+':'-')+fmtMoney(Math.abs(amt))+'</td>'
+      +'</tr>';
+  }
+  html+='</tbody></table></div>'+(ops.length>100?'<div style="text-align:center;padding:8px;font-size:12px;color:var(--muted)">Показано 100 из '+ops.length+'</div>':'')+'</div>';
+  return html;
 }
 
-// ── Вкладка Облигации ───────────────────────────────────────────────────────
-function renderInvestBonds(){
-  const prices=DB.investPrices||{};
-  const allH=Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0);
-  const bonds=allH.filter(h=>classifyHolding(h)==='Облигация');
-
-  let html='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">'
-    +'<button class="btn sm primary" onclick="searchMOEXBonds()">🔍 Поиск облигаций MOEX</button>'
-    +'<button class="btn sm" onclick="fetchMOEXBondPrices()">↻ Обновить цены</button>'
-    +'</div>';
-
-  if(!bonds.length){
-    html+='<div class="card" style="text-align:center;padding:32px;color:var(--muted)">'
-      +'<div style="font-size:24px;margin-bottom:8px">📋</div>'
-      +'<div>Облигации не найдены в портфеле.<br>Загрузите брокерский отчёт или добавьте вручную.</div>'
-      +'</div>';
-  } else {
-    html+='<div class="card"><div class="tbl-wrap"><table style="font-size:13px">'
-      +'<thead><tr><th>Облигация</th><th style="text-align:right">Кол-во</th><th style="text-align:right">Ном.</th><th style="text-align:right">Тек. цена</th><th style="text-align:right">Стоимость</th><th style="text-align:right">Купон</th><th style="text-align:right">НКД</th><th>Погашение</th></tr></thead><tbody>';
-    for(const h of bonds){
-      const pk=h.isin||h.ticker;
-      const price=prices[pk]||0;
-      const nominal=h.nominal||1000;
-      const priceRub=price>0?(price/100*nominal):0;
-      const val=h.qty*priceRub;
-      const coupon=h.coupon||0;
-      const nkd=h.nkd||0;
-      html+='<tr>'
-        +'<td><div style="font-weight:500">'+h.name+'</div>'
-          +'<div style="font-size:11px;color:var(--muted)">'+( h.isin||h.ticker||'')+'</div></td>'
-        +'<td style="text-align:right">'+h.qty+'</td>'
-        +'<td style="text-align:right;color:var(--muted)">'+nominal.toLocaleString('ru-RU')+'₽</td>'
-        +'<td style="text-align:right"><input type="number" value="'+(price||'')+'" placeholder="% от ном." '
-          +'oninput="setInvestPrice(this.dataset.key,this.value)" data-key="'+pk+'" '
-          +'style="width:80px;padding:3px 6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--font);text-align:right"></td>'
-        +'<td style="text-align:right;font-weight:500">'+(val>0?fmtMoney(val):'—')+'</td>'
-        +'<td style="text-align:right;color:var(--income)">'+(coupon?fmtMoney(coupon)+'₽':'—')+'</td>'
-        +'<td style="text-align:right;color:var(--muted)">'+(nkd?fmtMoney(nkd)+'₽':'—')+'</td>'
-        +'<td style="font-size:12px;color:var(--muted)">'+(h.maturity||'—')+'</td>'
-        +'</tr>';
-    }
-    html+='</tbody></table></div></div>';
-  }
-
-  // Поиск облигаций MOEX
-  html+='<div class="card" style="margin-top:16px">'
-    +'<div class="card-title">🔍 Поиск облигаций на MOEX</div>'
+// ── Данные MOEX ───────────────────────────────────────────────────────────────
+function renderPortfolioMOEX(holdings){
+  let html='<div class="card" style="margin-bottom:16px">'
+    +'<div class="card-title">Поиск инструмента на MOEX</div>'
     +'<div style="display:flex;gap:8px;margin-bottom:12px">'
-      +'<input id="bondSearchInput" type="text" placeholder="ISIN или название (напр. ОФЗ 26238)" '
+      +'<input id="bondSearchInput" type="text" placeholder="ISIN или тикер (напр. SU26238RMFS4 или ОФЗ)" '
         +'style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:var(--font)" '
         +'onkeydown="if(event.key===\'Enter\')searchMOEXBonds()">'
       +'<button class="btn sm primary" onclick="searchMOEXBonds()">Найти</button>'
     +'</div>'
-    +'<div id="bondSearchResults" style="font-size:13px;color:var(--muted)">Введите ISIN или название облигации</div>'
+    +'<div id="bondSearchResults" style="font-size:13px;color:var(--muted)">Введите ISIN или тикер</div>'
     +'</div>';
+
+  // Текущие метаданные облигаций в портфеле
+  const bonds=holdings.filter(h=>classifyHolding(h)==='Облигация');
+  if(bonds.length){
+    html+='<div class="card"><div class="card-title">Облигации в портфеле — данные MOEX</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:12px">'
+        +'<button class="btn sm primary" onclick="fetchMOEXBondPrices()">↻ Обновить все цены</button>'
+        +'<button class="btn sm" onclick="fetchAllBondMeta()">↻ Обновить метаданные</button>'
+      +'</div>'
+      +'<div class="tbl-wrap"><table style="font-size:12px"><thead><tr>'
+      +'<th>Облигация</th><th style="text-align:right">Номинал</th>'
+      +'<th style="text-align:right">Купон</th><th style="text-align:right">Перио.</th>'
+      +'<th style="text-align:right">НКД</th><th>Погашение</th>'
+      +'<th>След. купон</th><th></th>'
+      +'</tr></thead><tbody>';
+    for(const h of bonds){
+      const pk=h.isin||h.ticker;
+      const meta=(DB.bondMeta||{})[pk]||{};
+      const secid=meta.secid||h.ticker||'';
+      html+='<tr>'
+        +'<td><div style="font-weight:500">'+h.name+'</div>'
+          +'<div style="font-size:10px;color:var(--muted)">'+(h.isin||h.ticker||'')+'</div></td>'
+        +'<td style="text-align:right">'+(meta.nominal||h.nominal||1000)+' ₽</td>'
+        +'<td style="text-align:right;color:var(--income)">'+(meta.coupon||h.coupon?fmtMoney(meta.coupon||h.coupon)+' ₽':'—')+'</td>'
+        +'<td style="text-align:right;color:var(--muted)">'+(meta.couponFreq||h.couponFreq?'×'+(meta.couponFreq||h.couponFreq):'—')+'</td>'
+        +'<td style="text-align:right;color:var(--muted)">'+(meta.nkd?fmtMoney(meta.nkd)+' ₽':'—')+'</td>'
+        +'<td style="font-size:11px">'+(meta.maturity||h.maturity||'—')+'</td>'
+        +'<td style="font-size:11px;color:var(--accent)">'+(meta.nextCoupon||'—')+'</td>'
+        +'<td><button class="btn sm" onclick="loadMOEXBondDetails(\''+pk+'\',\''+secid+'\',\''+h.name.replace(/'/g,'\\\'')+'\')" style="white-space:nowrap">↻</button></td>'
+        +'</tr>';
+    }
+    html+='</tbody></table></div></div>';
+  }
   return html;
 }
 
-// ── Вкладка Денежный поток ──────────────────────────────────────────────────
-function renderInvestCashflow(){
-  const allH=Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0);
-  const withCoupons=allH.filter(h=>h.coupon&&h.couponFreq);
+// ── Денежный поток ────────────────────────────────────────────────────────────
+function renderPortfolioCashflow(holdings){
+  const meta=DB.bondMeta||{};
+  const prices=DB.investPrices||{};
   const today=new Date();
+  const monthNames=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 
-  // Генерируем купонный поток на 12 месяцев вперёд
+  // Генерируем купонный поток на 12 мес
   const months={};
   for(let i=0;i<12;i++){
     const d=new Date(today.getFullYear(),today.getMonth()+i,1);
-    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    months[key]=[];
+    months[d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')]=[];
   }
 
-  for(const h of withCoupons){
-    const freq=h.couponFreq||2; // раз в год
+  let hasCoupons=false;
+  for(const h of holdings){
+    const pk=h.isin||h.ticker;
+    const m=meta[pk]||{};
+    const coupon=m.coupon||h.coupon||0;
+    const freq=m.couponFreq||h.couponFreq||2;
+    const nextCoupon=m.nextCoupon||h.nextCoupon||'';
+    if(!coupon||!nextCoupon)continue;
+    hasCoupons=true;
     const monthsBetween=Math.round(12/freq);
-    // Если есть дата следующего купона
-    if(h.nextCoupon){
-      let nd=new Date(h.nextCoupon);
-      for(let i=0;i<freq*2;i++){
-        const key=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0');
-        if(months[key]!==undefined){
-          months[key].push({name:h.name,qty:h.qty,amount:h.coupon*h.qty,ticker:h.ticker||h.isin});
-        }
-        nd=new Date(nd.getFullYear(),nd.getMonth()+monthsBetween,nd.getDate());
-      }
+    let nd=new Date(nextCoupon);
+    for(let i=0;i<freq*2;i++){
+      const key=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0');
+      if(months[key]!==undefined)months[key].push({name:h.name,qty:h.qty,amount:coupon*h.qty,ticker:h.ticker});
+      nd=new Date(nd.getFullYear(),nd.getMonth()+monthsBetween,nd.getDate());
     }
   }
 
-  const monthNames=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
-  let html='';
-
-  if(!withCoupons.length){
-    html='<div class="card" style="text-align:center;padding:32px;color:var(--muted)">'
+  if(!hasCoupons){
+    return'<div class="card" style="text-align:center;padding:32px;color:var(--muted)">'
       +'<div style="font-size:24px;margin-bottom:8px">📅</div>'
-      +'<div>Нет данных по купонам.<br>Информация о купонах подгружается при поиске облигаций на MOEX.</div>'
+      +'<div>Нет данных по купонам.<br>Обновите метаданные во вкладке «Данные MOEX».</div></div>';
+  }
+
+  const maxAmt=Math.max(...Object.values(months).map(m=>m.reduce((s,p)=>s+p.amount,0)),1);
+  let html='<div class="card" style="margin-bottom:16px">'
+    +'<div class="card-title">Купонный поток — 12 месяцев</div>'
+    +'<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:8px;padding:0 4px">';
+  let totalYear=0;
+  for(const[key,payments]of Object.entries(months)){
+    const total=payments.reduce((s,p)=>s+p.amount,0);
+    totalYear+=total;
+    const pct=total>0?Math.max(5,total/maxAmt*96):3;
+    const[,m]=key.split('-');
+    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'
+      +'<div style="font-size:9px;color:var(--muted)">'+(total>0?Math.round(total).toLocaleString('ru-RU'):'')+'</div>'
+      +'<div style="width:100%;background:'+(total>0?'var(--accent)':'var(--bg3)')+';height:'+pct+'%;border-radius:3px 3px 0 0" title="'+fmtMoney(total)+'"></div>'
+      +'<div style="font-size:9px;color:var(--muted)">'+monthNames[+m-1]+'</div>'
       +'</div>';
-  } else {
-    // График по месяцам
-    const maxAmt=Math.max(...Object.values(months).map(m=>m.reduce((s,p)=>s+p.amount,0)),1);
-    html='<div class="card" style="margin-bottom:16px">'
-      +'<div class="card-title">Купонный поток — следующие 12 месяцев</div>'
-      +'<div style="display:flex;gap:6px;align-items:flex-end;height:120px;margin-bottom:8px">';
-    for(const[key,payments] of Object.entries(months)){
-      const total=payments.reduce((s,p)=>s+p.amount,0);
-      const pct=total>0?Math.max(4,total/maxAmt*100):4;
-      const [y,m]=key.split('-');
-      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'
-        +'<div style="font-size:10px;color:var(--muted)">'+(total>0?fmtMoney(total):'')+'</div>'
-        +'<div style="width:100%;background:'+(total>0?'var(--accent)':'var(--bg3)')+';height:'+pct+'%;border-radius:3px 3px 0 0" title="'+key+': '+fmtMoney(total)+'"></div>'
-        +'<div style="font-size:10px;color:var(--muted)">'+monthNames[+m-1]+'</div>'
-        +'</div>';
-    }
-    html+='</div></div>';
-
-    // Детали по месяцам
-    html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">';
-    for(const[key,payments] of Object.entries(months)){
-      if(!payments.length)continue;
-      const total=payments.reduce((s,p)=>s+p.amount,0);
-      const[y,m]=key.split('-');
-      html+='<div class="card">'
-        +'<div style="font-weight:600;margin-bottom:8px">'+monthNames[+m-1]+' '+y+' <span style="color:var(--income);font-size:13px">+'+fmtMoney(total)+'</span></div>'
-        +payments.map(p=>'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid var(--border)">'
-          +'<span style="color:var(--muted)">'+p.name.slice(0,25)+'</span>'
-          +'<span style="color:var(--income)">+'+fmtMoney(p.amount)+'</span>'
-          +'</div>').join('')
-        +'</div>';
-    }
-    html+='</div>';
   }
-  return html;
-}
+  html+='</div>'
+    +'<div style="text-align:center;font-size:12px;color:var(--muted)">Итого за год: <strong style="color:var(--income)">+'+fmtMoney(totalYear)+'</strong></div>'
+    +'</div>';
 
-// ── Вкладка Аналитика ───────────────────────────────────────────────────────
-function renderInvestAnalytics(){
-  const prices=DB.investPrices||{};
-  const allH=Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0);
-  if(!allH.length)return'<div class="card" style="text-align:center;padding:32px;color:var(--muted)">Нет данных</div>';
-
-  // Структура по типам
-  const byType={};
-  for(const h of allH){
-    const t=classifyHolding(h);
-    const val=h.qty*(prices[h.isin||h.ticker]||0);
-    byType[t]=(byType[t]||0)+val;
-  }
-  const totalVal=Object.values(byType).reduce((s,v)=>s+v,0);
-
-  // Структура по счетам
-  const byAcc={};
-  for(const[accId,data] of Object.entries(DB.investments||{})){
-    const name=DB.accounts[accId]?.name||accId;
-    const val=(data.holdings||[]).filter(h=>h.qty>0).reduce((s,h)=>s+(h.qty*(prices[h.isin||h.ticker]||0)),0);
-    if(val>0)byAcc[name]=val;
-  }
-
-  const colors=['var(--accent)','var(--income)','#f59e0b','#8b5cf6','#06b6d4','#ec4899','var(--muted)'];
-
-  let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
-
-  // По типам
-  html+='<div class="card"><div class="card-title">По типу актива</div>';
-  let ci=0;
-  for(const[type,val] of Object.entries(byType).sort((a,b)=>b[1]-a[1])){
-    const pct=totalVal>0?val/totalVal*100:0;
-    html+='<div style="margin-bottom:8px">'
-      +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">'
-        +'<span>'+type+'</span><span style="font-weight:600">'+pct.toFixed(1)+'%</span>'
+  // Детальный календарь
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">';
+  for(const[key,payments]of Object.entries(months)){
+    if(!payments.length)continue;
+    const total=payments.reduce((s,p)=>s+p.amount,0);
+    const[y,m]=key.split('-');
+    html+='<div class="card">'
+      +'<div style="font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between">'
+        +'<span>'+monthNames[+m-1]+' '+y+'</span>'
+        +'<span style="color:var(--income)">+'+fmtMoney(total)+'</span>'
       +'</div>'
-      +'<div style="background:var(--bg3);border-radius:4px;height:6px">'
-        +'<div style="background:'+colors[ci%colors.length]+';height:100%;border-radius:4px;width:'+pct.toFixed(1)+'%"></div>'
-      +'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+fmtMoney(val)+'</div>'
+      +payments.map(p=>'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:1px solid var(--border)">'
+        +'<span style="color:var(--muted)">'+p.name.slice(0,22)+'</span>'
+        +'<span style="color:var(--income)">+'+fmtMoney(p.amount)+'</span>'
+        +'</div>').join('')
       +'</div>';
-    ci++;
   }
   html+='</div>';
-
-  // По счетам
-  html+='<div class="card"><div class="card-title">По счетам</div>';
-  ci=0;
-  for(const[name,val] of Object.entries(byAcc).sort((a,b)=>b[1]-a[1])){
-    const pct=totalVal>0?val/totalVal*100:0;
-    html+='<div style="margin-bottom:8px">'
-      +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">'
-        +'<span>'+name+'</span><span style="font-weight:600">'+pct.toFixed(1)+'%</span>'
-      +'</div>'
-      +'<div style="background:var(--bg3);border-radius:4px;height:6px">'
-        +'<div style="background:'+colors[ci%colors.length]+';height:100%;border-radius:4px;width:'+pct.toFixed(1)+'%"></div>'
-      +'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+fmtMoney(val)+'</div>'
-      +'</div>';
-    ci++;
-  }
-  html+='</div></div>';
-
-  // Топ позиций по стоимости
-  html+='<div class="card"><div class="card-title">Топ позиций</div>'
-    +'<div class="tbl-wrap"><table style="font-size:13px"><thead><tr>'
-    +'<th>Актив</th><th>Тип</th><th style="text-align:right">Стоимость</th><th style="text-align:right">Доля</th><th style="text-align:right">P&amp;L</th>'
-    +'</tr></thead><tbody>';
-  const sorted=[...allH].map(h=>{
-    const pk=h.isin||h.ticker;
-    const val=h.qty*(prices[pk]||0);
-    const pnl=h.avgPrice&&prices[pk]>0?h.qty*(prices[pk]-h.avgPrice):null;
-    return{...h,val,pnl};
-  }).sort((a,b)=>b.val-a.val).slice(0,15);
-  for(const h of sorted){
-    const pct=totalVal>0?h.val/totalVal*100:0;
-    html+='<tr>'
-      +'<td><div style="font-weight:500">'+h.name+'</div>'
-        +(h.ticker?'<div style="font-size:11px;color:var(--muted)">'+h.ticker+'</div>':'')+'</td>'
-      +'<td><span style="font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">'+classifyHolding(h)+'</span></td>'
-      +'<td style="text-align:right;font-weight:500">'+fmtMoney(h.val)+'</td>'
-      +'<td style="text-align:right;color:var(--muted)">'+pct.toFixed(1)+'%</td>'
-      +'<td style="text-align:right;color:'+(h.pnl==null?'var(--muted)':h.pnl>=0?'var(--income)':'var(--expense)')+'">'
-        +(h.pnl==null?'—':(h.pnl>=0?'+':'')+fmtMoney(h.pnl))+'</td>'
-      +'</tr>';
-  }
-  html+='</tbody></table></div></div>';
   return html;
 }
 
-// ── Поиск облигаций MOEX ────────────────────────────────────────────────────
-async function searchMOEXBonds(){
-  const q=(document.getElementById('bondSearchInput')?.value||'').trim();
-  if(!q){toast('Введите ISIN или название','err');return;}
-  const el=document.getElementById('bondSearchResults');
-  if(el)el.innerHTML='<span style="color:var(--muted)">Ищем...</span>';
-  try{
-    const r=await fetch('https://iss.moex.com/iss/securities.json?q='+encodeURIComponent(q)+'&type=bonds&iss.meta=off&limit=10');
-    const d=await r.json();
-    const cols=d.securities.columns;
-    const rows=d.securities.data;
-    if(!rows.length){if(el)el.innerHTML='<span style="color:var(--muted)">Ничего не найдено</span>';return;}
-    const iIdx=cols.indexOf('ISIN'),nIdx=cols.indexOf('NAME'),sIdx=cols.indexOf('SECID');
-    let html='<div class="tbl-wrap"><table style="font-size:12px"><thead><tr><th>Название</th><th>ISIN</th><th>Тикер</th><th></th></tr></thead><tbody>';
-    for(const row of rows.slice(0,8)){
-      const isin=row[iIdx]||'',name=row[nIdx]||'',secid=row[sIdx]||'';
-      html+='<tr><td>'+name+'</td><td style="color:var(--muted)">'+isin+'</td><td style="color:var(--muted)">'+secid+'</td>'
-        +'<td><button class="btn sm" onclick="loadMOEXBondDetails(\''+isin+'\',\''+secid+'\',\''+name.replace(/'/g,'\\')+'\')" style="white-space:nowrap">+ В портфель</button></td></tr>';
-    }
-    html+='</tbody></table></div>';
-    if(el)el.innerHTML=html;
-  }catch(e){
-    if(el)el.innerHTML='<span style="color:var(--expense)">Ошибка: '+e.message+'</span>';
-  }
-}
-
-async function loadMOEXBondDetails(isin,secid,name){
-  toast('Загружаем данные по '+secid+'...','info');
-  try{
-    const r=await fetch('https://iss.moex.com/iss/securities/'+secid+'.json?iss.meta=off');
-    const d=await r.json();
-    const dc=d.description.columns;
-    const drows=d.description.data;
-    const get=(n)=>{const i=dc.indexOf(n);return i>=0?(drows.find(r=>r[dc.indexOf('name')]===n)||[])[dc.indexOf('value')]||null:null;};
-    const nominal=parseFloat(get('FACEVALUE'))||1000;
-    const coupon=parseFloat(get('COUPONVALUE'))||0;
-    const maturity=get('MATDATE')||'';
-    const couponFreq=parseFloat(get('COUPONFREQUENCY'))||2;
-    const nextCoupon=get('NEXTCOUPON')||'';
-
-    // Запросить текущую цену
-    const rp=await fetch('https://iss.moex.com/iss/engines/stock/markets/bonds/securities/'+secid+'.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,LCURRENTPRICE');
-    const dp=await rp.json();
-    const mprice=(dp.marketdata?.data?.[0]?.[1]||dp.marketdata?.data?.[0]?.[2])||0;
-
-    if(!DB.investPrices)DB.investPrices={};
-    if(mprice)DB.investPrices[isin||secid]=mprice;
-
-    // Сохранить метаданные облигации
-    if(!DB.bondMeta)DB.bondMeta={};
-    DB.bondMeta[isin||secid]={name,isin,secid,nominal,coupon,maturity,couponFreq,nextCoupon};
-    saveLocal();
-    saveInvestments('Bond meta');
-    toast(name+' добавлена, цена: '+mprice+'%','ok');
-    renderPage();
-  }catch(e){
-    toast('Ошибка загрузки: '+e.message,'err');
-  }
-}
-
-async function fetchMOEXBondPrices(){
-  const allH=Object.values(DB.investments||{}).flatMap(a=>a.holdings||[]).filter(h=>h.qty>0&&classifyHolding(h)==='Облигация');
-  if(!allH.length){toast('Нет облигаций в портфеле','err');return;}
-  toast('Обновляем цены облигаций...','info');
-  if(!DB.investPrices)DB.investPrices={};
-  let updated=0;
-  for(const h of allH){
+// Загрузить метаданные для всех облигаций в портфеле
+async function fetchAllBondMeta(){
+  const accId=window._investAcc;
+  if(!accId)return;
+  const holdings=(DB.investments?.[accId]?.holdings||[]).filter(h=>h.qty>0&&classifyHolding(h)==='Облигация');
+  if(!holdings.length){toast('Облигаций нет','err');return;}
+  toast('Загружаем данные по '+holdings.length+' облигациям...','info');
+  for(const h of holdings){
     const secid=h.ticker||h.isin;
-    if(!secid)continue;
-    try{
-      const r=await fetch('https://iss.moex.com/iss/engines/stock/markets/bonds/securities/'+secid+'.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,LCURRENTPRICE');
-      const d=await r.json();
-      const price=d.marketdata?.data?.[0]?.[1]||d.marketdata?.data?.[0]?.[2];
-      if(price){DB.investPrices[h.isin||h.ticker]=price;updated++;}
-    }catch(e){}
+    if(secid)await loadMOEXBondDetails(h.isin,secid,h.name).catch(()=>{});
   }
-  saveInvestments('Bond prices');
-  toast('Обновлено '+updated+' цен','ok');
+  toast('Метаданные обновлены ✓','ok');
   renderPage();
 }
+
+
 function setInvestPrice(key,val){
   if(!DB.investPrices)DB.investPrices={};
   DB.investPrices[key]=parseFloat(val)||0;
