@@ -3440,10 +3440,12 @@ function processFile(file){
           const txns=parseVTBBrokerXLSX(wb);
           if(txns.length){ingest(txns);}
           else{toast('ВТБ Брокер: не найдены операции','err');}
+          saveInvestments('VTB broker holdings');
         } else if(isTinkoffBroker){
           const txns=parseTinkoffBrokerXLSX(wb);
           if(txns.length){ingest(txns);}
           else{toast('Тинькофф Брокер: не найдены операции','err');}
+          saveInvestments('TBank broker holdings');
         } else if(isCifraBroker){
           const txns=parseCifraBrokerXLSX(wb);
           if(txns.length){ingest(txns);}
@@ -3517,6 +3519,8 @@ function ingest(newTxns){
   toast('Добавлено '+added+' операций за '+months.join(', ')+(pairs?' · связано '+pairs+' пар переводов':''),'ok');
   // Auto-save to GitHub in background
   autoSaveToGithub();
+  // Сохранить инвестиции если есть
+  if(Object.keys(DB.investments||{}).length>0)saveInvestments('After ingest');
 }
 
 let _ghSaving=false;
@@ -5717,10 +5721,21 @@ async function loadFromGithubManual(){
         if(dr.ok)DB.periods[f.name.replace('.json','')]=await dr.json();
       }));
     }
-    // Инвестиции
+    // Инвестиции — загружаем только если на GitHub есть данные (не пустой файл)
     try{
       const ri=await fetch(apiBase+'data/investments.json',{headers:apiHdr});
-      if(ri.ok){const inv=await ri.json();if(inv.prices)DB.investPrices=inv.prices;if(inv.holdings)DB.investments=inv.holdings;}
+      if(ri.ok){
+        const inv=await ri.json();
+        const hasHoldings=inv.holdings&&Object.keys(inv.holdings).length>0;
+        const hasPrices=inv.prices&&Object.keys(inv.prices).length>0;
+        if(hasHoldings)DB.investments=inv.holdings;
+        if(hasPrices)DB.investPrices=inv.prices;
+        // Если GitHub пустой — сохраняем локальные данные обратно на GitHub
+        if(!hasHoldings&&!hasPrices&&(Object.keys(DB.investments||{}).length>0||Object.keys(DB.investPrices||{}).length>0)){
+          await ghPut('data/investments.json',JSON.stringify({prices:DB.investPrices||{},holdings:DB.investments||{}},(null,2)),'Sync investments to GitHub').catch(()=>{});
+          toast('Инвестиции синхронизированы на GitHub ✓','ok');
+        }
+      }
     }catch(e){}
     ensureCashAccounts();
     const periods=Object.keys(DB.periods).sort().reverse();
