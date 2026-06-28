@@ -255,6 +255,21 @@ tr:hover td{background:var(--bg3)}
     flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:3px;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:500;
   }
+  /* Rate bar */
+  .rate-bar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap}
+  .rate-bar-val{font-weight:700;color:var(--text)}
+  .rate-bar-label{color:var(--muted);font-size:11px}
+  .rate-bar-actions{display:flex;gap:6px;margin-left:auto}
+  .rate-bar-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--muted);font-family:var(--font)}
+  .rate-bar-btn:hover{background:var(--bg3);color:var(--text)}
+  .rate-bar-sep{width:1px;height:20px;background:var(--border)}
+  /* App build badge */
+  #app-build{font-size:10px;color:var(--muted);font-family:monospace;opacity:.6;cursor:default;white-space:nowrap}
+  /* Мобильный: rate-bar компактный */
+  @media(max-width:768px){
+    .rate-bar{padding:6px 12px;gap:8px}
+    .rate-bar-sep{display:none}
+  }
   /* Drawer overlay */
 
 .nav-drawer.open{display:block}
@@ -272,12 +287,38 @@ tr:hover td{background:var(--bg3)}
 <div class="topbar">
   <div class="logo">Семейный<em> портфель</em></div>
   <div class="topbar-right">
+    <span id="app-build" title="Версия приложения">—</span>
     <button id="onlyConfirmedBtn" class="theme-btn" onclick="toggleOnlyConfirmed()" title="Только подтверждённые операции в отчётах">○</button>
     <button id="loadFromGhBtn" class="theme-btn" onclick="loadFromGithubManual()" title="Загрузить данные из GitHub">📥</button>
     <button id="saveAllBtn" class="theme-btn" onclick="saveAllNow()" title="Сохранить всё в GitHub">💾</button>
     <button class="theme-btn" onclick="openGhModal()" title="Настройки GitHub">⚙️</button>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">☀️</button>
   </div>
+</div>
+<!-- Rate bar -->
+<div class="rate-bar" id="rateBar">
+  <span class="rate-bar-label">USD / RUB</span>
+  <span class="rate-bar-val" id="rateUSD">—</span>
+  <div class="rate-bar-sep"></div>
+  <span class="rate-bar-label">EUR / RUB</span>
+  <span class="rate-bar-val" id="rateEUR">—</span>
+  <div class="rate-bar-sep"></div>
+  <span class="rate-bar-label">CNY / RUB</span>
+  <span class="rate-bar-val" id="rateCNY">—</span>
+  <div class="rate-bar-sep"></div>
+  <span class="rate-bar-label" id="rateDate" style="margin-left:4px"></span>
+  <div class="rate-bar-actions">
+    <button class="rate-bar-btn" onclick="fetchRateBar()" title="Обновить курсы">↻ Обновить</button>
+    <button class="rate-bar-btn" onclick="toggleRateBarManual()" title="Ввести вручную">✎</button>
+  </div>
+</div>
+<div id="rateBarManual" style="display:none;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;font-size:12px;flex-wrap:wrap">
+  <label style="color:var(--muted)">USD/RUB:</label>
+  <input type="number" id="rateManualUSD" step="0.01" placeholder="85.00" style="width:80px;padding:3px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font)">
+  <label style="color:var(--muted)">Дата:</label>
+  <input type="date" id="rateManualDate" style="padding:3px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font)">
+  <button class="rate-bar-btn" style="color:var(--income)" onclick="saveManualRateBar()">✓ Сохранить</button>
+  <button class="rate-bar-btn" onclick="toggleRateBarManual()">✕</button>
 </div>
 <div class="body">
   <div class="sidebar">
@@ -385,10 +426,13 @@ tr:hover td{background:var(--bg3)}
     <span class="bn-icon">≡</span><span>P&L</span>
   </div>
   <div class="bn-item" id="bn-transactions" onclick="showPage('transactions')">
-    <span class="bn-icon">☰</span><span>Операции</span>
+    <span class="bn-icon">—</span><span>Операции</span>
   </div>
-  <div class="bn-item" id="bn-upload" onclick="showPage('upload')">
-    <span class="bn-icon">↑</span><span>Загрузить</span>
+  <div class="bn-item" id="bn-investments" onclick="showPage('investments')">
+    <span class="bn-icon">◆</span><span>Инвест.</span>
+  </div>
+  <div class="bn-item" id="bn-trading" onclick="openTrading()">
+    <span class="bn-icon">⚡</span><span>Торговля</span>
   </div>
   <div class="bn-more-btn" onclick="openNavDrawer()">
     <span class="bn-icon">⋯</span><span style="font-size:10px;color:var(--muted2)">Ещё</span>
@@ -7521,6 +7565,98 @@ function bindLendsEvents(){}
 function openTrading(){
   window.open('https://iambescen.github.io/tradingjournal/','_blank');
 }
+
+// ── App build badge ──────────────────────────────────────────────────────────
+function setAppBuild(v){
+  const el=document.getElementById('app-build');
+  if(el)el.textContent=v||'—';
+}
+// Версия устанавливается в stamp_version.sh или вручную
+(function(){
+  // Попытаться загрузить версию из localStorage
+  const v=localStorage.getItem('ff_version');
+  if(v)setAppBuild(v);
+})();
+
+// ── Rate Bar — курсы ЦБ РФ ──────────────────────────────────────────────────
+let _rateCache={};
+async function fetchRateBar(){
+  const today=new Date().toISOString().slice(0,10);
+  // Проверяем кеш
+  if(_rateCache[today]){applyRateBar(_rateCache[today],today);return;}
+  // Загружаем из localStorage
+  try{
+    const cached=JSON.parse(localStorage.getItem('ff_rates')||'{}');
+    if(cached[today]){_rateCache=cached;applyRateBar(cached[today],today);return;}
+  }catch(e){}
+  // Запрашиваем ЦБ РФ
+  try{
+    const r=await fetch('https://www.cbr-xml-daily.ru/daily_json.js');
+    const d=await r.json();
+    const rates={
+      USD:+(d.Valute?.USD?.Value||0).toFixed(2),
+      EUR:+(d.Valute?.EUR?.Value||0).toFixed(2),
+      CNY:+(d.Valute?.CNY?.Value||0).toFixed(4),
+      date:d.Date?.slice(0,10)||today
+    };
+    _rateCache[today]=rates;
+    try{
+      const stored=JSON.parse(localStorage.getItem('ff_rates')||'{}');
+      stored[today]=rates;
+      // Хранить только последние 60 дней
+      const keys=Object.keys(stored).sort().reverse().slice(0,60);
+      const trimmed={};keys.forEach(k=>trimmed[k]=stored[k]);
+      localStorage.setItem('ff_rates',JSON.stringify(trimmed));
+    }catch(e){}
+    applyRateBar(rates,rates.date);
+  }catch(e){
+    // Fallback — попробуем вчерашний курс
+    try{
+      const stored=JSON.parse(localStorage.getItem('ff_rates')||'{}');
+      const lastKey=Object.keys(stored).sort().reverse()[0];
+      if(lastKey)applyRateBar(stored[lastKey],lastKey+'*');
+    }catch(e2){}
+  }
+}
+function applyRateBar(rates,dateStr){
+  const usd=document.getElementById('rateUSD');
+  const eur=document.getElementById('rateEUR');
+  const cny=document.getElementById('rateCNY');
+  const dt=document.getElementById('rateDate');
+  if(usd)usd.textContent=rates.USD?rates.USD.toFixed(2)+' ₽':'—';
+  if(eur)eur.textContent=rates.EUR?rates.EUR.toFixed(2)+' ₽':'—';
+  if(cny)cny.textContent=rates.CNY?rates.CNY.toFixed(4)+' ₽':'—';
+  if(dt)dt.textContent='ЦБ РФ · '+(dateStr||'');
+  // Обновляем глобальный кеш для getCBRRate
+  if(rates.USD&&rates.date)_cbrCache[rates.date]={USD:rates.USD,EUR:rates.EUR,CNY:rates.CNY/10,USDT:rates.USD};
+}
+function toggleRateBarManual(){
+  const el=document.getElementById('rateBarManual');
+  if(!el)return;
+  const vis=el.style.display!=='none'&&el.style.display!=='';
+  el.style.display=vis?'none':'flex';
+  if(!vis){
+    const today=new Date().toISOString().slice(0,10);
+    const inp=document.getElementById('rateManualDate');
+    if(inp)inp.value=today;
+  }
+}
+function saveManualRateBar(){
+  const usd=parseFloat(document.getElementById('rateManualUSD')?.value)||0;
+  const date=document.getElementById('rateManualDate')?.value||new Date().toISOString().slice(0,10);
+  if(!usd){toast('Введите курс USD/RUB','err');return;}
+  const rates={USD:usd,EUR:usd*1.08,CNY:usd/7.2,date};
+  _rateCache[date]=rates;
+  try{
+    const stored=JSON.parse(localStorage.getItem('ff_rates')||'{}');
+    stored[date]=rates;localStorage.setItem('ff_rates',JSON.stringify(stored));
+  }catch(e){}
+  applyRateBar(rates,date+'✎');
+  toggleRateBarManual();
+  toast('Курс сохранён ✓','ok');
+}
+// Загрузить при старте
+setTimeout(fetchRateBar,500);
 
 // Вычисления
 function daysBetween(d1,d2){
