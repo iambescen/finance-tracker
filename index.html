@@ -334,6 +334,7 @@ tr:hover td{background:var(--bg3)}
     <div class="nav-item" id="nav-assets" onclick="showPage('assets')">◈ Активы и долги</div>
     <div class="nav-item" id="nav-loans" onclick="showPage('loans')">⊘ Кредиты</div>
     <div class="nav-item" id="nav-lends" onclick="showPage('lends')">⟳ Долги</div>
+    <div class="nav-item" id="nav-projects" onclick="showPage('projects')">❐ Проекты</div>
     <div class="nav-item" id="nav-investments" onclick="showPage('investments')">◆ Инвестиции</div>
     <div class="nav-item" id="nav-rules" onclick="showPage('rules')">⊞ Правила</div>
     <div class="nav-divider"></div>
@@ -453,6 +454,7 @@ tr:hover td{background:var(--bg3)}
       <div class="nav-item" onclick="showPage('assets');closeNavDrawer()">◈ Активы и долги</div>
       <div class="nav-item" onclick="showPage('loans');closeNavDrawer()">⊘ Кредиты</div>
       <div class="nav-item" onclick="showPage('lends');closeNavDrawer()">⟳ Долги</div>
+      <div class="nav-item" onclick="showPage('projects');closeNavDrawer()">❐ Проекты</div>
     <div class="nav-item" onclick="showPage('investments');closeNavDrawer()">◆ Инвестиции</div>
     <div class="nav-item" onclick="openTrading();closeNavDrawer()">⚡ Торговля</div>
       <div class="nav-item" onclick="showPage('rules');closeNavDrawer()">⊞ Правила</div>
@@ -586,7 +588,8 @@ let DB={
     broker:0,trading:0,cash:0,eduLoan:0,updatedAt:null},
   accounts:{},
   rules:[],
-  customGroups:{}
+  customGroups:{},
+  projects:{}
 };
 let currentPeriod=null,currentPage='dashboard',editTxId=null,charts={},dashRange='month',dashQuarter=null,dashYear=null,reportRange='month',reportYear=null,reportQuarter=null,txFilterAccount='',txFilterGroup='',txFilterType='',txFilterSearch='',txAllPeriods=true,investFilter='all',txShowUnconfirmed=false,txFilterCounterparty='',txBulkSelected=new Set(),txGroupBy='none',txExpandedGroups=new Set(),onlyConfirmed=false;
 
@@ -3786,6 +3789,7 @@ function renderPage(){
   else if(currentPage==='rules')c.innerHTML=pageRules();
   else if(currentPage==='loans')c.innerHTML=pageLoans();
   else if(currentPage==='lends'){c.innerHTML=pageLends();bindLendsEvents();}
+  else if(currentPage==='projects'){c.innerHTML=pageProjects();bindProjectsEvents();}
   if(currentPage==='dashboard')renderDashCharts();
 }
 
@@ -6245,7 +6249,7 @@ function delPeriod(p){
 
 // ── Storage ──
 function saveLocal(){try{localStorage.setItem('ff_db',JSON.stringify(DB));}catch(e){}}
-function loadLocal(){try{const d=localStorage.getItem('ff_db');if(d){const p=JSON.parse(d);DB.periods=p.periods||{};DB.assets=p.assets||DB.assets;DB.accounts=p.accounts||{};DB.rules=p.rules||[];DB.customGroups=p.customGroups||{};DB.investments=p.investments||{};DB.investPrices=p.investPrices||{};DB.lends=p.lends||[];}}catch(e){}}
+function loadLocal(){try{const d=localStorage.getItem('ff_db');if(d){const p=JSON.parse(d);DB.periods=p.periods||{};DB.assets=p.assets||DB.assets;DB.accounts=p.accounts||{};DB.rules=p.rules||[];DB.customGroups=p.customGroups||{};DB.investments=p.investments||{};DB.investPrices=p.investPrices||{};DB.lends=p.lends||[];DB.projects=p.projects||{};}}catch(e){}}
 
 function ensureCashAccounts(){
   if(!DB.accounts[CASH_ACCOUNTS.me])
@@ -7825,6 +7829,298 @@ function deleteLendPayment(lIdx,pIdx){
       <button class="btn primary" onclick="importFromAISubmit()">✓ Применить</button>
       <button class="btn primary" style="background:var(--income);border-color:var(--income)" onclick="importFromAISubmitAndConfirm()">✓ Применить и подтвердить</button>
       <button class="btn" onclick="importFromAICancel()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// РАЗДЕЛ ПРОЕКТЫ
+// ════════════════════════════════════════════════════════════
+
+const CHANNELS = ['ЯД','ВК','TG','Google','Авито','Озон','WB','Прочее'];
+const WEEKS = ['1–7','8–14','15–21','22–28','29–31'];
+
+function projectsMonthKey(){
+  return window._projectsMonth || new Date().toISOString().slice(0,7);
+}
+
+function saveProjects(){
+  saveLocal();
+  const{token}=ghCfg();
+  if(!token)return;
+  ghPut('data/projects.json',JSON.stringify(DB.projects,null,2),'Save projects').catch(()=>{});
+}
+
+function getProjectsForMonth(key){
+  if(!DB.projects[key])DB.projects[key]=[];
+  return DB.projects[key];
+}
+
+function pageProjects(){
+  const mk = projectsMonthKey();
+  const projects = getProjectsForMonth(mk);
+
+  // Навигация по месяцам
+  const prev = mk <= '2024-01' ? null : new Date(mk+'-01');
+  if(prev) prev.setMonth(prev.getMonth()-1);
+  const next = new Date(mk+'-01');
+  next.setMonth(next.getMonth()+1);
+  const prevKey = prev ? prev.toISOString().slice(0,7) : null;
+  const nextKey = next.toISOString().slice(0,7);
+
+  const monthNav = '<div style="display:flex;align-items:center;gap:12px">'
+    +(prevKey?'<button class="btn sm" onclick="window._projectsMonth=\''+prevKey+'\';renderPage()">←</button>':'')
+    +'<span style="font-weight:600;font-size:15px">'+fmtMonth(mk)+'</span>'
+    +'<button class="btn sm" onclick="window._projectsMonth=\''+nextKey+'\';renderPage()">→</button>'
+    +'</div>';
+
+  // Итоговые метрики
+  const totals = {budgetPlan:0,budgetFact:0,totalFee:0,incomePlan:0,incomeFact:0};
+  for(const p of projects){
+    totals.budgetPlan += p.budgetPlan||0;
+    totals.budgetFact += p.budgetFact||0;
+    totals.totalFee += calcTotalFee(p);
+    totals.incomePlan += WEEKS.reduce((s,w)=>s+(p.incomePlan?.[w]||0),0);
+    totals.incomeFact += p.incomeFact||0;
+  }
+
+  let html = '<div class="page-header"><div class="page-title">❐ Проекты</div>'
+    +'<div class="page-actions">'+monthNav
+    +'<button class="btn sm primary" onclick="openProjectModal()">+ Добавить проект</button>'
+    +'</div></div>';
+
+  // Метрики
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">'
+    +'<div class="card" style="text-align:center;padding:14px"><div style="font-size:18px;font-weight:700">'+fmtMoney(totals.budgetFact)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Бюджет факт</div>'
+      +(totals.budgetPlan?'<div style="font-size:10px;color:var(--muted)">план '+fmtMoney(totals.budgetPlan)+'</div>':'')+'</div>'
+    +'<div class="card" style="text-align:center;padding:14px"><div style="font-size:18px;font-weight:700;color:var(--income)">'+fmtMoney(totals.totalFee)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Оплата всего</div></div>'
+    +'<div class="card" style="text-align:center;padding:14px"><div style="font-size:18px;font-weight:700;color:var(--accent)">'+fmtMoney(totals.incomeFact)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Факт приход</div>'
+      +(totals.incomePlan?'<div style="font-size:10px;color:var(--muted)">план '+fmtMoney(totals.incomePlan)+'</div>':'')+'</div>'
+    +'<div class="card" style="text-align:center;padding:14px"><div style="font-size:18px;font-weight:700;color:'+(totals.incomeFact>=totals.totalFee?'var(--income)':'var(--expense)')+'">'+fmtMoney(totals.incomeFact-totals.totalFee)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Дельта приход/оплата</div></div>'
+    +'</div>';
+
+  if(!projects.length){
+    return html+'<div class="card" style="text-align:center;padding:40px;color:var(--muted)">'
+      +'<div style="font-size:28px;margin-bottom:12px">📋</div>'
+      +'<div>Проектов нет. Добавьте первый проект.</div></div>';
+  }
+
+  // Таблица проектов
+  html += '<div class="card" style="padding:0;overflow:hidden">'
+    +'<div class="tbl-wrap"><table style="font-size:12px;min-width:900px"><thead>'
+    +'<tr style="background:var(--bg3)">'
+    +'<th style="padding:10px 12px">Проект</th>'
+    +'<th>Канал</th>'
+    +'<th>Период</th>'
+    +'<th style="text-align:right">Бюджет план</th>'
+    +'<th style="text-align:right">Бюджет факт</th>'
+    +'<th style="text-align:right">Фикс</th>'
+    +'<th style="text-align:right">% от бюдж.</th>'
+    +'<th style="text-align:right;color:var(--income)">Оплата всего</th>'
+    +'<th colspan="5" style="text-align:center;border-left:2px solid var(--border)">План приход</th>'
+    +'<th style="text-align:right;border-left:2px solid var(--border);color:var(--accent)">Факт приход</th>'
+    +'<th></th>'
+    +'</tr>'
+    +'<tr style="background:var(--bg3);font-size:10px;color:var(--muted)">'
+    +'<th colspan="7"></th>'
+    +'<th></th>'
+    +WEEKS.map(w=>'<th style="text-align:right;border-left:'+(w==='1–7'?'2px':'0')+'solid var(--border)">'+w+'</th>').join('')
+    +'<th style="border-left:2px solid var(--border)"></th>'
+    +'<th></th>'
+    +'</tr>'
+    +'</thead><tbody>';
+
+  for(let i=0;i<projects.length;i++){
+    const p=projects[i];
+    const fee=calcTotalFee(p);
+    const pctFee=calcPctFee(p);
+    const ipTotal=WEEKS.reduce((s,w)=>s+(p.incomePlan?.[w]||0),0);
+    const delta=(p.incomeFact||0)-fee;
+    html+='<tr style="border-top:1px solid var(--border);cursor:pointer" onclick="openProjectModal('+i+')">'
+      +'<td style="padding:10px 12px"><div style="font-weight:600">'+p.name+'</div>'
+        +(p.tasks?'<div style="font-size:10px;color:var(--muted)">задачи: '+p.tasks+'</div>':'')+'</td>'
+      +'<td><span style="background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">'+( p.channel||'—')+'</span></td>'
+      +'<td style="color:var(--muted)">'+(p.period||'—')+'</td>'
+      +'<td style="text-align:right;color:var(--muted)">'+(p.budgetPlan?fmtMoney(p.budgetPlan):'—')+'</td>'
+      +'<td style="text-align:right;font-weight:500">'+(p.budgetFact?fmtMoney(p.budgetFact):'—')+'</td>'
+      +'<td style="text-align:right">'+(p.fixFee?fmtMoney(p.fixFee):'—')+'</td>'
+      +'<td style="text-align:right;color:var(--muted)">'+(pctFee?fmtMoney(pctFee)+(p.pctRate?' ('+p.pctRate+'%)':''):'—')+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:var(--income)">'+fmtMoney(fee)+'</td>'
+      +WEEKS.map(w=>'<td style="text-align:right;border-left:'+(w==='1–7'?'2px':'0')+'solid var(--border);color:var(--muted)">'
+        +((p.incomePlan?.[w]||0)>0?fmtMoney(p.incomePlan[w]):'—')+'</td>').join('')
+      +'<td style="text-align:right;border-left:2px solid var(--border);font-weight:700;color:var(--accent)">'+(p.incomeFact?fmtMoney(p.incomeFact):'—')+'</td>'
+      +'<td style="padding:0 8px"><button onclick="event.stopPropagation();deleteProject('+i+')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:4px">✕</button></td>'
+      +'</tr>';
+  }
+
+  // Итоговая строка
+  html+='<tr style="border-top:2px solid var(--border);background:var(--bg3);font-weight:700">'
+    +'<td colspan="3" style="padding:10px 12px">ИТОГО</td>'
+    +'<td style="text-align:right">'+fmtMoney(totals.budgetPlan)+'</td>'
+    +'<td style="text-align:right">'+fmtMoney(totals.budgetFact)+'</td>'
+    +'<td colspan="2"></td>'
+    +'<td style="text-align:right;color:var(--income)">'+fmtMoney(totals.totalFee)+'</td>'
+    +WEEKS.map(w=>{
+      const wTotal=projects.reduce((s,p)=>s+(p.incomePlan?.[w]||0),0);
+      return '<td style="text-align:right;border-left:'+(w==='1–7'?'2px':'0')+'solid var(--border)">'+(wTotal?fmtMoney(wTotal):'—')+'</td>';
+    }).join('')
+    +'<td style="text-align:right;border-left:2px solid var(--border);color:var(--accent)">'+fmtMoney(totals.incomeFact)+'</td>'
+    +'<td></td>'
+    +'</tr>';
+
+  html+='</tbody></table></div></div>';
+  return html;
+}
+
+function bindProjectsEvents(){}
+
+// Вычисления
+function calcPctFee(p){
+  if(!p.pctRate||!p.budgetFact)return 0;
+  return Math.round(p.budgetFact * p.pctRate / 100);
+}
+function calcTotalFee(p){
+  return (p.fixFee||0) + calcPctFee(p);
+}
+
+// Удалить проект
+function deleteProject(idx){
+  const mk=projectsMonthKey();
+  if(!confirm('Удалить проект?'))return;
+  DB.projects[mk].splice(idx,1);
+  saveProjects();
+  renderPage();
+}
+
+// Открыть модал — добавление или редактирование
+function openProjectModal(idx){
+  const mk=projectsMonthKey();
+  const projects=getProjectsForMonth(mk);
+  const p=idx!==undefined?projects[idx]:{};
+  document.getElementById('projModalTitle').textContent=idx!==undefined?'Редактировать проект':'Новый проект';
+  document.getElementById('projIdx').value=idx!==undefined?idx:'';
+  document.getElementById('projName').value=p.name||'';
+  document.getElementById('projChannel').value=p.channel||'ЯД';
+  document.getElementById('projPeriod').value=p.period||'';
+  document.getElementById('projTasks').value=p.tasks||'';
+  document.getElementById('projBudgetPlan').value=p.budgetPlan||'';
+  document.getElementById('projBudgetFact').value=p.budgetFact||'';
+  document.getElementById('projFixFee').value=p.fixFee||'';
+  document.getElementById('projPctRate').value=p.pctRate||'';
+  document.getElementById('projIncomeFact').value=p.incomeFact||'';
+  WEEKS.forEach(w=>{
+    const el=document.getElementById('projWeek_'+w.replace('–','-'));
+    if(el)el.value=p.incomePlan?.[w]||'';
+  });
+  updateProjCalc();
+  document.getElementById('projModal').style.display='flex';
+}
+
+function updateProjCalc(){
+  const budgetFact=parseFloat(document.getElementById('projBudgetFact').value)||0;
+  const fixFee=parseFloat(document.getElementById('projFixFee').value)||0;
+  const pctRate=parseFloat(document.getElementById('projPctRate').value)||0;
+  const pctFee=Math.round(budgetFact*pctRate/100);
+  const total=fixFee+pctFee;
+  const el=document.getElementById('projTotalCalc');
+  if(el)el.textContent='% с бюджета: '+fmtMoney(pctFee)+' · Итого оплата: '+fmtMoney(total);
+}
+
+function saveProjectModal(){
+  const mk=projectsMonthKey();
+  const projects=getProjectsForMonth(mk);
+  const idx=document.getElementById('projIdx').value;
+  const incomePlan={};
+  WEEKS.forEach(w=>{
+    const v=parseFloat(document.getElementById('projWeek_'+w.replace('–','-'))?.value)||0;
+    if(v)incomePlan[w]=v;
+  });
+  const p={
+    id:idx!==''?(projects[+idx]?.id||uid()):uid(),
+    name:document.getElementById('projName').value.trim(),
+    channel:document.getElementById('projChannel').value,
+    period:document.getElementById('projPeriod').value.trim(),
+    tasks:document.getElementById('projTasks').value.trim(),
+    budgetPlan:parseFloat(document.getElementById('projBudgetPlan').value)||0,
+    budgetFact:parseFloat(document.getElementById('projBudgetFact').value)||0,
+    fixFee:parseFloat(document.getElementById('projFixFee').value)||0,
+    pctRate:parseFloat(document.getElementById('projPctRate').value)||0,
+    incomePlan,
+    incomeFact:parseFloat(document.getElementById('projIncomeFact').value)||0,
+  };
+  if(!p.name){toast('Укажите название проекта','err');return;}
+  if(idx!=='')projects[+idx]=p;
+  else projects.push(p);
+  DB.projects[mk]=projects;
+  saveProjects();
+  document.getElementById('projModal').style.display='none';
+  renderPage();
+  toast('Проект сохранён ✓','ok');
+}
+</script>
+
+<!-- Модал проекта -->
+<div id="projModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0">
+  <div style="background:var(--bg2);border-radius:var(--r);width:560px;padding:24px;margin:auto">
+    <h3 id="projModalTitle" style="margin:0 0 20px;font-size:18px">Проект</h3>
+    <input type="hidden" id="projIdx">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="form-group" style="grid-column:1/-1"><label>Название проекта</label>
+        <input id="projName" type="text" placeholder="Платформа 1С" style="width:100%"></div>
+      <div class="form-group"><label>Канал</label>
+        <select id="projChannel" style="width:100%">
+          <option value="ЯД">ЯД</option><option value="ВК">ВК</option><option value="TG">TG</option><option value="Google">Google</option><option value="Авито">Авито</option><option value="Озон">Озон</option><option value="WB">WB</option><option value="Прочее">Прочее</option>
+        </select></div>
+      <div class="form-group"><label>Период</label>
+        <input id="projPeriod" type="text" placeholder="1–30.06" style="width:100%"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Задачи / дата постановки</label>
+        <input id="projTasks" type="text" placeholder="22.06" style="width:100%"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Бюджет</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Бюджет план, ₽</label>
+          <input id="projBudgetPlan" type="number" placeholder="67100" style="width:100%"></div>
+        <div class="form-group"><label>Бюджет факт, ₽</label>
+          <input id="projBudgetFact" type="number" placeholder="64656" oninput="updateProjCalc()" style="width:100%"></div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Оплата</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Фикс оплата, ₽</label>
+          <input id="projFixFee" type="number" placeholder="29000" oninput="updateProjCalc()" style="width:100%"></div>
+        <div class="form-group"><label>Ставка % от бюджета</label>
+          <input id="projPctRate" type="number" step="0.1" placeholder="20" oninput="updateProjCalc()" style="width:100%"></div>
+      </div>
+      <div id="projTotalCalc" style="font-size:13px;color:var(--income);font-weight:600;margin-top:6px"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">План прихода по неделям, ₽</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        <div class="form-group"><label style="font-size:10px">1–7</label><input id="projWeek_1-7" type="number" placeholder="0" style="width:100%"></div>
+        <div class="form-group"><label style="font-size:10px">8–14</label><input id="projWeek_8-14" type="number" placeholder="0" style="width:100%"></div>
+        <div class="form-group"><label style="font-size:10px">15–21</label><input id="projWeek_15-21" type="number" placeholder="0" style="width:100%"></div>
+        <div class="form-group"><label style="font-size:10px">22–28</label><input id="projWeek_22-28" type="number" placeholder="0" style="width:100%"></div>
+        <div class="form-group"><label style="font-size:10px">29–31</label><input id="projWeek_29-31" type="number" placeholder="0" style="width:100%"></div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:16px">
+      <div class="form-group"><label>Факт приход, ₽</label>
+        <input id="projIncomeFact" type="number" placeholder="0" style="width:100%">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Введите вручную или матч с операциями в будущем</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn primary" onclick="saveProjectModal()">Сохранить</button>
+      <button class="btn" onclick="document.getElementById('projModal').style.display='none'">Отмена</button>
     </div>
   </div>
 </div>
