@@ -63,6 +63,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 /* ── Layout ── */
 .app{display:grid;grid-template-rows:52px 1fr;height:100vh}
 .topbar{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:var(--shadow)}
+/* Rate bar */
+.rate-bar{display:flex;align-items:center;flex-wrap:wrap;gap:0;padding:0 20px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;min-height:32px}
+.rate-item{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-right:1px solid var(--border)}
+.rate-item:first-child{padding-left:0}
+.rate-bar-label{color:var(--muted);font-size:11px;white-space:nowrap}
+.rate-bar-val{font-weight:600;color:var(--text);white-space:nowrap}
+.rate-bar-date{color:var(--muted);font-size:11px;padding:6px 14px;white-space:nowrap}
+.rate-bar-actions{display:inline-flex;align-items:center;gap:4px;margin-left:auto}
+.rate-bar-btn{background:none;border:none;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--muted);font-family:var(--font);border-radius:4px}
+.rate-bar-btn:hover{background:var(--bg3);color:var(--text)}
+/* App build badge */
+#app-build{font-size:10px;color:var(--muted);font-family:monospace;opacity:.55;cursor:default;white-space:nowrap}
+@media(max-width:768px){
+  .rate-item{padding:6px 10px}
+  .rate-bar-label{display:none}
+  .rate-bar-date{display:none}
+}
 .logo{font-size:15px;font-weight:800;letter-spacing:-0.6px;color:var(--text)}
 .logo em{color:var(--accent);font-style:normal;font-weight:500}
 .topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
@@ -256,24 +273,6 @@ tr:hover td{background:var(--bg3)}
   .bn-more-btn{
     flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:3px;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:500;
-  }
-  /* Rate bar */
-  .rate-bar{display:flex;align-items:center;gap:0;padding:0 20px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;height:32px;overflow:hidden}
-  .rate-item{display:flex;align-items:center;gap:6px;padding:0 14px;height:100%;border-right:1px solid var(--border)}
-  .rate-item:first-child{padding-left:0}
-  .rate-bar-label{color:var(--muted);font-size:11px;white-space:nowrap}
-  .rate-bar-val{font-weight:600;color:var(--text);white-space:nowrap}
-  .rate-bar-date{color:var(--muted);font-size:11px;padding:0 14px}
-  .rate-bar-actions{display:flex;align-items:center;gap:4px;margin-left:auto;height:100%}
-  .rate-bar-btn{background:none;border:none;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--muted);font-family:var(--font);border-radius:4px}
-  .rate-bar-btn:hover{background:var(--bg3);color:var(--text)}
-  /* App build badge */
-  #app-build{font-size:10px;color:var(--muted);font-family:monospace;opacity:.55;cursor:default;white-space:nowrap}
-  /* Мобильный: rate-bar скрыть лейблы */
-  @media(max-width:768px){
-    .rate-item{padding:0 10px}
-    .rate-bar-label{display:none}
-    .rate-bar-date{display:none}
   }
   /* Drawer overlay */
 
